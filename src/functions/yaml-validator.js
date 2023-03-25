@@ -2,7 +2,7 @@ import * as core from '@actions/core'
 import validateSchema from 'yaml-schema-validator'
 import {readFileSync} from 'fs'
 import {globSync} from 'glob'
-import { parse } from 'yaml'
+import {parse} from 'yaml'
 
 // Helper function to validate all yaml files in the baseDir
 export async function yamlValidator() {
@@ -22,11 +22,13 @@ export async function yamlValidator() {
     violations: []
   }
   const files = globSync(
-    `**/*.{${yamlExtension.replace('.', '')},${yamlExtensionShort.replace('.', '')}}`,
+    `**/*.{${yamlExtension.replace('.', '')},${yamlExtensionShort.replace(
+      '.',
+      ''
+    )}}`,
     {cwd: baseDirSanitized}
   )
   for (const file of files) {
-
     try {
       // try to parse the yaml file
       parse(readFileSync(`${baseDirSanitized}/${file}`, 'utf8'))
@@ -47,7 +49,9 @@ export async function yamlValidator() {
       continue
     }
 
-    const schemaErrors = validateSchema(`${baseDirSanitized}/${file}`, { schema: yamlSchema })
+    const schemaErrors = validateSchema(`${baseDirSanitized}/${file}`, {
+      schema: yamlSchema
+    })
 
     if (!schemaErrors) {
       // if the yaml file is invalid against the schema, log an error and set success to false
