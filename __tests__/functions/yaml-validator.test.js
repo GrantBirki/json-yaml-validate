@@ -76,7 +76,7 @@ test('fails to validate a yaml file with an incorrect schema', async () => {
   })
   expect(errorMock).toHaveBeenCalledWith(
     expect.stringMatching(
-      '❌ failed to parse YAML file: ./__tests__/fixtures/yaml/valid/yaml2.yaml'
+      '❌ failed to parse YAML file: ./__tests__/fixtures/yaml/valid/yaml1.yaml'
     )
   )
 })
