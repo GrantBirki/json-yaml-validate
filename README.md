@@ -6,8 +6,14 @@ A GitHub Action to quickly validate JSON and YAML files in a repository
 
 ## About 💡
 
-- JSON validation with [ajv](https://github.com/ajv-validator/ajv) - The fastest nodejs JSON validator
-- YAML - TODO
+This action comes pre-packaged with two different common JSON and YAML validators:
+
+- JSON validation with [ajv](https://github.com/ajv-validator/ajv) - The fastest NodeJS JSON validator
+- YAML validation with [yaml-schema-validator](https://github.com/ketanSaxena/schema-validator)
+
+If you have a repository containing JSON or YAML files and want to validate them extremely quickly, this action is for you!
+
+You can provide schemas to check against, or just validate the syntax of the files. This comes very handy when you want to ensure that your JSON and YAML files are valid before committing them to your repository, especially from pull requests.
 
 ## Inputs 📥
 
@@ -26,3 +32,30 @@ A GitHub Action to quickly validate JSON and YAML files in a repository
 | Output | Description |
 | ------ | ----------- |
 | `success` | Whether or not the validation was successful for all files - `"true"` or `"false"` |
+
+## Usage 🚀
+
+Here is a basic usage example:
+
+```yaml
+name: json-yaml-validate 
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  json-yaml-validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3.5.0
+
+      - name: json-yaml-validate
+        id: json-yaml-validate
+        uses: GrantBirki/json-yaml-validate@vX.X.X # replace with the latest version
+```
