@@ -60,3 +60,31 @@ jobs:
         id: json-yaml-validate
         uses: GrantBirki/json-yaml-validate@vX.X.X # replace with the latest version
 ```
+
+Here is a usage example in the context of a pull request with comment mode enabled:
+
+```yaml
+name: json-yaml-validate 
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write # enable write permissions for pull requests
+
+jobs:
+  json-yaml-validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3.5.0
+
+      - name: json-yaml-validate
+        id: json-yaml-validate
+        uses: GrantBirki/json-yaml-validate@vX.X.X # replace with the latest version
+        with:
+          comment: "true" # enable comment mode
+```
