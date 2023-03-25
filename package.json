@@ -32,7 +32,8 @@
     "@actions/github": "^5.0.1",
     "ajv": "^8.12.0",
     "dedent-js": "^1.0.1",
-    "glob": "^9.3.2"
+    "glob": "^9.3.2",
+    "yaml-schema-validator": "^1.2.3"
   },
   "jest": {
     "coverageReporters": [
