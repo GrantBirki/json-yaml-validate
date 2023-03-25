@@ -4,6 +4,11 @@
 
 A GitHub Action to quickly validate JSON and YAML files in a repository
 
+## About 💡
+
+- JSON validation with [ajv](https://github.com/ajv-validator/ajv) - The fastest nodejs JSON validator
+- YAML - TODO
+
 ## Inputs 📥
 
 | Input | Required? | Default | Description |
