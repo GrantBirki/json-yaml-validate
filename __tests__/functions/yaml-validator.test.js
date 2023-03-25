@@ -67,8 +67,8 @@ test('fails to validate a yaml file with an incorrect schema', async () => {
         file: './__tests__/fixtures/yaml/valid/yaml1.yaml',
         errors: [
           {
-            path: '/foo',
-            message: 'must be string'
+            path: 'person.age',
+            message: 'person.age must be of type String.'
           }
         ]
       }

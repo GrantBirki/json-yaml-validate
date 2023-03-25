@@ -53,11 +53,13 @@ export async function yamlValidator() {
       schema: yamlSchema
     })
 
-    if (!schemaErrors) {
+    console.log(`============= ${JSON.stringify(schemaErrors)} =============`)
+
+    if (schemaErrors && schemaErrors.length > 0) {
       // if the yaml file is invalid against the schema, log an error and set success to false
       core.error(
         `❌ failed to parse YAML file: ${baseDirSanitized}/${file}\n${JSON.stringify(
-          schemaErrors.errors
+          schemaErrors
         )}`
       )
       result.success = false
@@ -66,9 +68,9 @@ export async function yamlValidator() {
       // add the errors to the result object (path and message)
       // where path is the path to the property that failed validation
       var errors = []
-      for (const error of schemaErrors.errors) {
+      for (const error of schemaErrors) {
         errors.push({
-          path: error.instancePath || null,
+          path: error.path || null,
           message: error.message
         })
       }
