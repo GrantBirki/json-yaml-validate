@@ -57,7 +57,7 @@ test('fails to validate a yaml file without using a schema', async () => {
 })
 
 test('fails to validate a yaml file with an incorrect schema', async () => {
-  process.env.INPUT_YAML_SCHEMA = './__tests__/fixtures/schemas/yaml2.yml'
+  process.env.INPUT_YAML_SCHEMA = './__tests__/fixtures/schemas/schema2.yml'
   expect(await yamlValidator()).toStrictEqual({
     failed: 1,
     passed: 0,
@@ -82,7 +82,7 @@ test('fails to validate a yaml file with an incorrect schema', async () => {
 })
 
 test('fails to validate one yaml file with an incorrect schema and succeeds on the other', async () => {
-  process.env.INPUT_YAML_SCHEMA = './__tests__/fixtures/schemas/schema2.yaml'
+  process.env.INPUT_YAML_SCHEMA = './__tests__/fixtures/schemas/schema2.yml'
   process.env.INPUT_BASE_DIR = './__tests__/fixtures/yaml/mixture'
   expect(await yamlValidator()).toStrictEqual({
     failed: 1,

@@ -4,7 +4,7 @@ person:
     first_name:
       type: string
   age:
-    type: number
+    type: string
     required: true
   employeed:
     type: boolean
