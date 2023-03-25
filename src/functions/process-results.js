@@ -2,10 +2,10 @@ import * as core from '@actions/core'
 
 // Helper function to process the results of json and yaml validation
 export async function processResults(jsonResults, yamlResults) {
+  var success = true
+
   if (jsonResults.success === true) {
     core.info('✅ all JSON files are valid')
-    core.setOutput('success', 'true')
-    return true
   } else {
     core.info(
       `JSON Validation Results:\n  - Passed: ${
@@ -16,8 +16,10 @@ export async function processResults(jsonResults, yamlResults) {
         2
       )}`
     )
-    core.setOutput('success', 'false')
     core.setFailed(`❌ ${jsonResults.failed} JSON files failed validation`)
-    return false
+    success = false
   }
+
+  core.setOutput('success', `${success}`)
+  return success
 }
