@@ -10489,7 +10489,7 @@ __nccwpck_require__.d(__webpack_exports__, {
 });
 
 // EXTERNAL MODULE: ./node_modules/@actions/core/lib/core.js
-var lib_core = __nccwpck_require__(2186);
+var core = __nccwpck_require__(2186);
 // EXTERNAL MODULE: ./node_modules/ajv/dist/ajv.js
 var ajv = __nccwpck_require__(2426);
 var ajv_default = /*#__PURE__*/__nccwpck_require__.n(ajv);
@@ -17037,7 +17037,7 @@ const json_validator_ajv = new (ajv_default())() // options can be passed, e.g. 
 
 // Helper function to setup the schema
 async function schema() {
-  const jsonSchema = lib_core.getInput('json_schema')
+  const jsonSchema = core.getInput('json_schema')
   // if a jsonSchema is provided, validate the json against it
   var schema
   if (jsonSchema) {
@@ -17055,8 +17055,8 @@ async function schema() {
 
 // Helper function to validate all json files in the baseDir
 async function jsonValidator() {
-  const baseDir = lib_core.getInput('base_dir')
-  const jsonExtension = lib_core.getInput('json_extension')
+  const baseDir = core.getInput('base_dir')
+  const jsonExtension = core.getInput('json_extension')
 
   // remove trailing slash from baseDir
   const baseDirSanitized = baseDir.replace(/\/$/, '')
@@ -17079,7 +17079,7 @@ async function jsonValidator() {
       data = JSON.parse((0,external_fs_.readFileSync)(`${baseDirSanitized}/${file}`, 'utf8'))
     } catch {
       // if the json file is invalid, log an error and set success to false
-      lib_core.error(`❌ failed to parse JSON file: ${baseDirSanitized}/${file}`)
+      core.error(`❌ failed to parse JSON file: ${baseDirSanitized}/${file}`)
       result.success = false
       result.failed++
       continue
@@ -17089,7 +17089,7 @@ async function jsonValidator() {
     const valid = validate(data)
     if (!valid) {
       // if the json file is invalid against the schema, log an error and set success to false
-      lib_core.error(
+      core.error(
         `❌ failed to parse JSON file: ${baseDirSanitized}/${file}\n${JSON.stringify(
           validate.errors
         )}`
@@ -17100,7 +17100,7 @@ async function jsonValidator() {
     }
 
     result.passed++
-    lib_core.info(`✅ ${baseDirSanitized}/${file} is valid`)
+    core.info(`✅ ${baseDirSanitized}/${file} is valid`)
   }
 
   // return the result object
@@ -17108,7 +17108,7 @@ async function jsonValidator() {
 }
 
 ;// CONCATENATED MODULE: ./src/main.js
-// import * as core from '@actions/core'
+
 // import * as github from '@actions/github'
 // import {context} from '@actions/github'
 // import dedent from 'dedent-js'
@@ -17117,8 +17117,15 @@ async function jsonValidator() {
 async function run() {
   const jsonResult = await jsonValidator()
 
-  if (jsonResult) {
-    core.info('✅ All JSON files are valid')
+  if (jsonResult.success === true) {
+    core.info('✅ all JSON files are valid')
+    return true
+  } else {
+    core.info(
+      `JSON Validation Results:\n  - Passed: ${jsonResult.passed}\n  - Failed: ${jsonResult.failed}`
+    )
+    core.setFailed(`❌ ${jsonResult.failed} JSON files failed validation`)
+    return false
   }
 }
 
