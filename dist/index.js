@@ -17133,34 +17133,59 @@ async function jsonValidator() {
   return result
 }
 
-;// CONCATENATED MODULE: ./src/main.js
+;// CONCATENATED MODULE: ./src/functions/process-results.js
 
+
+// Helper function to check the results of json and yaml validation
+// :param results: the results of the validation
+// :param type: the type of validation (json or yaml)
+// :returns: true if the results are valid, false if they are not
+async function checkResults(results, type) {
+  if (results.success === true) {
+    core.info(`✅ all ${type} files are valid`)
+  } else {
+    core.info(
+      `${type} Validation Results:\n  - Passed: ${
+        results.passed
+      }\n  - Failed: ${results.failed}\n  - Violations: ${JSON.stringify(
+        results.violations,
+        null,
+        2
+      )}`
+    )
+    core.error(`❌ ${results.failed} ${type} files failed validation`)
+    return false
+  }
+  return true
+}
+
+// Helper function to process the results of json and yaml validation
+async function processResults(jsonResults, yamlResults) {
+  var success = true
+
+  // check the json results
+  const jsonResult = await checkResults(jsonResults, 'JSON')
+  const yamlResult = await checkResults(yamlResults, 'YAML')
+
+  if (jsonResult === false || yamlResult === false) {
+    success = false
+    core.setFailed('❌ JSON or YAML files failed validation')
+  }
+
+  core.setOutput('success', `${success}`)
+  return success
+}
+
+;// CONCATENATED MODULE: ./src/main.js
 // import * as github from '@actions/github'
 // import {context} from '@actions/github'
 // import dedent from 'dedent-js'
 
 
-async function run() {
-  const jsonResult = await jsonValidator()
 
-  if (jsonResult.success === true) {
-    core.info('✅ all JSON files are valid')
-    core.setOutput('success', 'true')
-    return true
-  } else {
-    core.info(
-      `JSON Validation Results:\n  - Passed: ${
-        jsonResult.passed
-      }\n  - Failed: ${jsonResult.failed}\n  - Violations: ${JSON.stringify(
-        jsonResult.violations,
-        null,
-        2
-      )}`
-    )
-    core.setOutput('success', 'false')
-    core.setFailed(`❌ ${jsonResult.failed} JSON files failed validation`)
-    return false
-  }
+async function run() {
+  const jsonResults = await jsonValidator()
+  await processResults(jsonResults, null)
 }
 
 if (process.env.LOCAL_ACTIONS_CI_TEST !== 'true') {
