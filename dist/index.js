@@ -41829,6 +41829,10 @@ async function checkResults(results, type) {
   return false
 }
 
+// Helper function to construct the body of the PR comment
+// :param jsonResults: the results of the json validation
+// :param yamlResults: the results of the yaml validation
+// :returns: the body of the PR comment
 async function constructBody(jsonResults, yamlResults) {
   var body = '## JSON and YAML Validation Results'
 
