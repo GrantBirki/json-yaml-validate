@@ -1,6 +1,7 @@
 import * as core from '@actions/core'
 import * as github from '@actions/github'
 import {context} from '@actions/github'
+import dedent from 'dedent-js'
 
 // Helper function to check the results of json and yaml validation
 // :param results: the results of the validation
@@ -27,6 +28,40 @@ async function checkResults(results, type) {
   )
   core.error(`❌ ${results.failed} ${type} files failed validation`)
   return false
+}
+
+async function constructBody(jsonResults, yamlResults) {
+  var body = '## JSON and YAML Validation Results'
+
+  if (jsonResults.success === false) {
+    body += dedent(`
+      ### JSON Validation Results
+
+      - Passed: ${jsonResults.passed}
+      - Failed: ${jsonResults.failed}
+      - Violations: 
+
+      \`\`\`json
+      ${JSON.stringify(jsonResults.violations, null, 2)}
+      \`\`\`
+    `)
+
+    if (yamlResults.success === false) {
+      body += dedent(`
+        ### YAML Validation Results
+
+        - Passed: ${yamlResults.passed}
+        - Failed: ${yamlResults.failed}
+        - Violations: 
+
+        \`\`\`json
+        ${JSON.stringify(yamlResults.violations, null, 2)}
+        \`\`\`
+      `)
+    }
+  }
+
+  return body
 }
 
 // Helper function to process the results of json and yaml validation
@@ -58,11 +93,14 @@ export async function processResults(jsonResults, yamlResults) {
       core.getInput('github_token', {required: true})
     )
 
+    // build the body of the comment
+    const body = await constructBody(jsonResults, yamlResults)
+
     // add a comment to the pull request
     await octokit.rest.issues.createComment({
       ...context.repo,
       issue_number: context.issue.number,
-      body: `❌ JSON or YAML files failed validation`
+      body: body
     })
   }
 
