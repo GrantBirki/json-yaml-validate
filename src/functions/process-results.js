@@ -47,7 +47,7 @@ async function constructBody(jsonResults, yamlResults) {
       jsonResults.violations,
       null,
       2
-    )}\`\`\`\n`
+    )}\n\`\`\``
   }
 
   if (yamlResults.success === false) {
@@ -64,7 +64,7 @@ async function constructBody(jsonResults, yamlResults) {
       yamlResults.violations,
       null,
       2
-    )}\`\`\`\n`
+    )}\n\`\`\``
   }
 
   return body
