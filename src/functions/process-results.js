@@ -1,7 +1,7 @@
 import * as core from '@actions/core'
 import * as github from '@actions/github'
 import {context} from '@actions/github'
-// import dedent from 'dedent-js'
+import dedent from 'dedent-js'
 
 // Helper function to check the results of json and yaml validation
 // :param results: the results of the validation
@@ -34,7 +34,8 @@ async function constructBody(jsonResults, yamlResults) {
   var body = '## JSON and YAML Validation Results'
 
   if (jsonResults.success === false) {
-    body += `
+    body += dedent(`
+
     ### JSON Validation Results
 
     - Passed: ${jsonResults.passed}
@@ -44,11 +45,12 @@ async function constructBody(jsonResults, yamlResults) {
     \`\`\`json
     ${JSON.stringify(jsonResults.violations, null, 2)}
     \`\`\`
-    `
+    `)
   }
 
   if (yamlResults.success === false) {
-    body += `
+    body += dedent(`
+
     ### YAML Validation Results
 
     - Passed: ${yamlResults.passed}
@@ -58,7 +60,7 @@ async function constructBody(jsonResults, yamlResults) {
     \`\`\`json
     ${JSON.stringify(yamlResults.violations, null, 2)}
     \`\`\`
-    `
+    `)
   }
 
   return body
