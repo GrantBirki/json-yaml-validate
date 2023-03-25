@@ -20,6 +20,7 @@ You can provide schemas to check against, or just validate the syntax of the fil
 | Input | Required? | Default | Description |
 | ----- | --------- | ------- | ----------- |
 | `mode` | `false` | `"fail"` | The mode to run the action in `"warn"` or `"fail"` - Default is `"fail"` |
+| `comment` | `false` | `"false"` | Whether or not to comment on a PR with the validation results - `"true"` or `"false"` - Default is `"false"` |
 | `base_dir` | `false` | `"."` | The base directory to search for JSON and YAML files (e.g. ./src) - Default is `"."` which searches the entire repository |
 | `json_schema` | `false` | `""` | The full path to the JSON schema file (e.g. ./schemas/schema.json) - Default is `""` which doesn't enforce a strict schema |
 | `json_extension` | `false` | `".json"` | The file extension for JSON files (e.g. .json) - Default is `".json"` |

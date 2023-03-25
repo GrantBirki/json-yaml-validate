@@ -13,6 +13,10 @@ inputs:
     description: The mode to run the action in "warn" or "fail" - Default is "fail"
     required: false
     default: "fail"
+  comment:
+    description: Whether or not to comment on a PR with the validation results - "true" or "false" - Default is "false"
+    required: false
+    default: "false"
   base_dir:
     description: The base directory to search for JSON and YAML files (e.g. ./src) - Default is "." which searches the entire repository
     required: false
