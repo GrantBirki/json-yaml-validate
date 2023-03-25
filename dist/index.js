@@ -41841,10 +41841,12 @@ async function constructBody(jsonResults, yamlResults) {
     - Failed: ${jsonResults.failed}
     - Violations: 
 
-    \`\`\`json
-    ${JSON.stringify(jsonResults.violations, null, 2)}
-    \`\`\`
     `)
+    body += `\`\`\`json\n${JSON.stringify(
+      jsonResults.violations,
+      null,
+      2
+    )}\`\`\``
   }
 
   if (yamlResults.success === false) {
@@ -41856,10 +41858,12 @@ async function constructBody(jsonResults, yamlResults) {
     - Failed: ${yamlResults.failed}
     - Violations: 
 
-    \`\`\`json
-    ${JSON.stringify(yamlResults.violations, null, 2)}
-    \`\`\`
     `)
+    body += `\`\`\`json\n${JSON.stringify(
+      yamlResults.violations,
+      null,
+      2
+    )}\`\`\``
   }
 
   return body
