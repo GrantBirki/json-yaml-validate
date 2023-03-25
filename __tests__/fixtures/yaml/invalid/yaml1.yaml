@@ -1,0 +1,8 @@
+---
+person:
+  name:
+    first_name: monalisa:
+  age: 2000
+  employeed: true
+  hobbies:
+    - painting
