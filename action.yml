@@ -8,8 +8,22 @@ inputs:
   github_token:
     description: The GitHub token used to create an authenticated client - Provided for you by default!
     default: ${{ github.token }}
-    required: true
-# outputs:
+    required: false
+  json_schema:
+    description: The full path to the JSON schema file (e.g. ./schemas/schema.json) - Default is "" which doesn't enforce a strict schema
+    required: false
+    default: ""
+  base_dir:
+    description: The base directory to search for JSON and YAML files (e.g. ./src) - Default is "." which searches the entire repository
+    required: false
+    default: "."
+  json_extension:
+    description: The file extension for JSON files (e.g. .json) - Default is ".json"
+    required: false
+    default: ".json"
+outputs:
+  success:
+    description: Whether or not the validation was successful for all files - "true" or "false"
 runs:
   using: "node16"
   main: "dist/index.js"

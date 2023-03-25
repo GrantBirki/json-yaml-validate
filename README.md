@@ -13,10 +13,13 @@ A GitHub Action to quickly validate JSON and YAML files in a repository
 
 | Input | Required? | Default | Description |
 | ----- | --------- | ------- | ----------- |
-| `github_token` | `true` | `${{ github.token }}` | The GitHub token used to create an authenticated client - Provided for you by default! |
+| `json_schema` | `false` | `""` | The full path to the JSON schema file (e.g. ./schemas/schema.json) - Default is `""` which doesn't enforce a strict schema |
+| `base_dir` | `false` | `"."` | The base directory to search for JSON and YAML files (e.g. ./src) - Default is `"."` which searches the entire repository |
+| `json_extension` | `false` | `".json"` | The file extension for JSON files (e.g. .json) - Default is `".json"` |
+| `github_token` | `false` | `${{ github.token }}` | The GitHub token used to create an authenticated client - Provided for you by default! |
 
 ## Outputs 📤
 
 | Output | Description |
 | ------ | ----------- |
-| `todo` | todo |
+| `success` | Whether or not the validation was successful for all files - `"true"` or `"false"` |
