@@ -88,3 +88,7 @@ jobs:
         with:
           comment: "true" # enable comment mode
 ```
+
+The resulting comment will look like this:
+
+![comment-example](docs/assets/comment-example.png)
