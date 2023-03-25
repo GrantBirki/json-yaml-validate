@@ -41846,7 +41846,7 @@ async function constructBody(jsonResults, yamlResults) {
       jsonResults.violations,
       null,
       2
-    )}\`\`\``
+    )}\`\`\`\n`
   }
 
   if (yamlResults.success === false) {
@@ -41863,7 +41863,7 @@ async function constructBody(jsonResults, yamlResults) {
       yamlResults.violations,
       null,
       2
-    )}\`\`\``
+    )}\`\`\`\n`
   }
 
   return body
