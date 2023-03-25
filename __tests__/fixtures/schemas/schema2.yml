@@ -1,0 +1,12 @@
+---
+person:
+  name:
+    first_name:
+      type: string
+  age:
+    type: number
+    required: true
+  employeed:
+    type: boolean
+  hobbies:
+    - type: string

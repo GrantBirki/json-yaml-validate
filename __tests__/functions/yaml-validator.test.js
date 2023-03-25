@@ -6,7 +6,7 @@ const infoMock = jest.spyOn(core, 'info').mockImplementation(() => {})
 
 beforeEach(() => {
   jest.clearAllMocks()
-  process.env.INPUT_JSON_SCHEMA = './__tests__/fixtures/schemas/schema1.yaml'
+  process.env.INPUT_YAML_SCHEMA = './__tests__/fixtures/schemas/schema1.yaml'
   process.env.INPUT_BASE_DIR = './__tests__/fixtures/yaml/valid'
   process.env.INPUT_YAML_EXTENSION = '.yaml'
   process.env.INPUT_YAML_EXTENSION_SHORT = '.yml'
@@ -21,8 +21,8 @@ test('successfully validates a yaml file with a schema', async () => {
   })
 })
 
-test('successfully validates a json file without using a schema', async () => {
-  process.env.INPUT_JSON_SCHEMA = ''
+test('successfully validates a yaml file without using a schema', async () => {
+  process.env.INPUT_YAML_SCHEMA = ''
   expect(await yamlValidator()).toStrictEqual({
     failed: 0,
     passed: 1,
@@ -31,40 +31,40 @@ test('successfully validates a json file without using a schema', async () => {
   })
 })
 
-test('fails to validate a json file without using a schema', async () => {
-  process.env.INPUT_JSON_SCHEMA = ''
-  process.env.INPUT_BASE_DIR = './__tests__/fixtures/json/invalid'
+test('fails to validate a yaml file without using a schema', async () => {
+  process.env.INPUT_YAML_SCHEMA = ''
+  process.env.INPUT_BASE_DIR = './__tests__/fixtures/yaml/invalid'
   expect(await yamlValidator()).toStrictEqual({
     failed: 1,
     passed: 0,
     success: false,
     violations: [
       {
-        file: './__tests__/fixtures/json/invalid/json1.json',
+        file: './__tests__/fixtures/yaml/invalid/yaml1.yaml',
         errors: [
           {
             path: null,
-            message: 'Invalid JSON'
+            message: 'Invalid YAML'
           }
         ]
       }
     ]
   })
   expect(errorMock).toHaveBeenCalledWith(
-    '❌ failed to parse JSON file: ./__tests__/fixtures/json/invalid/json1.json'
+    '❌ failed to parse YAML file: ./__tests__/fixtures/yaml/invalid/yaml1.yaml'
   )
   expect(infoMock).not.toHaveBeenCalled()
 })
 
-test('fails to validate a json file with an incorrect schema', async () => {
-  process.env.INPUT_JSON_SCHEMA = './__tests__/fixtures/schemas/schema2.json'
+test('fails to validate a yaml file with an incorrect schema', async () => {
+  process.env.INPUT_YAML_SCHEMA = './__tests__/fixtures/schemas/yaml2.yml'
   expect(await yamlValidator()).toStrictEqual({
     failed: 1,
     passed: 0,
     success: false,
     violations: [
       {
-        file: './__tests__/fixtures/json/valid/json1.json',
+        file: './__tests__/fixtures/yaml/valid/yaml1.yaml',
         errors: [
           {
             path: '/foo',
@@ -76,21 +76,21 @@ test('fails to validate a json file with an incorrect schema', async () => {
   })
   expect(errorMock).toHaveBeenCalledWith(
     expect.stringMatching(
-      '❌ failed to parse JSON file: ./__tests__/fixtures/json/valid/json1.json'
+      '❌ failed to parse YAML file: ./__tests__/fixtures/yaml/valid/yaml2.yaml'
     )
   )
 })
 
-test('fails to validate one json file with an incorrect schema and succeeds on the other', async () => {
-  process.env.INPUT_JSON_SCHEMA = './__tests__/fixtures/schemas/schema2.json'
-  process.env.INPUT_BASE_DIR = './__tests__/fixtures/json/mixture'
+test('fails to validate one yaml file with an incorrect schema and succeeds on the other', async () => {
+  process.env.INPUT_YAML_SCHEMA = './__tests__/fixtures/schemas/schema2.yaml'
+  process.env.INPUT_BASE_DIR = './__tests__/fixtures/yaml/mixture'
   expect(await yamlValidator()).toStrictEqual({
     failed: 1,
     passed: 1,
     success: false,
     violations: [
       {
-        file: './__tests__/fixtures/json/mixture/json1.json',
+        file: './__tests__/fixtures/yaml/mixture/yaml1.yaml',
         errors: [
           {
             path: '/foo',
@@ -101,11 +101,11 @@ test('fails to validate one json file with an incorrect schema and succeeds on t
     ]
   })
   expect(infoMock).toHaveBeenCalledWith(
-    '✅ ./__tests__/fixtures/json/mixture/json2.json is valid'
+    '✅ ./__tests__/fixtures/yaml/mixture/yaml2.yaml is valid'
   )
   expect(errorMock).toHaveBeenCalledWith(
     expect.stringMatching(
-      '❌ failed to parse JSON file: ./__tests__/fixtures/json/mixture/json1.json'
+      '❌ failed to parse YAML file: ./__tests__/fixtures/yaml/mixture/yaml2.yaml'
     )
   )
 })
