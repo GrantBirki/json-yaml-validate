@@ -9,6 +9,10 @@ inputs:
     description: The GitHub token used to create an authenticated client - Provided for you by default!
     default: ${{ github.token }}
     required: false
+  mode:
+    description: The mode to run the action in "warn" or "fail" - Default is "fail"
+    required: false
+    default: "fail"
   base_dir:
     description: The base directory to search for JSON and YAML files (e.g. ./src) - Default is "." which searches the entire repository
     required: false

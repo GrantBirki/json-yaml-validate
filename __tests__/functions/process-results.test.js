@@ -2,6 +2,7 @@ import * as core from '@actions/core'
 import {processResults} from '../../src/functions/process-results'
 
 const infoMock = jest.spyOn(core, 'info').mockImplementation(() => {})
+const warningMock = jest.spyOn(core, 'warning').mockImplementation(() => {})
 const errorMock = jest.spyOn(core, 'error').mockImplementation(() => {})
 const setFailedMock = jest.spyOn(core, 'setFailed').mockImplementation(() => {})
 const setOutputMock = jest.spyOn(core, 'setOutput').mockImplementation(() => {})
@@ -50,6 +51,7 @@ const yamlViolations = [
 
 beforeEach(() => {
   jest.clearAllMocks()
+  process.env.INPUT_MODE = 'fail'
 })
 
 test('successfully processes the results with no JSON or YAML failures', async () => {
@@ -80,7 +82,8 @@ test('successfully processes the results with no JSON or YAML detected files', a
   expect(setOutputMock).toHaveBeenCalledWith('success', 'true')
 })
 
-test('fails the action due to json errors, but yaml is fine', async () => {
+test('fails the action due to json errors, but yaml is fine - warn mode', async () => {
+  process.env.INPUT_MODE = 'warn'
   expect(
     await processResults(
       {success: false, failed: 2, passed: 8, violations: jsonViolations},
@@ -99,12 +102,14 @@ test('fails the action due to json errors, but yaml is fine', async () => {
   )
   expect(errorMock).toHaveBeenCalledWith('❌ 2 JSON files failed validation')
   expect(setOutputMock).toHaveBeenCalledWith('success', 'false')
-  expect(setFailedMock).toHaveBeenCalledWith(
+  expect(errorMock).toHaveBeenCalledWith(
     '❌ JSON or YAML files failed validation'
   )
+  expect(setFailedMock).not.toHaveBeenCalled()
 })
 
-test('fails the action due to yaml errors, but json is fine', async () => {
+test('fails the action due to yaml errors, but json is fine - unrecognized mode', async () => {
+  process.env.INPUT_MODE = 'oh no'
   expect(
     await processResults(
       {success: true, failed: 0, passed: 10, violations: []},
@@ -126,6 +131,7 @@ test('fails the action due to yaml errors, but json is fine', async () => {
   expect(setFailedMock).toHaveBeenCalledWith(
     '❌ JSON or YAML files failed validation'
   )
+  expect(warningMock).toHaveBeenCalledWith('unrecognized mode: oh no')
 })
 
 test('fails the action due to yaml AND json errors', async () => {

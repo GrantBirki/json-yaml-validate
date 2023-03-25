@@ -34837,7 +34837,14 @@ async function processResults(jsonResults, yamlResults) {
 
   if (jsonResult === false || yamlResult === false) {
     success = false
-    core.setFailed('❌ JSON or YAML files failed validation')
+    if (core.getInput('mode') === 'fail') {
+      core.setFailed('❌ JSON or YAML files failed validation')
+    } else if (core.getInput('mode') === 'warn') {
+      core.error('❌ JSON or YAML files failed validation')
+    } else {
+      core.warning(`unrecognized mode: ${core.getInput('mode')}`)
+      core.setFailed('❌ JSON or YAML files failed validation')
+    }
   }
 
   core.setOutput('success', `${success}`)
