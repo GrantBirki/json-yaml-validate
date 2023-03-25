@@ -34754,7 +34754,8 @@ async function yamlValidator() {
     }
 
     const schemaErrors = yaml_schema_validator_default()(`${baseDirSanitized}/${file}`, {
-      schema: yamlSchema
+      schema: yamlSchema,
+      logLevel: 'none'
     })
 
     if (schemaErrors && schemaErrors.length > 0) {
