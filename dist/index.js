@@ -34803,7 +34803,7 @@ async function yamlValidator() {
 // :returns: true if the results are valid, false if they are not
 async function checkResults(results, type) {
   if (results.success === true) {
-    core.info(`✅ all ${type} files are valid`)
+    core.info(`✅ all ${results.passed} ${type} files are valid`)
   } else {
     core.info(
       `${type} Validation Results:\n  - Passed: ${
