@@ -101,7 +101,7 @@ test('fails to validate one yaml file with an incorrect schema and succeeds on t
     ]
   })
   expect(infoMock).toHaveBeenCalledWith(
-    '✅ ./__tests__/fixtures/yaml/mixture/yaml2.yml is valid'
+    './__tests__/fixtures/yaml/mixture/yaml2.yml is valid'
   )
   expect(errorMock).toHaveBeenCalledWith(
     expect.stringMatching(

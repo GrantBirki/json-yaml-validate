@@ -100,7 +100,7 @@ test('fails to validate one json file with an incorrect schema and succeeds on t
     ]
   })
   expect(infoMock).toHaveBeenCalledWith(
-    '✅ ./__tests__/fixtures/json/mixture/json2.json is valid'
+    './__tests__/fixtures/json/mixture/json2.json is valid'
   )
   expect(errorMock).toHaveBeenCalledWith(
     expect.stringMatching(

@@ -97,7 +97,7 @@ export async function jsonValidator() {
     }
 
     result.passed++
-    core.info(`✅ ${baseDirSanitized}/${file} is valid`)
+    core.info(`${baseDirSanitized}/${file} is valid`)
   }
 
   // return the result object

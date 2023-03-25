@@ -34677,7 +34677,7 @@ async function jsonValidator() {
     }
 
     result.passed++
-    core.info(`✅ ${baseDirSanitized}/${file} is valid`)
+    core.info(`${baseDirSanitized}/${file} is valid`)
   }
 
   // return the result object
@@ -34749,7 +34749,7 @@ async function yamlValidator() {
       yamlSchema === undefined
     ) {
       result.passed++
-      core.info(`✅ ${baseDirSanitized}/${file} is valid`)
+      core.info(`${baseDirSanitized}/${file} is valid`)
       continue
     }
 
@@ -34787,7 +34787,7 @@ async function yamlValidator() {
     }
 
     result.passed++
-    core.info(`✅ ${baseDirSanitized}/${file} is valid`)
+    core.info(`${baseDirSanitized}/${file} is valid`)
   }
 
   // return the result object
