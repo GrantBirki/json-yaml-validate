@@ -17119,11 +17119,13 @@ async function run() {
 
   if (jsonResult.success === true) {
     core.info('✅ all JSON files are valid')
+    core.setOutput('success', 'true')
     return true
   } else {
     core.info(
       `JSON Validation Results:\n  - Passed: ${jsonResult.passed}\n  - Failed: ${jsonResult.failed}`
     )
+    core.setOutput('success', 'false')
     core.setFailed(`❌ ${jsonResult.failed} JSON files failed validation`)
     return false
   }

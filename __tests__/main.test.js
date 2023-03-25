@@ -4,6 +4,7 @@ import * as jsonValidator from '../src/functions/json-validator'
 
 const infoMock = jest.spyOn(core, 'info').mockImplementation(() => {})
 const setFailedMock = jest.spyOn(core, 'setFailed').mockImplementation(() => {})
+const setOutputMock = jest.spyOn(core, 'setOutput').mockImplementation(() => {})
 
 beforeEach(() => {
   jest.clearAllMocks()
@@ -15,6 +16,7 @@ beforeEach(() => {
 test('successfully runs the action', async () => {
   expect(await run()).toBe(true)
   expect(infoMock).toHaveBeenCalledWith('✅ all JSON files are valid')
+  expect(setOutputMock).toHaveBeenCalledWith('success', 'true')
 })
 
 test('fails the action due to json errors', async () => {
@@ -28,4 +30,5 @@ test('fails the action due to json errors', async () => {
   expect(setFailedMock).toHaveBeenCalledWith(
     '❌ 3 JSON files failed validation'
   )
+  expect(setOutputMock).toHaveBeenCalledWith('success', 'false')
 })
