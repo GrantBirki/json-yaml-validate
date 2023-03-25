@@ -78,17 +78,14 @@ export async function jsonValidator() {
       result.success = false
       result.failed++
 
-
       // add the errors to the result object (path and message)
       // where path is the path to the property that failed validation
       var errors = []
       for (const error of validate.errors) {
-        errors.push(
-          {
-            path: error.instancePath || null,
-            message: error.message
-          }
-        )
+        errors.push({
+          path: error.instancePath || null,
+          message: error.message
+        })
       }
 
       // add the file and errors to the result object

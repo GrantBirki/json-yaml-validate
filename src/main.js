@@ -13,7 +13,13 @@ export async function run() {
     return true
   } else {
     core.info(
-      `JSON Validation Results:\n  - Passed: ${jsonResult.passed}\n  - Failed: ${jsonResult.failed}`
+      `JSON Validation Results:\n  - Passed: ${
+        jsonResult.passed
+      }\n  - Failed: ${jsonResult.failed}\n  - Violations: ${JSON.stringify(
+        jsonResult.violations,
+        null,
+        2
+      )}`
     )
     core.setOutput('success', 'false')
     core.setFailed(`❌ ${jsonResult.failed} JSON files failed validation`)
