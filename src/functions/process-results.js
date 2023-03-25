@@ -45,20 +45,20 @@ async function constructBody(jsonResults, yamlResults) {
       ${JSON.stringify(jsonResults.violations, null, 2)}
       \`\`\`
     `)
+  }
 
-    if (yamlResults.success === false) {
-      body += dedent(`
-        ### YAML Validation Results
+  if (yamlResults.success === false) {
+    body += dedent(`
+      ### YAML Validation Results
 
-        - Passed: ${yamlResults.passed}
-        - Failed: ${yamlResults.failed}
-        - Violations: 
+      - Passed: ${yamlResults.passed}
+      - Failed: ${yamlResults.failed}
+      - Violations: 
 
-        \`\`\`json
-        ${JSON.stringify(yamlResults.violations, null, 2)}
-        \`\`\`
-      `)
-    }
+      \`\`\`json
+      ${JSON.stringify(yamlResults.violations, null, 2)}
+      \`\`\`
+    `)
   }
 
   return body
