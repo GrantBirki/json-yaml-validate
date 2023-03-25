@@ -27,6 +27,27 @@ const jsonViolations = [
   }
 ]
 
+const yamlViolations = [
+  {
+    file: './__tests__/fixtures/yaml/invalid/yaml1.yaml',
+    errors: [
+      {
+        path: null,
+        message: 'Invalid YAML'
+      }
+    ]
+  },
+  {
+    file: './__tests__/fixtures/yaml/invalid/yaml2.yaml',
+    errors: [
+      {
+        path: 'person.age',
+        message: 'person.age must be of type String.'
+      }
+    ]
+  }
+]
+
 beforeEach(() => {
   jest.clearAllMocks()
 })
@@ -59,6 +80,28 @@ test('fails the action due to json errors, but yaml is fine', async () => {
   )
   expect(infoMock).toHaveBeenCalledWith('✅ all YAML files are valid')
   expect(errorMock).toHaveBeenCalledWith('❌ 3 JSON files failed validation')
+  expect(setOutputMock).toHaveBeenCalledWith('success', 'false')
+  expect(setFailedMock).toHaveBeenCalledWith(
+    '❌ JSON or YAML files failed validation'
+  )
+})
+
+test('fails the action due to yaml errors, but json is fine', async () => {
+  expect(
+    await processResults(
+      {success: true, failed: 0, passed: 10, violations: []},
+      {success: false, failed: 2, passed: 3, violations: yamlViolations}
+    )
+  ).toBe(false)
+  expect(infoMock).toHaveBeenCalledWith('✅ all JSON files are valid')
+  expect(infoMock).toHaveBeenCalledWith(
+    `YAML Validation Results:\n  - Passed: 3\n  - Failed: 2\n  - Violations: ${JSON.stringify(
+      yamlViolations,
+      null,
+      2
+    )}`
+  )
+  expect(errorMock).toHaveBeenCalledWith('❌ 2 YAML files failed validation')
   expect(setOutputMock).toHaveBeenCalledWith('success', 'false')
   expect(setFailedMock).toHaveBeenCalledWith(
     '❌ JSON or YAML files failed validation'
