@@ -38,9 +38,10 @@ async function constructBody(jsonResults, yamlResults) {
 
     ### JSON Validation Results
 
-    - Passed: ${jsonResults.passed}
-    - Failed: ${jsonResults.failed}
-    - Violations: 
+    - ✅ Passed: ${jsonResults.passed}
+    - ❌ Failed: ${jsonResults.failed}
+    
+    **Violations**: 
 
     `)
     body += `\`\`\`json\n${JSON.stringify(
@@ -55,9 +56,10 @@ async function constructBody(jsonResults, yamlResults) {
 
     ### YAML Validation Results
 
-    - Passed: ${yamlResults.passed}
-    - Failed: ${yamlResults.failed}
-    - Violations: 
+    - ✅ Passed: ${yamlResults.passed}
+    - ❌ Failed: ${yamlResults.failed}
+    
+    **Violations**: 
 
     `)
     body += `\`\`\`json\n${JSON.stringify(
