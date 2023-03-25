@@ -93,19 +93,19 @@ test('fails to validate one yaml file with an incorrect schema and succeeds on t
         file: './__tests__/fixtures/yaml/mixture/yaml1.yaml',
         errors: [
           {
-            path: '/foo',
-            message: 'must be string'
+            path: 'person.age',
+            message: 'person.age must be of type String.'
           }
         ]
       }
     ]
   })
   expect(infoMock).toHaveBeenCalledWith(
-    '✅ ./__tests__/fixtures/yaml/mixture/yaml2.yaml is valid'
+    '✅ ./__tests__/fixtures/yaml/mixture/yaml2.yml is valid'
   )
   expect(errorMock).toHaveBeenCalledWith(
     expect.stringMatching(
-      '❌ failed to parse YAML file: ./__tests__/fixtures/yaml/mixture/yaml2.yaml'
+      '❌ failed to parse YAML file: ./__tests__/fixtures/yaml/mixture/yaml1.yaml'
     )
   )
 })
