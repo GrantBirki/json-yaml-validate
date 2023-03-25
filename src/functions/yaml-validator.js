@@ -50,7 +50,12 @@ export async function yamlValidator() {
     }
 
     // if no yamlSchema is provided, skip validation against the schema
-    if (!yamlSchema || yamlSchema.trim() === '' || yamlSchema === null || yamlSchema === undefined) {
+    if (
+      !yamlSchema ||
+      yamlSchema.trim() === '' ||
+      yamlSchema === null ||
+      yamlSchema === undefined
+    ) {
       result.passed++
       core.info(`✅ ${baseDirSanitized}/${file} is valid`)
       continue
