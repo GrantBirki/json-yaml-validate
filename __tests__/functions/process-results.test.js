@@ -67,19 +67,19 @@ test('successfully runs the action', async () => {
 test('fails the action due to json errors, but yaml is fine', async () => {
   expect(
     await processResults(
-      {success: false, failed: 3, passed: 8, violations: jsonViolations},
+      {success: false, failed: 2, passed: 8, violations: jsonViolations},
       {success: true, failed: 0, passed: 3, violations: []}
     )
   ).toBe(false)
   expect(infoMock).toHaveBeenCalledWith(
-    `JSON Validation Results:\n  - Passed: 8\n  - Failed: 3\n  - Violations: ${JSON.stringify(
+    `JSON Validation Results:\n  - Passed: 8\n  - Failed: 2\n  - Violations: ${JSON.stringify(
       jsonViolations,
       null,
       2
     )}`
   )
   expect(infoMock).toHaveBeenCalledWith('✅ all YAML files are valid')
-  expect(errorMock).toHaveBeenCalledWith('❌ 3 JSON files failed validation')
+  expect(errorMock).toHaveBeenCalledWith('❌ 2 JSON files failed validation')
   expect(setOutputMock).toHaveBeenCalledWith('success', 'false')
   expect(setFailedMock).toHaveBeenCalledWith(
     '❌ JSON or YAML files failed validation'
@@ -102,6 +102,35 @@ test('fails the action due to yaml errors, but json is fine', async () => {
     )}`
   )
   expect(errorMock).toHaveBeenCalledWith('❌ 2 YAML files failed validation')
+  expect(setOutputMock).toHaveBeenCalledWith('success', 'false')
+  expect(setFailedMock).toHaveBeenCalledWith(
+    '❌ JSON or YAML files failed validation'
+  )
+})
+
+test('fails the action due to yaml AND json errors', async () => {
+  expect(
+    await processResults(
+      {success: false, failed: 2, passed: 114, violations: jsonViolations},
+      {success: false, failed: 2, passed: 3, violations: yamlViolations}
+    )
+  ).toBe(false)
+  expect(infoMock).toHaveBeenCalledWith(
+    `JSON Validation Results:\n  - Passed: 114\n  - Failed: 2\n  - Violations: ${JSON.stringify(
+      jsonViolations,
+      null,
+      2
+    )}`
+  )
+  expect(infoMock).toHaveBeenCalledWith(
+    `YAML Validation Results:\n  - Passed: 3\n  - Failed: 2\n  - Violations: ${JSON.stringify(
+      yamlViolations,
+      null,
+      2
+    )}`
+  )
+  expect(errorMock).toHaveBeenCalledWith('❌ 2 YAML files failed validation')
+  expect(errorMock).toHaveBeenCalledWith('❌ 2 JSON files failed validation')
   expect(setOutputMock).toHaveBeenCalledWith('success', 'false')
   expect(setFailedMock).toHaveBeenCalledWith(
     '❌ JSON or YAML files failed validation'
