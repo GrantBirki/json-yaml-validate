@@ -41804,8 +41804,10 @@ async function processResults(jsonResults, yamlResults) {
   core.setOutput('success', 'false')
 
   // check if the context is a pull request and if we should comment
+  // fetch the pr number from the context
   if (
-    typeof (github.context.payload.pull_request.number === 'number') &&
+    github.context.payload.pull_request.number !== undefined &&
+    github.context.payload.pull_request.number !== null &&
     core.getInput('comment') === 'true'
   ) {
     const octokit = github.getOctokit(
