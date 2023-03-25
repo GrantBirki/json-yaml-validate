@@ -31,13 +31,23 @@ beforeEach(() => {
 })
 
 test('successfully runs the action', async () => {
-  expect(await processResults({success: true, failed: 0, passed: 12, violations}, null)).toBe(true)
+  expect(
+    await processResults(
+      {success: true, failed: 0, passed: 12, violations},
+      null
+    )
+  ).toBe(true)
   expect(infoMock).toHaveBeenCalledWith('✅ all JSON files are valid')
   expect(setOutputMock).toHaveBeenCalledWith('success', 'true')
 })
 
 test('fails the action due to json errors', async () => {
-  expect(await processResults({success: false, failed: 3, passed: 8, violations}, null)).toBe(false)
+  expect(
+    await processResults(
+      {success: false, failed: 3, passed: 8, violations},
+      null
+    )
+  ).toBe(false)
   expect(infoMock).toHaveBeenCalledWith(
     `JSON Validation Results:\n  - Passed: 8\n  - Failed: 3\n  - Violations: ${JSON.stringify(
       violations,

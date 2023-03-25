@@ -2,7 +2,6 @@ import {run} from '../src/main'
 import * as jsonValidator from '../src/functions/json-validator'
 import * as processResults from '../src/functions/process-results'
 
-
 beforeEach(() => {
   jest.clearAllMocks()
   jest.spyOn(jsonValidator, 'jsonValidator').mockImplementation(() => {

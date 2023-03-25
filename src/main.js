@@ -2,7 +2,7 @@
 // import {context} from '@actions/github'
 // import dedent from 'dedent-js'
 import {jsonValidator} from './functions/json-validator'
-import { processResults } from './functions/process-results'
+import {processResults} from './functions/process-results'
 
 export async function run() {
   const jsonResults = await jsonValidator()
