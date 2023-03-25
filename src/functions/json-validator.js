@@ -39,7 +39,8 @@ export async function jsonValidator() {
   var result = {
     success: true,
     passed: 0,
-    failed: 0
+    failed: 0,
+    violations: []
   }
   const files = globSync(`**/*${jsonExtension}`, {cwd: baseDirSanitized})
   for (const file of files) {
@@ -53,6 +54,15 @@ export async function jsonValidator() {
       core.error(`❌ failed to parse JSON file: ${baseDirSanitized}/${file}`)
       result.success = false
       result.failed++
+      result.violations.push({
+        file: `${baseDirSanitized}/${file}`,
+        errors: [
+          {
+            path: null,
+            message: 'Invalid JSON'
+          }
+        ]
+      })
       continue
     }
 
@@ -67,6 +77,25 @@ export async function jsonValidator() {
       )
       result.success = false
       result.failed++
+
+
+      // add the errors to the result object (path and message)
+      // where path is the path to the property that failed validation
+      var errors = []
+      for (const error of validate.errors) {
+        errors.push(
+          {
+            path: error.instancePath || null,
+            message: error.message
+          }
+        )
+      }
+
+      // add the file and errors to the result object
+      result.violations.push({
+        file: `${baseDirSanitized}/${file}`,
+        errors: errors
+      })
       continue
     }
 

@@ -15,7 +15,8 @@ test('successfully validates a json file with a schema', async () => {
   expect(await jsonValidator()).toStrictEqual({
     failed: 0,
     passed: 1,
-    success: true
+    success: true,
+    violations: []
   })
 })
 
@@ -24,7 +25,8 @@ test('successfully validates a json file without using a schema', async () => {
   expect(await jsonValidator()).toStrictEqual({
     failed: 0,
     passed: 1,
-    success: true
+    success: true,
+    violations: []
   })
 })
 
@@ -34,7 +36,18 @@ test('fails to validate a json file without using a schema', async () => {
   expect(await jsonValidator()).toStrictEqual({
     failed: 1,
     passed: 0,
-    success: false
+    success: false,
+    violations: [
+      {
+        file: './__tests__/fixtures/json/invalid/json1.json',
+        errors: [
+          {
+            path: null,
+            message: 'Invalid JSON'
+          }
+        ]
+      }
+    ]
   })
   expect(errorMock).toHaveBeenCalledWith(
     '❌ failed to parse JSON file: ./__tests__/fixtures/json/invalid/json1.json'
@@ -47,7 +60,18 @@ test('fails to validate a json file with an incorrect schema', async () => {
   expect(await jsonValidator()).toStrictEqual({
     failed: 1,
     passed: 0,
-    success: false
+    success: false,
+    violations: [
+      {
+        file: './__tests__/fixtures/json/valid/json1.json',
+        errors: [
+          {
+            path: '/foo',
+            message: 'must be string'
+          }
+        ]
+      }
+    ]
   })
   expect(errorMock).toHaveBeenCalledWith(
     expect.stringMatching(
@@ -62,7 +86,18 @@ test('fails to validate one json file with an incorrect schema and succeeds on t
   expect(await jsonValidator()).toStrictEqual({
     failed: 1,
     passed: 1,
-    success: false
+    success: false,
+    violations: [
+      {
+        file: './__tests__/fixtures/json/mixture/json1.json',
+        errors: [
+          {
+            path: '/foo',
+            message: 'must be string'
+          }
+        ]
+      }
+    ]
   })
   expect(infoMock).toHaveBeenCalledWith(
     '✅ ./__tests__/fixtures/json/mixture/json2.json is valid'
