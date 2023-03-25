@@ -41837,8 +41837,8 @@ async function constructBody(jsonResults, yamlResults) {
 
     ### JSON Validation Results
 
-    - ✅ Passed: ${jsonResults.passed}
-    - ❌ Failed: ${jsonResults.failed}
+    - ✅ File(s) Passed: ${jsonResults.passed}
+    - ❌ File(s) Failed: ${jsonResults.failed}
     
     **Violations**: 
 
@@ -41855,8 +41855,8 @@ async function constructBody(jsonResults, yamlResults) {
 
     ### YAML Validation Results
 
-    - ✅ Passed: ${yamlResults.passed}
-    - ❌ Failed: ${yamlResults.failed}
+    - ✅ File(s) Passed: ${yamlResults.passed}
+    - ❌ File(s) Failed: ${yamlResults.failed}
     
     **Violations**: 
 
