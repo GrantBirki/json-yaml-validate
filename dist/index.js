@@ -34802,8 +34802,14 @@ async function yamlValidator() {
 // :param type: the type of validation (json or yaml)
 // :returns: true if the results are valid, false if they are not
 async function checkResults(results, type) {
+  // check if there were any scanned files
+  if (results.passed === 0 && results.failed === 0) {
+    core.info(`🔎 no ${type} files were detected`)
+    return true
+  }
+
   if (results.success === true) {
-    core.info(`✅ all ${results.passed} ${type} files are valid`)
+    core.info(`✅ all ${results.passed} detected ${type} files are valid`)
   } else {
     core.info(
       `${type} Validation Results:\n  - Passed: ${

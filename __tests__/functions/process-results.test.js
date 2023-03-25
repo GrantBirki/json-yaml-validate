@@ -52,15 +52,31 @@ beforeEach(() => {
   jest.clearAllMocks()
 })
 
-test('successfully runs the action', async () => {
+test('successfully processes the results with no JSON or YAML failures', async () => {
   expect(
     await processResults(
       {success: true, failed: 0, passed: 12, violations: jsonViolations},
       {success: true, failed: 0, passed: 5, violations: []}
     )
   ).toBe(true)
-  expect(infoMock).toHaveBeenCalledWith('✅ all 12 detected JSON files are valid')
-  expect(infoMock).toHaveBeenCalledWith('✅ all 5 detected YAML files are valid')
+  expect(infoMock).toHaveBeenCalledWith(
+    '✅ all 12 detected JSON files are valid'
+  )
+  expect(infoMock).toHaveBeenCalledWith(
+    '✅ all 5 detected YAML files are valid'
+  )
+  expect(setOutputMock).toHaveBeenCalledWith('success', 'true')
+})
+
+test('successfully processes the results with no JSON or YAML detected files', async () => {
+  expect(
+    await processResults(
+      {success: true, failed: 0, passed: 0, violations: []},
+      {success: true, failed: 0, passed: 0, violations: []}
+    )
+  ).toBe(true)
+  expect(infoMock).toHaveBeenCalledWith('🔎 no JSON files were detected')
+  expect(infoMock).toHaveBeenCalledWith('🔎 no YAML files were detected')
   expect(setOutputMock).toHaveBeenCalledWith('success', 'true')
 })
 
@@ -78,7 +94,9 @@ test('fails the action due to json errors, but yaml is fine', async () => {
       2
     )}`
   )
-  expect(infoMock).toHaveBeenCalledWith('✅ all 3 detected YAML files are valid')
+  expect(infoMock).toHaveBeenCalledWith(
+    '✅ all 3 detected YAML files are valid'
+  )
   expect(errorMock).toHaveBeenCalledWith('❌ 2 JSON files failed validation')
   expect(setOutputMock).toHaveBeenCalledWith('success', 'false')
   expect(setFailedMock).toHaveBeenCalledWith(
@@ -93,7 +111,9 @@ test('fails the action due to yaml errors, but json is fine', async () => {
       {success: false, failed: 2, passed: 3, violations: yamlViolations}
     )
   ).toBe(false)
-  expect(infoMock).toHaveBeenCalledWith('✅ all 10 detected JSON files are valid')
+  expect(infoMock).toHaveBeenCalledWith(
+    '✅ all 10 detected JSON files are valid'
+  )
   expect(infoMock).toHaveBeenCalledWith(
     `YAML Validation Results:\n  - Passed: 3\n  - Failed: 2\n  - Violations: ${JSON.stringify(
       yamlViolations,
