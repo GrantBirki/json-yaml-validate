@@ -1,0 +1,15 @@
+name: "json-yaml-validate"
+description: "A GitHub Action to quickly validate JSON and YAML files in a repository"
+author: "Grant Birkinbine"
+branding:
+  icon: 'check'
+  color: 'green'
+inputs:
+  github_token:
+    description: The GitHub token used to create an authenticated client - Provided for you by default!
+    default: ${{ github.token }}
+    required: true
+# outputs:
+runs:
+  using: "node16"
+  main: "dist/index.js"
