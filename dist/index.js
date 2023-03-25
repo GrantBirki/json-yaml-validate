@@ -41834,29 +41834,29 @@ async function constructBody(jsonResults, yamlResults) {
 
   if (jsonResults.success === false) {
     body += lib_default()(`
-      ### JSON Validation Results
+    ### JSON Validation Results
 
-      - Passed: ${jsonResults.passed}
-      - Failed: ${jsonResults.failed}
-      - Violations: 
+    - Passed: ${jsonResults.passed}
+    - Failed: ${jsonResults.failed}
+    - Violations: 
 
-      \`\`\`json
-      ${JSON.stringify(jsonResults.violations, null, 2)}
-      \`\`\`
+    \`\`\`json
+    ${JSON.stringify(jsonResults.violations, null, 2)}
+    \`\`\`
     `)
   }
 
   if (yamlResults.success === false) {
     body += lib_default()(`
-      ### YAML Validation Results
+    ### YAML Validation Results
 
-      - Passed: ${yamlResults.passed}
-      - Failed: ${yamlResults.failed}
-      - Violations: 
+    - Passed: ${yamlResults.passed}
+    - Failed: ${yamlResults.failed}
+    - Violations: 
 
-      \`\`\`json
-      ${JSON.stringify(yamlResults.violations, null, 2)}
-      \`\`\`
+    \`\`\`json
+    ${JSON.stringify(yamlResults.violations, null, 2)}
+    \`\`\`
     `)
   }
 
