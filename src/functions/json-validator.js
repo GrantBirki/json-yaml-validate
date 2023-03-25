@@ -36,7 +36,11 @@ export async function jsonValidator() {
   const validate = await schema()
 
   // loop through all json files in the baseDir and validate them
-  var success = true
+  var result = {
+    success: true,
+    passed: 0,
+    failed: 0
+  }
   const files = globSync(`**/*${jsonExtension}`, {cwd: baseDirSanitized})
   for (const file of files) {
     var data
@@ -46,8 +50,9 @@ export async function jsonValidator() {
       data = JSON.parse(readFileSync(`${baseDirSanitized}/${file}`, 'utf8'))
     } catch {
       // if the json file is invalid, log an error and set success to false
-      core.error(`failed to parse JSON file: ${baseDirSanitized}/${file}`)
-      success = false
+      core.error(`❌ failed to parse JSON file: ${baseDirSanitized}/${file}`)
+      result.success = false
+      result.failed++
       continue
     }
 
@@ -55,11 +60,20 @@ export async function jsonValidator() {
     const valid = validate(data)
     if (!valid) {
       // if the json file is invalid against the schema, log an error and set success to false
-      core.error(validate.errors)
-      success = false
+      core.error(
+        `❌ failed to parse JSON file: ${baseDirSanitized}/${file}\n${JSON.stringify(
+          validate.errors
+        )}`
+      )
+      result.success = false
+      result.failed++
+      continue
     }
+
+    result.passed++
+    core.info(`✅ ${baseDirSanitized}/${file} is valid`)
   }
 
-  // return the overall success status of the validation for all files
-  return success
+  // return the result object
+  return result
 }

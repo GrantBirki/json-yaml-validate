@@ -2,6 +2,7 @@ import {jsonValidator} from '../../src/functions/json-validator'
 import * as core from '@actions/core'
 
 const errorMock = jest.spyOn(core, 'error').mockImplementation(() => {})
+const infoMock = jest.spyOn(core, 'info').mockImplementation(() => {})
 
 beforeEach(() => {
   jest.clearAllMocks()
@@ -11,33 +12,64 @@ beforeEach(() => {
 })
 
 test('successfully validates a json file with a schema', async () => {
-  expect(await jsonValidator()).toBe(true)
+  expect(await jsonValidator()).toStrictEqual({
+    failed: 0,
+    passed: 1,
+    success: true
+  })
 })
 
 test('successfully validates a json file without using a schema', async () => {
   process.env.INPUT_JSON_SCHEMA = ''
-  expect(await jsonValidator()).toBe(true)
+  expect(await jsonValidator()).toStrictEqual({
+    failed: 0,
+    passed: 1,
+    success: true
+  })
 })
 
 test('fails to validate a json file without using a schema', async () => {
   process.env.INPUT_JSON_SCHEMA = ''
   process.env.INPUT_BASE_DIR = './__tests__/fixtures/json/invalid'
-  expect(await jsonValidator()).toBe(false)
+  expect(await jsonValidator()).toStrictEqual({
+    failed: 1,
+    passed: 0,
+    success: false
+  })
   expect(errorMock).toHaveBeenCalledWith(
-    'failed to parse JSON file: ./__tests__/fixtures/json/invalid/json1.json'
+    '❌ failed to parse JSON file: ./__tests__/fixtures/json/invalid/json1.json'
   )
+  expect(infoMock).not.toHaveBeenCalled()
 })
 
 test('fails to validate a json file with an incorrect schema', async () => {
   process.env.INPUT_JSON_SCHEMA = './__tests__/fixtures/schemas/schema2.json'
-  expect(await jsonValidator()).toBe(false)
-  expect(errorMock).toHaveBeenCalledWith([
-    {
-      instancePath: '/foo',
-      keyword: 'type',
-      message: 'must be string',
-      params: {type: 'string'},
-      schemaPath: '#/properties/foo/type'
-    }
-  ])
+  expect(await jsonValidator()).toStrictEqual({
+    failed: 1,
+    passed: 0,
+    success: false
+  })
+  expect(errorMock).toHaveBeenCalledWith(
+    expect.stringMatching(
+      '❌ failed to parse JSON file: ./__tests__/fixtures/json/valid/json1.json'
+    )
+  )
+})
+
+test('fails to validate one json file with an incorrect schema and succeeds on the other', async () => {
+  process.env.INPUT_JSON_SCHEMA = './__tests__/fixtures/schemas/schema2.json'
+  process.env.INPUT_BASE_DIR = './__tests__/fixtures/json/mixture'
+  expect(await jsonValidator()).toStrictEqual({
+    failed: 1,
+    passed: 1,
+    success: false
+  })
+  expect(infoMock).toHaveBeenCalledWith(
+    '✅ ./__tests__/fixtures/json/mixture/json2.json is valid'
+  )
+  expect(errorMock).toHaveBeenCalledWith(
+    expect.stringMatching(
+      '❌ failed to parse JSON file: ./__tests__/fixtures/json/mixture/json1.json'
+    )
+  )
 })

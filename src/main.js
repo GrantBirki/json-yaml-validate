@@ -5,7 +5,11 @@
 import {jsonValidator} from './functions/json-validator'
 
 export async function run() {
-  await jsonValidator()
+  const jsonResult = await jsonValidator()
+
+  if (jsonResult) {
+    core.info('✅ All JSON files are valid')
+  }
 }
 
 if (process.env.LOCAL_ACTIONS_CI_TEST !== 'true') {
