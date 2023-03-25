@@ -1,11 +1,15 @@
 import {run} from '../src/main'
 import * as jsonValidator from '../src/functions/json-validator'
+import * as yamlValidator from '../src/functions/yaml-validator'
 import * as processResults from '../src/functions/process-results'
 
 beforeEach(() => {
   jest.clearAllMocks()
   jest.spyOn(jsonValidator, 'jsonValidator').mockImplementation(() => {
     return {success: true, failed: 0, passed: 8, violations: []}
+  })
+  jest.spyOn(yamlValidator, 'yamlValidator').mockImplementation(() => {
+    return {success: true, failed: 0, passed: 3, violations: []}
   })
   jest.spyOn(processResults, 'processResults').mockImplementation(() => {
     return true

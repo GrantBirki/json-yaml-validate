@@ -65,8 +65,6 @@ export async function yamlValidator() {
       schema: yamlSchema
     })
 
-    console.log(`============= ${JSON.stringify(schemaErrors)} =============`)
-
     if (schemaErrors && schemaErrors.length > 0) {
       // if the yaml file is invalid against the schema, log an error and set success to false
       core.error(
