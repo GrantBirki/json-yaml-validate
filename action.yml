@@ -9,18 +9,30 @@ inputs:
     description: The GitHub token used to create an authenticated client - Provided for you by default!
     default: ${{ github.token }}
     required: false
-  json_schema:
-    description: The full path to the JSON schema file (e.g. ./schemas/schema.json) - Default is "" which doesn't enforce a strict schema
-    required: false
-    default: ""
   base_dir:
     description: The base directory to search for JSON and YAML files (e.g. ./src) - Default is "." which searches the entire repository
     required: false
     default: "."
+  json_schema:
+    description: The full path to the JSON schema file (e.g. ./schemas/schema.json) - Default is "" which doesn't enforce a strict schema
+    required: false
+    default: ""
   json_extension:
     description: The file extension for JSON files (e.g. .json) - Default is ".json"
     required: false
     default: ".json"
+  yaml_schema:
+    description: The full path to the YAML schema file (e.g. ./schemas/schema.yml) - Default is "" which doesn't enforce a strict schema
+    required: false
+    default: ""
+  yaml_extension:
+    description: The file extension for YAML files (e.g. .yaml) - Default is ".yaml"
+    required: false
+    default: ".yaml"
+  yaml_extension_short:
+    description: The "short" file extension for YAML files (e.g. .yml) - Default is ".yml"
+    required: false
+    default: ".yml"
 outputs:
   success:
     description: Whether or not the validation was successful for all files - "true" or "false"
