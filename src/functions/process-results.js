@@ -43,6 +43,7 @@ export async function processResults(jsonResults, yamlResults) {
     if (core.getInput('mode') === 'fail') {
       core.setFailed('❌ JSON or YAML files failed validation')
     } else if (core.getInput('mode') === 'warn') {
+      core.warning('mode is set to "warn" - this action will not fail')
       core.error('❌ JSON or YAML files failed validation')
     } else {
       core.warning(`unrecognized mode: ${core.getInput('mode')}`)

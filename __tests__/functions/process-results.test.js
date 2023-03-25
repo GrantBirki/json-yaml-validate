@@ -105,6 +105,9 @@ test('fails the action due to json errors, but yaml is fine - warn mode', async 
   expect(errorMock).toHaveBeenCalledWith(
     '❌ JSON or YAML files failed validation'
   )
+  expect(warningMock).toHaveBeenCalledWith(
+    'mode is set to "warn" - this action will not fail'
+  )
   expect(setFailedMock).not.toHaveBeenCalled()
 })
 
