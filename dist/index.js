@@ -34808,25 +34808,26 @@ async function checkResults(results, type) {
     return true
   }
 
+  // print a nice success message if there were no errors
   if (results.success === true) {
     core.info(`✅ all ${results.passed} detected ${type} files are valid`)
-  } else {
-    core.info(
-      `${type} Validation Results:\n  - Passed: ${
-        results.passed
-      }\n  - Failed: ${results.failed}\n  - Violations: ${JSON.stringify(
-        results.violations,
-        null,
-        2
-      )}`
-    )
-    core.error(`❌ ${results.failed} ${type} files failed validation`)
-    return false
+    return true
   }
-  return true
+
+  // print the results of the validation if there were errors
+  core.info(
+    `${type} Validation Results:\n  - Passed: ${results.passed}\n  - Failed: ${
+      results.failed
+    }\n  - Violations: ${JSON.stringify(results.violations, null, 2)}`
+  )
+  core.error(`❌ ${results.failed} ${type} files failed validation`)
+  return false
 }
 
 // Helper function to process the results of json and yaml validation
+// :param jsonResults: the results of the json validation
+// :param yamlResults: the results of the yaml validation
+// :returns: true if the results are valid, false if they are not
 async function processResults(jsonResults, yamlResults) {
   var success = true
 
