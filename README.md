@@ -49,7 +49,9 @@ Here is a quick example of how to install this action in any workflow:
 
 ## Usage 🚀
 
-Here is a basic usage example:
+Here are some basic usage examples for this Action
+
+### Basic
 
 ```yaml
 name: json-yaml-validate 
@@ -73,6 +75,8 @@ jobs:
         id: json-yaml-validate
         uses: GrantBirki/json-yaml-validate@vX.X.X # replace with the latest version
 ```
+
+### Pull Request Comment
 
 Here is a usage example in the context of a pull request with comment mode enabled:
 
@@ -105,3 +109,39 @@ jobs:
 The resulting comment will look like this:
 
 ![comment-example](docs/assets/comment-example.png)
+
+## Violations Structure Explained
+
+Below is a very simple example of a violation warning that you might see in this Action in your Action's logs or as a comment on a pull request:
+
+```json
+[
+  {
+    "file": "./test/test2.json",
+    "errors": [
+      {
+        "path": null,
+        "message": "Invalid JSON"
+      }
+    ]
+  },
+  {
+    "file": "./test/test3.yaml",
+    "errors": [
+      {
+        "path": "person.age",
+        "message": "person.age must be of type String."
+      }
+    ]
+  }
+]
+```
+
+The example above contains two violations - one for a JSON file and one for a YAML file. Here is what each of the fields mean:
+
+- `file` - The full path to file that the violation occurred in
+- `errors` - An array of errors that occurred in the file
+  - `path` - The path to the error in the file (if applicable) - Note: This is **not** the file path but rather the path place within the file that the error occurred
+  - `message` - The error message
+
+In the example above, the `path` for the JSON file is `null` and the message says `Invalid JSON`. This means that the entire file could not be parsed as JSON. Likewise, if you see `null` for the `path` and the message says `Invalid YAML`, this means that the entire file could not be parsed as YAML.
