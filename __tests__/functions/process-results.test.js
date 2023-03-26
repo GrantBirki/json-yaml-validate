@@ -86,7 +86,13 @@ beforeEach(() => {
 test('successfully processes the results with no JSON or YAML failures', async () => {
   expect(
     await processResults(
-      {success: true, failed: 0, passed: 12, skipped: 0, violations: jsonViolations},
+      {
+        success: true,
+        failed: 0,
+        passed: 12,
+        skipped: 0,
+        violations: jsonViolations
+      },
       {success: true, failed: 0, passed: 5, skipped: 0, violations: []}
     )
   ).toBe(true)
@@ -115,7 +121,13 @@ test('fails the action due to json errors, but yaml is fine - warn mode', async 
   process.env.INPUT_MODE = 'warn'
   expect(
     await processResults(
-      {success: false, failed: 2, passed: 8, skipped: 0, violations: jsonViolations},
+      {
+        success: false,
+        failed: 2,
+        passed: 8,
+        skipped: 0,
+        violations: jsonViolations
+      },
       {success: true, failed: 0, passed: 3, skipped: 0, violations: []}
     )
   ).toBe(false)
@@ -145,7 +157,13 @@ test('fails the action due to yaml errors, but json is fine - unrecognized mode'
   expect(
     await processResults(
       {success: true, failed: 0, passed: 10, skipped: 0, violations: []},
-      {success: false, failed: 2, passed: 3, skipped: 0, violations: yamlViolations}
+      {
+        success: false,
+        failed: 2,
+        passed: 3,
+        skipped: 0,
+        violations: yamlViolations
+      }
     )
   ).toBe(false)
   expect(infoMock).toHaveBeenCalledWith(
@@ -169,8 +187,20 @@ test('fails the action due to yaml errors, but json is fine - unrecognized mode'
 test('fails the action due to yaml AND json errors', async () => {
   expect(
     await processResults(
-      {success: false, failed: 2, passed: 114, skipped: 0, violations: jsonViolations},
-      {success: false, failed: 2, passed: 3, skipped: 0, violations: yamlViolations}
+      {
+        success: false,
+        failed: 2,
+        passed: 114,
+        skipped: 0,
+        violations: jsonViolations
+      },
+      {
+        success: false,
+        failed: 2,
+        passed: 3,
+        skipped: 0,
+        violations: yamlViolations
+      }
     )
   ).toBe(false)
   expect(infoMock).toHaveBeenCalledWith(
@@ -199,8 +229,20 @@ test('fails the action due to yaml AND json errors - comment mode enabled', asyn
   process.env.INPUT_COMMENT = 'true'
   expect(
     await processResults(
-      {success: false, failed: 2, passed: 114, skipped: 0, violations: jsonViolations},
-      {success: false, failed: 2, passed: 3, skipped: 0, violations: yamlViolations}
+      {
+        success: false,
+        failed: 2,
+        passed: 114,
+        skipped: 0,
+        violations: jsonViolations
+      },
+      {
+        success: false,
+        failed: 2,
+        passed: 3,
+        skipped: 0,
+        violations: yamlViolations
+      }
     )
   ).toBe(false)
   expect(infoMock).toHaveBeenCalledWith(

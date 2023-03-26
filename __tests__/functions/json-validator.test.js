@@ -56,7 +56,9 @@ test('fails to validate a json file without using a schema', async () => {
   expect(errorMock).toHaveBeenCalledWith(
     '❌ failed to parse JSON file: ./__tests__/fixtures/json/invalid/json1.json'
   )
-  expect(infoMock).toHaveBeenCalledWith('skipping due to exclude match: ./__tests__/fixtures/json/invalid/skip-bad.json')
+  expect(infoMock).toHaveBeenCalledWith(
+    'skipping due to exclude match: ./__tests__/fixtures/json/invalid/skip-bad.json'
+  )
 })
 
 test('fails to validate a json file with an incorrect schema', async () => {

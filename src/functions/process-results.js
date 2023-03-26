@@ -24,7 +24,11 @@ async function checkResults(results, type) {
   core.info(
     `${type} Validation Results:\n  - Passed: ${results.passed}\n  - Failed: ${
       results.failed
-    }\n  - Skipped: ${results.skipped}\n  - Violations: ${JSON.stringify(results.violations, null, 2)}`
+    }\n  - Skipped: ${results.skipped}\n  - Violations: ${JSON.stringify(
+      results.violations,
+      null,
+      2
+    )}`
   )
   core.error(`❌ ${results.failed} ${type} files failed validation`)
   return false

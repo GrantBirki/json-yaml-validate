@@ -41605,9 +41605,16 @@ async function schema() {
 async function jsonValidator() {
   const baseDir = core.getInput('base_dir')
   const jsonExtension = core.getInput('json_extension')
+  const jsonExcludeRegex = core.getInput('json_exclude_regex').trim()
 
   // remove trailing slash from baseDir
   const baseDirSanitized = baseDir.replace(/\/$/, '')
+
+  // check if regex is enabled
+  var skipRegex = null
+  if (jsonExcludeRegex && jsonExcludeRegex !== '') {
+    skipRegex = new RegExp(jsonExcludeRegex)
+  }
 
   // setup the schema (if provided)
   const validate = await schema()
@@ -41617,22 +41624,35 @@ async function jsonValidator() {
     success: true,
     passed: 0,
     failed: 0,
+    skipped: 0,
     violations: []
   }
   const files = globSync(`**/*${jsonExtension}`, {cwd: baseDirSanitized})
   for (const file of files) {
+    // construct the full path to the file
+    const fullPath = `${baseDirSanitized}/${file}`
+
+    // If an exclude regex is provided, skip json files that match
+    if (skipRegex !== null) {
+      if (skipRegex.test(fullPath)) {
+        core.info(`skipping due to exclude match: ${fullPath}`)
+        result.skipped++
+        continue
+      }
+    }
+
     var data
 
     try {
       // try to parse the json file
-      data = JSON.parse((0,external_fs_.readFileSync)(`${baseDirSanitized}/${file}`, 'utf8'))
+      data = JSON.parse((0,external_fs_.readFileSync)(fullPath, 'utf8'))
     } catch {
       // if the json file is invalid, log an error and set success to false
-      core.error(`❌ failed to parse JSON file: ${baseDirSanitized}/${file}`)
+      core.error(`❌ failed to parse JSON file: ${fullPath}`)
       result.success = false
       result.failed++
       result.violations.push({
-        file: `${baseDirSanitized}/${file}`,
+        file: fullPath,
         errors: [
           {
             path: null,
@@ -41648,7 +41668,7 @@ async function jsonValidator() {
     if (!valid) {
       // if the json file is invalid against the schema, log an error and set success to false
       core.error(
-        `❌ failed to parse JSON file: ${baseDirSanitized}/${file}\n${JSON.stringify(
+        `❌ failed to parse JSON file: ${fullPath}\n${JSON.stringify(
           validate.errors
         )}`
       )
@@ -41667,14 +41687,14 @@ async function jsonValidator() {
 
       // add the file and errors to the result object
       result.violations.push({
-        file: `${baseDirSanitized}/${file}`,
+        file: `${fullPath}`,
         errors: errors
       })
       continue
     }
 
     result.passed++
-    core.info(`${baseDirSanitized}/${file} is valid`)
+    core.info(`${fullPath} is valid`)
   }
 
   // return the result object
@@ -41699,15 +41719,23 @@ async function yamlValidator() {
   const yamlExtension = core.getInput('yaml_extension')
   const yamlExtensionShort = core.getInput('yaml_extension_short')
   const yamlSchema = core.getInput('yaml_schema')
+  const yamlExcludeRegex = core.getInput('yaml_exclude_regex').trim()
 
   // remove trailing slash from baseDir
   const baseDirSanitized = baseDir.replace(/\/$/, '')
+
+  // check if regex is enabled
+  var skipRegex = null
+  if (yamlExcludeRegex && yamlExcludeRegex !== '') {
+    skipRegex = new RegExp(yamlExcludeRegex)
+  }
 
   // loop through all yaml files in the baseDir and validate them
   var result = {
     success: true,
     passed: 0,
     failed: 0,
+    skipped: 0,
     violations: []
   }
   const files = globSync(
@@ -41718,16 +41746,28 @@ async function yamlValidator() {
     {cwd: baseDirSanitized}
   )
   for (const file of files) {
+    // construct the full path to the file
+    const fullPath = `${baseDirSanitized}/${file}`
+
+    // If an exclude regex is provided, skip yaml files that match
+    if (skipRegex !== null) {
+      if (skipRegex.test(fullPath)) {
+        core.info(`skipping due to exclude match: ${fullPath}`)
+        result.skipped++
+        continue
+      }
+    }
+
     try {
       // try to parse the yaml file
-      ;(0,dist/* parse */.Qc)((0,external_fs_.readFileSync)(`${baseDirSanitized}/${file}`, 'utf8'))
+      (0,dist/* parse */.Qc)((0,external_fs_.readFileSync)(fullPath, 'utf8'))
     } catch {
       // if the yaml file is invalid, log an error and set success to false
-      core.error(`❌ failed to parse YAML file: ${baseDirSanitized}/${file}`)
+      core.error(`❌ failed to parse YAML file: ${fullPath}`)
       result.success = false
       result.failed++
       result.violations.push({
-        file: `${baseDirSanitized}/${file}`,
+        file: fullPath,
         errors: [
           {
             path: null,
@@ -41746,11 +41786,11 @@ async function yamlValidator() {
       yamlSchema === undefined
     ) {
       result.passed++
-      core.info(`${baseDirSanitized}/${file} is valid`)
+      core.info(`${fullPath} is valid`)
       continue
     }
 
-    const schemaErrors = yaml_schema_validator_default()(`${baseDirSanitized}/${file}`, {
+    const schemaErrors = yaml_schema_validator_default()(`${fullPath}`, {
       schema: yamlSchema,
       logLevel: 'none'
     })
@@ -41758,7 +41798,7 @@ async function yamlValidator() {
     if (schemaErrors && schemaErrors.length > 0) {
       // if the yaml file is invalid against the schema, log an error and set success to false
       core.error(
-        `❌ failed to parse YAML file: ${baseDirSanitized}/${file}\n${JSON.stringify(
+        `❌ failed to parse YAML file: ${fullPath}\n${JSON.stringify(
           schemaErrors
         )}`
       )
@@ -41777,14 +41817,14 @@ async function yamlValidator() {
 
       // add the file and errors to the result object
       result.violations.push({
-        file: `${baseDirSanitized}/${file}`,
+        file: fullPath,
         errors: errors
       })
       continue
     }
 
     result.passed++
-    core.info(`${baseDirSanitized}/${file} is valid`)
+    core.info(`${fullPath} is valid`)
   }
 
   // return the result object
@@ -41823,7 +41863,11 @@ async function checkResults(results, type) {
   core.info(
     `${type} Validation Results:\n  - Passed: ${results.passed}\n  - Failed: ${
       results.failed
-    }\n  - Violations: ${JSON.stringify(results.violations, null, 2)}`
+    }\n  - Skipped: ${results.skipped}\n  - Violations: ${JSON.stringify(
+      results.violations,
+      null,
+      2
+    )}`
   )
   core.error(`❌ ${results.failed} ${type} files failed validation`)
   return false
@@ -41843,6 +41887,7 @@ async function constructBody(jsonResults, yamlResults) {
 
     - ✅ File(s) Passed: ${jsonResults.passed}
     - ❌ File(s) Failed: ${jsonResults.failed}
+    - ⏭️ File(s) Skipped: ${jsonResults.skipped}
     
     **Violations**: 
 
@@ -41861,6 +41906,7 @@ async function constructBody(jsonResults, yamlResults) {
 
     - ✅ File(s) Passed: ${yamlResults.passed}
     - ❌ File(s) Failed: ${yamlResults.failed}
+    - ⏭️ File(s) Skipped: ${yamlResults.skipped}
     
     **Violations**: 
 
