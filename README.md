@@ -113,6 +113,45 @@ The resulting comment will look like this:
 
 ![comment-example](docs/assets/comment-example.png)
 
+### Schema Validation
+
+This Action also supports schema validation for both JSON and YAML files.
+
+References docs for both JSON and YAML schema validation can be found at the links below:
+
+- [JSON Schema Validation Docs](https://ajv.js.org/json-schema.html#json-schema)
+- [YAML Schema Validation Docs](https://github.com/ketanSaxena/schema-validator#yaml-schema)
+
+Assuming the following repository structure:
+
+```text
+/
+├── schemas/
+│   ├── schema.yml
+│   └── schema.json
+├── data/
+│   ├── test.json
+│   └── test.yml
+└── ...
+```
+
+Here is an example of how to use this feature:
+
+```yaml
+# checkout the repository
+- uses: actions/checkout@v3.5.0
+
+- name: json-yaml-validate
+  uses: GrantBirki/json-yaml-validate@vX.X.X # replace with the latest version
+  with:
+    yaml_schema: schemas/schema.yml # validate YAML files against the schema
+    json_schema: schemas/schema.json # validate JSON files against the schema
+```
+
+When this Action workflow runs, it will validate all JSON and YAML files in the repository against the schema files in the `schemas/` directory.
+
+> If you want to only validate files in the `data/` directory, you could set the `base_dir` input to `data/`
+
 ## Violations Structure Explained
 
 Below is a very simple example of a violation warning that you might see in this Action in your Action's logs or as a comment on a pull request:
