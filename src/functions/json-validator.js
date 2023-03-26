@@ -33,6 +33,12 @@ export async function jsonValidator() {
   // remove trailing slash from baseDir
   const baseDirSanitized = baseDir.replace(/\/$/, '')
 
+  // check if regex is enabled
+  var skipRegex = null
+  if (jsonExcludeRegex && jsonExcludeRegex !== '') {
+    skipRegex = new RegExp(jsonExcludeRegex)
+  }
+
   // setup the schema (if provided)
   const validate = await schema()
 
@@ -48,8 +54,7 @@ export async function jsonValidator() {
   for (const file of files) {
 
     // If an exclude regex is provided, skip json files that match
-    if (jsonExcludeRegex && jsonExcludeRegex !== '') {
-      const skipRegex = new RegExp(jsonExcludeRegex)
+    if (skipRegex !== null) {
       if (skipRegex.test(`${baseDirSanitized}/${file}`)) {
         core.info(`skipping due to exclude match: ${baseDirSanitized}/${file}`)
         result.skipped++

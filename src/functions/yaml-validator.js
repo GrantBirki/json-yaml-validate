@@ -10,9 +10,16 @@ export async function yamlValidator() {
   const yamlExtension = core.getInput('yaml_extension')
   const yamlExtensionShort = core.getInput('yaml_extension_short')
   const yamlSchema = core.getInput('yaml_schema')
+  const yamlExcludeRegex = core.getInput('yaml_exclude_regex').trim()
 
   // remove trailing slash from baseDir
   const baseDirSanitized = baseDir.replace(/\/$/, '')
+
+  // check if regex is enabled
+  var skipRegex = null
+  if (yamlExcludeRegex && yamlExcludeRegex !== '') {
+    skipRegex = new RegExp(yamlExcludeRegex)
+  }
 
   // loop through all yaml files in the baseDir and validate them
   var result = {
@@ -30,6 +37,16 @@ export async function yamlValidator() {
     {cwd: baseDirSanitized}
   )
   for (const file of files) {
+
+    // If an exclude regex is provided, skip yaml files that match
+    if (skipRegex !== null) {
+      if (skipRegex.test(`${baseDirSanitized}/${file}`)) {
+        core.info(`skipping due to exclude match: ${baseDirSanitized}/${file}`)
+        result.skipped++
+        continue
+      }
+    }
+
     try {
       // try to parse the yaml file
       parse(readFileSync(`${baseDirSanitized}/${file}`, 'utf8'))

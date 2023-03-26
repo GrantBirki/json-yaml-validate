@@ -10,6 +10,7 @@ beforeEach(() => {
   process.env.INPUT_BASE_DIR = './__tests__/fixtures/yaml/valid'
   process.env.INPUT_YAML_EXTENSION = '.yaml'
   process.env.INPUT_YAML_EXTENSION_SHORT = '.yml'
+  process.env.INPUT_YAML_EXCLUDE_REGEX = '.*bad.*\\.yaml'
 })
 
 test('successfully validates a yaml file with a schema', async () => {
@@ -39,7 +40,7 @@ test('fails to validate a yaml file without using a schema', async () => {
   expect(await yamlValidator()).toStrictEqual({
     failed: 1,
     passed: 0,
-    skipped: 0,
+    skipped: 1,
     success: false,
     violations: [
       {
@@ -56,7 +57,7 @@ test('fails to validate a yaml file without using a schema', async () => {
   expect(errorMock).toHaveBeenCalledWith(
     '❌ failed to parse YAML file: ./__tests__/fixtures/yaml/invalid/yaml1.yaml'
   )
-  expect(infoMock).not.toHaveBeenCalled()
+  expect(infoMock).toHaveBeenCalledWith('skipping due to exclude match: ./__tests__/fixtures/yaml/invalid/skip-bad.yaml')
 })
 
 test('fails to validate a yaml file with an incorrect schema', async () => {
