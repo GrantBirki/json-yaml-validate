@@ -52,11 +52,13 @@ export async function jsonValidator() {
   }
   const files = globSync(`**/*${jsonExtension}`, {cwd: baseDirSanitized})
   for (const file of files) {
+    // construct the full path to the file
+    const fullPath = `${baseDirSanitized}/${file}`
 
     // If an exclude regex is provided, skip json files that match
     if (skipRegex !== null) {
-      if (skipRegex.test(`${baseDirSanitized}/${file}`)) {
-        core.info(`skipping due to exclude match: ${baseDirSanitized}/${file}`)
+      if (skipRegex.test(fullPath)) {
+        core.info(`skipping due to exclude match: ${fullPath}`)
         result.skipped++
         continue
       }
@@ -66,14 +68,14 @@ export async function jsonValidator() {
 
     try {
       // try to parse the json file
-      data = JSON.parse(readFileSync(`${baseDirSanitized}/${file}`, 'utf8'))
+      data = JSON.parse(readFileSync(fullPath, 'utf8'))
     } catch {
       // if the json file is invalid, log an error and set success to false
-      core.error(`❌ failed to parse JSON file: ${baseDirSanitized}/${file}`)
+      core.error(`❌ failed to parse JSON file: ${fullPath}`)
       result.success = false
       result.failed++
       result.violations.push({
-        file: `${baseDirSanitized}/${file}`,
+        file: fullPath,
         errors: [
           {
             path: null,
@@ -89,7 +91,7 @@ export async function jsonValidator() {
     if (!valid) {
       // if the json file is invalid against the schema, log an error and set success to false
       core.error(
-        `❌ failed to parse JSON file: ${baseDirSanitized}/${file}\n${JSON.stringify(
+        `❌ failed to parse JSON file: ${fullPath}\n${JSON.stringify(
           validate.errors
         )}`
       )
@@ -108,14 +110,14 @@ export async function jsonValidator() {
 
       // add the file and errors to the result object
       result.violations.push({
-        file: `${baseDirSanitized}/${file}`,
+        file: `${fullPath}`,
         errors: errors
       })
       continue
     }
 
     result.passed++
-    core.info(`${baseDirSanitized}/${file} is valid`)
+    core.info(`${fullPath} is valid`)
   }
 
   // return the result object

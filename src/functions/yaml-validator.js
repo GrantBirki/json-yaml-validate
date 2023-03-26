@@ -37,11 +37,13 @@ export async function yamlValidator() {
     {cwd: baseDirSanitized}
   )
   for (const file of files) {
+    // construct the full path to the file
+    const fullPath = `${baseDirSanitized}/${file}`
 
     // If an exclude regex is provided, skip yaml files that match
     if (skipRegex !== null) {
-      if (skipRegex.test(`${baseDirSanitized}/${file}`)) {
-        core.info(`skipping due to exclude match: ${baseDirSanitized}/${file}`)
+      if (skipRegex.test(fullPath)) {
+        core.info(`skipping due to exclude match: ${fullPath}`)
         result.skipped++
         continue
       }
@@ -49,14 +51,14 @@ export async function yamlValidator() {
 
     try {
       // try to parse the yaml file
-      parse(readFileSync(`${baseDirSanitized}/${file}`, 'utf8'))
+      parse(readFileSync(fullPath, 'utf8'))
     } catch {
       // if the yaml file is invalid, log an error and set success to false
-      core.error(`❌ failed to parse YAML file: ${baseDirSanitized}/${file}`)
+      core.error(`❌ failed to parse YAML file: ${fullPath}`)
       result.success = false
       result.failed++
       result.violations.push({
-        file: `${baseDirSanitized}/${file}`,
+        file: fullPath,
         errors: [
           {
             path: null,
@@ -75,11 +77,11 @@ export async function yamlValidator() {
       yamlSchema === undefined
     ) {
       result.passed++
-      core.info(`${baseDirSanitized}/${file} is valid`)
+      core.info(`${fullPath} is valid`)
       continue
     }
 
-    const schemaErrors = validateSchema(`${baseDirSanitized}/${file}`, {
+    const schemaErrors = validateSchema(`${fullPath}`, {
       schema: yamlSchema,
       logLevel: 'none'
     })
@@ -87,7 +89,7 @@ export async function yamlValidator() {
     if (schemaErrors && schemaErrors.length > 0) {
       // if the yaml file is invalid against the schema, log an error and set success to false
       core.error(
-        `❌ failed to parse YAML file: ${baseDirSanitized}/${file}\n${JSON.stringify(
+        `❌ failed to parse YAML file: ${fullPath}\n${JSON.stringify(
           schemaErrors
         )}`
       )
@@ -106,14 +108,14 @@ export async function yamlValidator() {
 
       // add the file and errors to the result object
       result.violations.push({
-        file: `${baseDirSanitized}/${file}`,
+        file: fullPath,
         errors: errors
       })
       continue
     }
 
     result.passed++
-    core.info(`${baseDirSanitized}/${file} is valid`)
+    core.info(`${fullPath} is valid`)
   }
 
   // return the result object
