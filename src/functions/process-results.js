@@ -115,6 +115,7 @@ export async function processResults(jsonResults, yamlResults) {
     const body = await constructBody(jsonResults, yamlResults)
 
     // add a comment to the pull request
+    core.info(`📝 adding comment to PR #${context.issue.number}`)
     await octokit.rest.issues.createComment({
       ...context.repo,
       issue_number: context.issue.number,
