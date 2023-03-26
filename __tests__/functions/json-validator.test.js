@@ -9,6 +9,7 @@ beforeEach(() => {
   process.env.INPUT_JSON_SCHEMA = './__tests__/fixtures/schemas/schema1.json'
   process.env.INPUT_BASE_DIR = './__tests__/fixtures/json/valid'
   process.env.INPUT_JSON_EXTENSION = '.json'
+  process.env.INPUT_JSON_EXCLUDE_REGEX = '.*bad.*\\.json'
 })
 
 test('successfully validates a json file with a schema', async () => {

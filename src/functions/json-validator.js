@@ -28,6 +28,7 @@ async function schema() {
 export async function jsonValidator() {
   const baseDir = core.getInput('base_dir')
   const jsonExtension = core.getInput('json_extension')
+  const jsonExcludeRegex = core.getInput('json_exclude_regex').trim()
 
   // remove trailing slash from baseDir
   const baseDirSanitized = baseDir.replace(/\/$/, '')
@@ -46,12 +47,14 @@ export async function jsonValidator() {
   const files = globSync(`**/*${jsonExtension}`, {cwd: baseDirSanitized})
   for (const file of files) {
 
-    const skipFile = ".*bad.*\.json"
-    const skipRegex = new RegExp(skipFile)
-    if (skipRegex.test(`${baseDirSanitized}/${file}`)) {
-      core.info(`skipping due to exclude match: ${baseDirSanitized}/${file}`)
-      result.skipped++
-      continue
+    // If an exclude regex is provided, skip json files that match
+    if (jsonExcludeRegex && jsonExcludeRegex !== '') {
+      const skipRegex = new RegExp(jsonExcludeRegex)
+      if (skipRegex.test(`${baseDirSanitized}/${file}`)) {
+        core.info(`skipping due to exclude match: ${baseDirSanitized}/${file}`)
+        result.skipped++
+        continue
+      }
     }
 
     var data
