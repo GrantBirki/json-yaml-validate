@@ -41584,11 +41584,12 @@ const sync = Object.assign(globSync, {
 const json_validator_ajv = new (ajv_default())() // options can be passed, e.g. {allErrors: true}
 
 // Helper function to setup the schema
-async function schema() {
-  const jsonSchema = core.getInput('json_schema')
+// :param jsonSchema: path to the jsonSchema file
+// :returns: the compiled schema
+async function schema(jsonSchema) {
   // if a jsonSchema is provided, validate the json against it
   var schema
-  if (jsonSchema) {
+  if (jsonSchema && jsonSchema !== '') {
     // parse the jsonSchema from the file path
     schema = JSON.parse((0,external_fs_.readFileSync)(jsonSchema, 'utf8'))
   } else {
@@ -41603,9 +41604,10 @@ async function schema() {
 
 // Helper function to validate all json files in the baseDir
 async function jsonValidator() {
-  const baseDir = core.getInput('base_dir')
-  const jsonExtension = core.getInput('json_extension')
+  const baseDir = core.getInput('base_dir').trim()
+  const jsonExtension = core.getInput('json_extension').trim()
   const jsonExcludeRegex = core.getInput('json_exclude_regex').trim()
+  const jsonSchema = core.getInput('json_schema').trim()
 
   // remove trailing slash from baseDir
   const baseDirSanitized = baseDir.replace(/\/$/, '')
@@ -41617,7 +41619,7 @@ async function jsonValidator() {
   }
 
   // setup the schema (if provided)
-  const validate = await schema()
+  const validate = await schema(jsonSchema)
 
   // loop through all json files in the baseDir and validate them
   var result = {
@@ -41631,6 +41633,12 @@ async function jsonValidator() {
   for (const file of files) {
     // construct the full path to the file
     const fullPath = `${baseDirSanitized}/${file}`
+
+    if (jsonSchema !== '' && fullPath.includes(jsonSchema)) {
+      // skip the jsonSchema file and don't count it as a skipped file
+      core.debug(`skipping json schema file: ${fullPath}`)
+      continue
+    }
 
     // If an exclude regex is provided, skip json files that match
     if (skipRegex !== null) {
@@ -41715,10 +41723,10 @@ var dist = __nccwpck_require__(4083);
 
 // Helper function to validate all yaml files in the baseDir
 async function yamlValidator() {
-  const baseDir = core.getInput('base_dir')
-  const yamlExtension = core.getInput('yaml_extension')
-  const yamlExtensionShort = core.getInput('yaml_extension_short')
-  const yamlSchema = core.getInput('yaml_schema')
+  const baseDir = core.getInput('base_dir').trim()
+  const yamlExtension = core.getInput('yaml_extension').trim()
+  const yamlExtensionShort = core.getInput('yaml_extension_short').trim()
+  const yamlSchema = core.getInput('yaml_schema').trim()
   const yamlExcludeRegex = core.getInput('yaml_exclude_regex').trim()
 
   // remove trailing slash from baseDir
@@ -41748,6 +41756,11 @@ async function yamlValidator() {
   for (const file of files) {
     // construct the full path to the file
     const fullPath = `${baseDirSanitized}/${file}`
+
+    if (yamlSchema !== '' && fullPath.includes(yamlSchema)) {
+      core.debug(`skipping yaml schema file: ${fullPath}`)
+      continue
+    }
 
     // If an exclude regex is provided, skip yaml files that match
     if (skipRegex !== null) {
@@ -41781,7 +41794,7 @@ async function yamlValidator() {
     // if no yamlSchema is provided, skip validation against the schema
     if (
       !yamlSchema ||
-      yamlSchema.trim() === '' ||
+      yamlSchema === '' ||
       yamlSchema === null ||
       yamlSchema === undefined
     ) {

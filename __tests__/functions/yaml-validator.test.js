@@ -1,8 +1,9 @@
 import {yamlValidator} from '../../src/functions/yaml-validator'
 import * as core from '@actions/core'
 
-const errorMock = jest.spyOn(core, 'error').mockImplementation(() => {})
+const debugMock = jest.spyOn(core, 'debug').mockImplementation(() => {})
 const infoMock = jest.spyOn(core, 'info').mockImplementation(() => {})
+const errorMock = jest.spyOn(core, 'error').mockImplementation(() => {})
 
 beforeEach(() => {
   jest.clearAllMocks()
@@ -32,6 +33,23 @@ test('successfully validates a yaml file without using a schema', async () => {
     success: true,
     violations: []
   })
+})
+
+test('successfully validates a yaml file with a schema and skips the schema as well', async () => {
+  process.env.INPUT_YAML_SCHEMA =
+    './__tests__/fixtures/yaml/project_dir/schemas/schema.yml'
+  process.env.INPUT_BASE_DIR = './__tests__/fixtures/yaml/project_dir'
+  expect(await yamlValidator()).toStrictEqual({
+    failed: 0,
+    passed: 1,
+    skipped: 0,
+    success: true,
+    violations: []
+  })
+
+  expect(debugMock).toHaveBeenCalledWith(
+    `skipping yaml schema file: ${process.env.INPUT_YAML_SCHEMA}`
+  )
 })
 
 test('fails to validate a yaml file without using a schema', async () => {

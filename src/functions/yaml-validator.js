@@ -6,10 +6,10 @@ import {parse} from 'yaml'
 
 // Helper function to validate all yaml files in the baseDir
 export async function yamlValidator() {
-  const baseDir = core.getInput('base_dir')
-  const yamlExtension = core.getInput('yaml_extension')
-  const yamlExtensionShort = core.getInput('yaml_extension_short')
-  const yamlSchema = core.getInput('yaml_schema')
+  const baseDir = core.getInput('base_dir').trim()
+  const yamlExtension = core.getInput('yaml_extension').trim()
+  const yamlExtensionShort = core.getInput('yaml_extension_short').trim()
+  const yamlSchema = core.getInput('yaml_schema').trim()
   const yamlExcludeRegex = core.getInput('yaml_exclude_regex').trim()
 
   // remove trailing slash from baseDir
@@ -39,6 +39,11 @@ export async function yamlValidator() {
   for (const file of files) {
     // construct the full path to the file
     const fullPath = `${baseDirSanitized}/${file}`
+
+    if (yamlSchema !== '' && fullPath.includes(yamlSchema)) {
+      core.debug(`skipping yaml schema file: ${fullPath}`)
+      continue
+    }
 
     // If an exclude regex is provided, skip yaml files that match
     if (skipRegex !== null) {
@@ -72,7 +77,7 @@ export async function yamlValidator() {
     // if no yamlSchema is provided, skip validation against the schema
     if (
       !yamlSchema ||
-      yamlSchema.trim() === '' ||
+      yamlSchema === '' ||
       yamlSchema === null ||
       yamlSchema === undefined
     ) {

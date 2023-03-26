@@ -1,8 +1,9 @@
 import {jsonValidator} from '../../src/functions/json-validator'
 import * as core from '@actions/core'
 
-const errorMock = jest.spyOn(core, 'error').mockImplementation(() => {})
+const debugMock = jest.spyOn(core, 'debug').mockImplementation(() => {})
 const infoMock = jest.spyOn(core, 'info').mockImplementation(() => {})
+const errorMock = jest.spyOn(core, 'error').mockImplementation(() => {})
 
 beforeEach(() => {
   jest.clearAllMocks()
@@ -31,6 +32,22 @@ test('successfully validates a json file without using a schema', async () => {
     success: true,
     violations: []
   })
+})
+
+test('successfully validates a json file with a schema and skips the schema as well', async () => {
+  process.env.INPUT_JSON_SCHEMA =
+    './__tests__/fixtures/json/project_dir/schemas/schema.json'
+  process.env.INPUT_BASE_DIR = './__tests__/fixtures/json/project_dir'
+  expect(await jsonValidator()).toStrictEqual({
+    failed: 0,
+    passed: 1,
+    skipped: 0,
+    success: true,
+    violations: []
+  })
+  expect(debugMock).toHaveBeenCalledWith(
+    `skipping json schema file: ${process.env.INPUT_JSON_SCHEMA}`
+  )
 })
 
 test('fails to validate a json file without using a schema', async () => {

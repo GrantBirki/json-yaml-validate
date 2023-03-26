@@ -7,11 +7,12 @@ import {globSync} from 'glob'
 const ajv = new Ajv() // options can be passed, e.g. {allErrors: true}
 
 // Helper function to setup the schema
-async function schema() {
-  const jsonSchema = core.getInput('json_schema')
+// :param jsonSchema: path to the jsonSchema file
+// :returns: the compiled schema
+async function schema(jsonSchema) {
   // if a jsonSchema is provided, validate the json against it
   var schema
-  if (jsonSchema) {
+  if (jsonSchema && jsonSchema !== '') {
     // parse the jsonSchema from the file path
     schema = JSON.parse(readFileSync(jsonSchema, 'utf8'))
   } else {
@@ -26,9 +27,10 @@ async function schema() {
 
 // Helper function to validate all json files in the baseDir
 export async function jsonValidator() {
-  const baseDir = core.getInput('base_dir')
-  const jsonExtension = core.getInput('json_extension')
+  const baseDir = core.getInput('base_dir').trim()
+  const jsonExtension = core.getInput('json_extension').trim()
   const jsonExcludeRegex = core.getInput('json_exclude_regex').trim()
+  const jsonSchema = core.getInput('json_schema').trim()
 
   // remove trailing slash from baseDir
   const baseDirSanitized = baseDir.replace(/\/$/, '')
@@ -40,7 +42,7 @@ export async function jsonValidator() {
   }
 
   // setup the schema (if provided)
-  const validate = await schema()
+  const validate = await schema(jsonSchema)
 
   // loop through all json files in the baseDir and validate them
   var result = {
@@ -54,6 +56,12 @@ export async function jsonValidator() {
   for (const file of files) {
     // construct the full path to the file
     const fullPath = `${baseDirSanitized}/${file}`
+
+    if (jsonSchema !== '' && fullPath.includes(jsonSchema)) {
+      // skip the jsonSchema file and don't count it as a skipped file
+      core.debug(`skipping json schema file: ${fullPath}`)
+      continue
+    }
 
     // If an exclude regex is provided, skip json files that match
     if (skipRegex !== null) {
