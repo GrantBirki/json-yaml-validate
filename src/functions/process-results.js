@@ -24,7 +24,7 @@ async function checkResults(results, type) {
   core.info(
     `${type} Validation Results:\n  - Passed: ${results.passed}\n  - Failed: ${
       results.failed
-    }\n  - Violations: ${JSON.stringify(results.violations, null, 2)}`
+    }\n  - Skipped: ${results.skipped}\n  - Violations: ${JSON.stringify(results.violations, null, 2)}`
   )
   core.error(`❌ ${results.failed} ${type} files failed validation`)
   return false
@@ -44,6 +44,7 @@ async function constructBody(jsonResults, yamlResults) {
 
     - ✅ File(s) Passed: ${jsonResults.passed}
     - ❌ File(s) Failed: ${jsonResults.failed}
+    - ⏭️ File(s) Skipped: ${jsonResults.skipped}
     
     **Violations**: 
 
@@ -62,6 +63,7 @@ async function constructBody(jsonResults, yamlResults) {
 
     - ✅ File(s) Passed: ${yamlResults.passed}
     - ❌ File(s) Failed: ${yamlResults.failed}
+    - ⏭️ File(s) Skipped: ${yamlResults.skipped}
     
     **Violations**: 
 

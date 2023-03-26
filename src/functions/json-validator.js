@@ -40,10 +40,20 @@ export async function jsonValidator() {
     success: true,
     passed: 0,
     failed: 0,
+    skipped: 0,
     violations: []
   }
   const files = globSync(`**/*${jsonExtension}`, {cwd: baseDirSanitized})
   for (const file of files) {
+
+    const skipFile = ".*bad.*\.json"
+    const skipRegex = new RegExp(skipFile)
+    if (skipRegex.test(`${baseDirSanitized}/${file}`)) {
+      core.info(`skipping due to exclude match: ${baseDirSanitized}/${file}`)
+      result.skipped++
+      continue
+    }
+
     var data
 
     try {

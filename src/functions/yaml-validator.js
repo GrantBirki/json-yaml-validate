@@ -19,6 +19,7 @@ export async function yamlValidator() {
     success: true,
     passed: 0,
     failed: 0,
+    skipped: 0,
     violations: []
   }
   const files = globSync(

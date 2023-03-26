@@ -16,6 +16,7 @@ test('successfully validates a yaml file with a schema', async () => {
   expect(await yamlValidator()).toStrictEqual({
     failed: 0,
     passed: 1,
+    skipped: 0,
     success: true,
     violations: []
   })
@@ -26,6 +27,7 @@ test('successfully validates a yaml file without using a schema', async () => {
   expect(await yamlValidator()).toStrictEqual({
     failed: 0,
     passed: 1,
+    skipped: 0,
     success: true,
     violations: []
   })
@@ -37,6 +39,7 @@ test('fails to validate a yaml file without using a schema', async () => {
   expect(await yamlValidator()).toStrictEqual({
     failed: 1,
     passed: 0,
+    skipped: 0,
     success: false,
     violations: [
       {
@@ -61,6 +64,7 @@ test('fails to validate a yaml file with an incorrect schema', async () => {
   expect(await yamlValidator()).toStrictEqual({
     failed: 1,
     passed: 0,
+    skipped: 0,
     success: false,
     violations: [
       {
@@ -87,6 +91,7 @@ test('fails to validate one yaml file with an incorrect schema and succeeds on t
   expect(await yamlValidator()).toStrictEqual({
     failed: 1,
     passed: 1,
+    skipped: 0,
     success: false,
     violations: [
       {

@@ -15,6 +15,7 @@ test('successfully validates a json file with a schema', async () => {
   expect(await jsonValidator()).toStrictEqual({
     failed: 0,
     passed: 1,
+    skipped: 0,
     success: true,
     violations: []
   })
@@ -25,6 +26,7 @@ test('successfully validates a json file without using a schema', async () => {
   expect(await jsonValidator()).toStrictEqual({
     failed: 0,
     passed: 1,
+    skipped: 0,
     success: true,
     violations: []
   })
@@ -36,6 +38,7 @@ test('fails to validate a json file without using a schema', async () => {
   expect(await jsonValidator()).toStrictEqual({
     failed: 1,
     passed: 0,
+    skipped: 1,
     success: false,
     violations: [
       {
@@ -52,7 +55,7 @@ test('fails to validate a json file without using a schema', async () => {
   expect(errorMock).toHaveBeenCalledWith(
     '❌ failed to parse JSON file: ./__tests__/fixtures/json/invalid/json1.json'
   )
-  expect(infoMock).not.toHaveBeenCalled()
+  expect(infoMock).toHaveBeenCalledWith('skipping due to exclude match: ./__tests__/fixtures/json/invalid/skip-bad.json')
 })
 
 test('fails to validate a json file with an incorrect schema', async () => {
@@ -60,6 +63,7 @@ test('fails to validate a json file with an incorrect schema', async () => {
   expect(await jsonValidator()).toStrictEqual({
     failed: 1,
     passed: 0,
+    skipped: 0,
     success: false,
     violations: [
       {
@@ -86,6 +90,7 @@ test('fails to validate one json file with an incorrect schema and succeeds on t
   expect(await jsonValidator()).toStrictEqual({
     failed: 1,
     passed: 1,
+    skipped: 0,
     success: false,
     violations: [
       {
