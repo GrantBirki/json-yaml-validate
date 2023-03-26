@@ -32,13 +32,16 @@ Here is a quick example of how to install this action in any workflow:
 
 | Input | Required? | Default | Description |
 | ----- | --------- | ------- | ----------- |
-| `mode` | `false` | `"fail"` | The mode to run the action in `"warn"` or `"fail"` - Default is `"fail"` |
-| `comment` | `false` | `"false"` | Whether or not to comment on a PR with the validation results - `"true"` or `"false"` - Default is `"false"` |
+| `mode` | `false` | `"fail"` | The mode to run the action in `"warn"` or `"fail"` |
+| `comment` | `false` | `"false"` | Whether or not to comment on a PR with the validation results - `"true"` or `"false"` |
 | `base_dir` | `false` | `"."` | The base directory to search for JSON and YAML files (e.g. ./src) - Default is `"."` which searches the entire repository |
 | `json_schema` | `false` | `""` | The full path to the JSON schema file (e.g. ./schemas/schema.json) - Default is `""` which doesn't enforce a strict schema |
-| `json_extension` | `false` | `".json"` | The file extension for JSON files (e.g. .json) - Default is `".json"` |
-| `yaml_extension` | `false` | `".yaml"` | The file extension for YAML files (e.g. .yaml) - Default is `".yaml"` |
-| `yaml_extension_short` | `false` | `".yml"` | The "short" file extension for YAML files (e.g. .yml) - Default is `".yml"` |
+| `json_extension` | `false` | `".json"` | The file extension for JSON files (e.g. .json) |
+| `json_exclude_regex` | `false` | `""` | A regex to exclude files from validation (e.g. `".*\.schema\.json$"` to exclude all files ending with `.schema.json`) - Default is `""` which doesn't exclude any files |
+| `yaml_schema` | `false` | `""` | The full path to the YAML schema file (e.g. ./schemas/schema.yaml) - Default is `""` which doesn't enforce a strict schema |
+| `yaml_extension` | `false` | `".yaml"` | The file extension for YAML files (e.g. .yaml) |
+| `yaml_extension_short` | `false` | `".yml"` | The "short" file extension for YAML files (e.g. .yml) |
+| `yaml_exclude_regex` | `false` | `""` | A regex to exclude files from validation (e.g. `".*\.schema\.yaml$"` to exclude all files ending with `.schema.yaml`) - Default is `""` which doesn't exclude any files |
 | `github_token` | `false` | `${{ github.token }}` | The GitHub token used to create an authenticated client - Provided for you by default! |
 
 ## Outputs 📤

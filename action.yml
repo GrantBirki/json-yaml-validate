@@ -29,6 +29,10 @@ inputs:
     description: The file extension for JSON files (e.g. .json) - Default is ".json"
     required: false
     default: ".json"
+  json_exclude_regex:
+    description: A regex to exclude JSON files from validation (e.g. .*\.schema\.json$) - Default is "" which doesn't exclude any files
+    required: false
+    default: ""
   yaml_schema:
     description: The full path to the YAML schema file (e.g. ./schemas/schema.yml) - Default is "" which doesn't enforce a strict schema
     required: false
@@ -41,6 +45,10 @@ inputs:
     description: The "short" file extension for YAML files (e.g. .yml) - Default is ".yml"
     required: false
     default: ".yml"
+  yaml_exclude_regex:
+    description: A regex to exclude YAML files from validation (e.g. .*\.schema\.yaml$) - Default is "" which doesn't exclude any files
+    required: false
+    default: ""
 outputs:
   success:
     description: Whether or not the validation was successful for all files - "true" or "false"
