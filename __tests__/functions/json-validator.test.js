@@ -5,6 +5,14 @@ const debugMock = jest.spyOn(core, 'debug').mockImplementation(() => {})
 const infoMock = jest.spyOn(core, 'info').mockImplementation(() => {})
 const errorMock = jest.spyOn(core, 'error').mockImplementation(() => {})
 
+class Exclude {
+  isExcluded() {
+    return false
+  }
+}
+
+const excludeMock = new Exclude()
+
 beforeEach(() => {
   jest.clearAllMocks()
   process.env.INPUT_JSON_SCHEMA = './__tests__/fixtures/schemas/schema1.json'
@@ -14,7 +22,7 @@ beforeEach(() => {
 })
 
 test('successfully validates a json file with a schema', async () => {
-  expect(await jsonValidator()).toStrictEqual({
+  expect(await jsonValidator(excludeMock)).toStrictEqual({
     failed: 0,
     passed: 1,
     skipped: 0,
@@ -25,7 +33,7 @@ test('successfully validates a json file with a schema', async () => {
 
 test('successfully validates a json file without using a schema', async () => {
   process.env.INPUT_JSON_SCHEMA = ''
-  expect(await jsonValidator()).toStrictEqual({
+  expect(await jsonValidator(excludeMock)).toStrictEqual({
     failed: 0,
     passed: 1,
     skipped: 0,
@@ -38,7 +46,7 @@ test('successfully validates a json file with a schema and skips the schema as w
   process.env.INPUT_JSON_SCHEMA =
     './__tests__/fixtures/json/project_dir/schemas/schema.json'
   process.env.INPUT_BASE_DIR = './__tests__/fixtures/json/project_dir'
-  expect(await jsonValidator()).toStrictEqual({
+  expect(await jsonValidator(excludeMock)).toStrictEqual({
     failed: 0,
     passed: 1,
     skipped: 0,
@@ -53,7 +61,7 @@ test('successfully validates a json file with a schema and skips the schema as w
 test('fails to validate a json file without using a schema', async () => {
   process.env.INPUT_JSON_SCHEMA = ''
   process.env.INPUT_BASE_DIR = './__tests__/fixtures/json/invalid'
-  expect(await jsonValidator()).toStrictEqual({
+  expect(await jsonValidator(excludeMock)).toStrictEqual({
     failed: 1,
     passed: 0,
     skipped: 1,
@@ -80,7 +88,7 @@ test('fails to validate a json file without using a schema', async () => {
 
 test('fails to validate a json file with an incorrect schema', async () => {
   process.env.INPUT_JSON_SCHEMA = './__tests__/fixtures/schemas/schema2.json'
-  expect(await jsonValidator()).toStrictEqual({
+  expect(await jsonValidator(excludeMock)).toStrictEqual({
     failed: 1,
     passed: 0,
     skipped: 0,
@@ -107,7 +115,7 @@ test('fails to validate a json file with an incorrect schema', async () => {
 test('fails to validate one json file with an incorrect schema and succeeds on the other', async () => {
   process.env.INPUT_JSON_SCHEMA = './__tests__/fixtures/schemas/schema2.json'
   process.env.INPUT_BASE_DIR = './__tests__/fixtures/json/mixture'
-  expect(await jsonValidator()).toStrictEqual({
+  expect(await jsonValidator(excludeMock)).toStrictEqual({
     failed: 1,
     passed: 1,
     skipped: 0,
