@@ -42014,6 +42014,10 @@ class Exclude {
       this.exclude = (0,external_fs_.readFileSync)(this.path, 'utf8')
       // split the exclude file into an array of strings and trim each string
       this.exclude = this.exclude.split('\n').map(item => item.trim())
+      // remove any empty strings
+      this.exclude = this.exclude.filter(item => item !== '')
+      // remove any comments
+      this.exclude = this.exclude.filter(item => !item.startsWith('#'))
     } else {
       this.exclude = []
     }
@@ -42027,20 +42031,13 @@ class Exclude {
       return false
     }
 
+    // remove the leading ./ if it exists
+    if (file.startsWith('./')) {
+      file = file.replace('./', '')
+    }
+
     // loop through each exclude pattern
     for (const pattern of this.exclude) {
-      // if the pattern is a comment, skip it
-      if (pattern.startsWith('#')) {
-        core.debug(`skipping comment: ${pattern}`)
-        continue
-      }
-
-      // if the pattern is empty, skip it
-      if (pattern === '') {
-        core.debug(`skipping empty pattern`)
-        continue
-      }
-
       // if the file exactly matches the pattern, return true
       if (file === pattern) {
         core.debug(`file exactly matches exclude pattern: ${pattern}`)
@@ -42084,6 +42081,7 @@ class Exclude {
     }
 
     // if the file did not match any exclude patterns, return false
+    core.debug(`file '${file}' did not match any exclude patterns`)
     return false
   }
 }
