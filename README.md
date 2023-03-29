@@ -94,7 +94,7 @@ on:
 
 permissions:
   contents: read
-  pull-requests: write # enable write permissions for pull requests
+  pull-requests: write # enable write permissions for pull request comments
 
 jobs:
   json-yaml-validate:
