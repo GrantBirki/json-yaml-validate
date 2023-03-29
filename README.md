@@ -120,7 +120,7 @@ This Action also supports schema validation for both JSON and YAML files.
 References docs for both JSON and YAML schema validation can be found at the links below:
 
 - [JSON Schema Validation Docs](https://ajv.js.org/json-schema.html#json-schema)
-- [YAML Schema Validation Docs](https://github.com/ketanSaxena/schema-validator#yaml-schema)
+- [YAML Schema Validation Docs](https://github.com/ketanSaxena/schema-validator#yaml-schema) - Additional docs [here](https://www.npmjs.com/package/validate)
 
 Assuming the following repository structure:
 
