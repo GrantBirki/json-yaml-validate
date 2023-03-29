@@ -1,0 +1,3 @@
+# this is an exclusion file that is similar to a .gitignore file
+
+exclude-me.json

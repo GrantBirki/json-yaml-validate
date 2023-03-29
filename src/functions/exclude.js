@@ -80,6 +80,7 @@ export class Exclude {
     }
 
     // if the file did not match any exclude patterns, return false
+    core.debug(`file '${file}' did not match any exclude patterns`)
     return false
   }
 }
