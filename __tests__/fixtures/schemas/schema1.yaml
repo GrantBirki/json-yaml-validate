@@ -3,6 +3,9 @@ person:
   name:
     first_name:
       type: string
+      length:
+        min: 2
+        max: 10
   age:
     type: number
     required: true
@@ -10,3 +13,4 @@ person:
     type: boolean
   hobbies:
     - type: string
+      enum: [football, basketball, tennis]

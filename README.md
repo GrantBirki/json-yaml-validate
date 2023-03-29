@@ -120,7 +120,9 @@ This Action also supports schema validation for both JSON and YAML files.
 References docs for both JSON and YAML schema validation can be found at the links below:
 
 - [JSON Schema Validation Docs](https://ajv.js.org/json-schema.html#json-schema)
-- [YAML Schema Validation Docs](https://github.com/ketanSaxena/schema-validator#yaml-schema)
+- [YAML Schema Validation Docs](https://github.com/ketanSaxena/schema-validator#yaml-schema) - Additional docs [here](https://www.npmjs.com/package/validate)
+
+> Note: JSON files and YAML files use two seperate libraries for schema validation
 
 Assuming the following repository structure:
 
@@ -151,6 +153,99 @@ Here is an example of how to use this feature:
 When this Action workflow runs, it will validate all JSON and YAML files in the repository against the schema files in the `schemas/` directory.
 
 > If you want to only validate files in the `data/` directory, you could set the `base_dir` input to `data/`
+
+### JSON Schema Docs
+
+For validating a `.json` file with a `.json` schema
+
+#### JSON Input Example
+
+```json
+{
+  "foo": 1,
+  "bar": "abc"
+}
+
+```
+
+#### JSON Schema Example
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "foo": {
+      "type": "integer"
+    },
+    "bar": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "foo"
+  ],
+  "additionalProperties": false
+}
+```
+
+Details on the fields seen in the schema above:
+
+- `type` - the type of the value, can be one of `string`, `number`, `integer`, `boolean`, `array`, `object`, `null`
+- `required` - an array of strings, each of which is a property name that is required
+- `additionalProperties` - a boolean value that determines if additional properties are allowed in the object
+
+### YAML Schema Docs
+
+For validating a `.yaml` file with a `.yaml` schema
+
+> Note: can also be `.yml` files, both work
+
+#### YAML Input Example
+
+The following is a sample yaml file to input into the validator schema which will be seen below:
+
+```yaml
+---
+person:
+  name:
+    first_name: monalisa
+  age: 2000
+  employeed: true
+  hobbies:
+    - tennis
+    - football
+
+```
+
+#### YAML Schema Example
+
+The schema used to validate the input file from above:
+
+```yaml
+---
+person:
+  name:
+    first_name:
+      type: string
+      length: # define min and max length (optional)
+        min: 2
+        max: 10
+  age:
+    type: number
+    required: true # make this field required (optional)
+  employeed:
+    type: boolean
+  hobbies:
+    - type: string
+      enum: [football, basketball, tennis] # only accept these values (optional)
+```
+
+Details on the fields seen in the schema above:
+
+- `type` - The type of the field (e.g. `string`, `number`, `boolean`, etc)
+- `length` - The length of the field with `min` and `max` constraints
+- `required` - Whether or not the field is required
+- `enums` - An array of values that the field can be
 
 ## Violations Structure Explained
 
