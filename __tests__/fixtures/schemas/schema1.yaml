@@ -10,3 +10,4 @@ person:
     type: boolean
   hobbies:
     - type: string
+      enum: [football, basketball, tennis]
