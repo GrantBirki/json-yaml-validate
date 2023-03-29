@@ -248,6 +248,41 @@ Details on the fields seen in the schema above:
 - `required` - Whether or not the field is required
 - `enums` - An array of values that the field can be
 
+## Excluding Files
+
+There are three main ways you can go about excluding files from being validated with this Action:
+
+- `json_exclude_regex` - A regex string that will be used to exclude **JSON** files from being validated
+- `yaml_exclude_regex` - A regex string that will be used to exclude **YAML** files from being validated
+- `exclude_file` - **best** way to exclude files - A file that contains a list of files to exclude from being validated in *gitignore* format
+
+> It should be strongly noted that both `json_exclude_regex` and `yaml_exclude_regex` options get unwieldy very quickly and are not recommended. The `exclude_file` option is the best way to exclude files from being validated. Especially if you have a large repository with many files.
+
+Example of an `exclude_file`'s contents:
+
+```python
+# exclude all files in the test/ directory
+test/
+
+# exclude a yaml file at an exact path
+src/cool-path/example.yaml
+
+# exclude all json files with some glob matching
+*.test.json
+```
+
+If the file path to your `exclude_file` is `exclude.txt`, you would set the `exclude_file` input to `exclude.txt` like so:
+
+```yaml
+# checkout the repository
+- uses: actions/checkout@v3.5.0
+
+- name: json-yaml-validate
+  uses: GrantBirki/json-yaml-validate@vX.X.X # replace with the latest version
+  with:
+    exclude_file: exclude.txt # gitignore style file that contains a list of files to exclude
+```
+
 ## Violations Structure Explained
 
 Below is a very simple example of a violation warning that you might see in this Action in your Action's logs or as a comment on a pull request:
