@@ -24,11 +24,27 @@ test('successfully excludes a with a glob match', () => {
   )
 })
 
-test('successfully does not exclude a negate pattern', () => {
+test('successfully does not exclude a negate pattern match', () => {
   const exclude = new Exclude()
   expect(exclude.isExcluded('cat.txt')).toBe(false)
   expect(debugMock).toHaveBeenCalledWith(
     `file matches exclude negation pattern: !cat.txt`
+  )
+})
+
+test('successfully excludes a file where the negate pattern matches after', () => {
+  const exclude = new Exclude()
+  expect(exclude.isExcluded('dog.txt')).toBe(true)
+  expect(debugMock).toHaveBeenCalledWith(
+    `file exactly matches exclude pattern: dog.txt`
+  )
+})
+
+test('successfully excludes with a regex pattern match', () => {
+  const exclude = new Exclude()
+  expect(exclude.isExcluded('src/app/cars-and-a-bus.txt')).toBe(true)
+  expect(debugMock).toHaveBeenCalledWith(
+    `file matches exclude regex pattern: /^.*cars.*\\.txt$/`
   )
 })
 
