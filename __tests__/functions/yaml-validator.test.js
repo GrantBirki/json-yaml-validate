@@ -121,6 +121,11 @@ test('fails to validate one yaml file with an incorrect schema and succeeds on t
           {
             path: 'person.age',
             message: 'person.age must be of type String.'
+          },
+          {
+            path: 'person.hobbies.1',
+            message:
+              'person.hobbies.1 must be either football, basketball or tennis.'
           }
         ]
       }
