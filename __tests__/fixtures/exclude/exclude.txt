@@ -3,3 +3,11 @@
 exclude-me.json
 
 evil-base-dir/
+
+# here are some glob matches
+
+*.exclude
+
+# test a negate pattern where the negate pattern is the first pattern
+!cat.txt
+cat.txt

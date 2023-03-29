@@ -16,6 +16,22 @@ test('successfully excludes a file', () => {
   )
 })
 
+test('successfully excludes a with a glob match', () => {
+  const exclude = new Exclude()
+  expect(exclude.isExcluded('src/dev/app/nope.exclude')).toBe(true)
+  expect(debugMock).toHaveBeenCalledWith(
+    `file matches exclude glob pattern: *.exclude`
+  )
+})
+
+test('successfully does not exclude a negate pattern', () => {
+  const exclude = new Exclude()
+  expect(exclude.isExcluded('cat.txt')).toBe(false)
+  expect(debugMock).toHaveBeenCalledWith(
+    `file matches exclude negation pattern: !cat.txt`
+  )
+})
+
 test('successfully excludes a file in a dir one level down', () => {
   const exclude = new Exclude()
   expect(exclude.isExcluded('./evil-base-dir/exclude-me.json')).toBe(true)
