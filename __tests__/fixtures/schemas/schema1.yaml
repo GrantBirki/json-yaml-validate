@@ -3,6 +3,9 @@ person:
   name:
     first_name:
       type: string
+      length:
+        min: 2
+        max: 10
   age:
     type: number
     required: true
