@@ -32,6 +32,22 @@ test('successfully validates a yaml file with a schema', async () => {
   })
 })
 
+test('successfully skips a file found in the exclude txt file', async () => {
+  class Exclude {
+    isExcluded() {
+      return true
+    }
+  }
+  const excludeMock = new Exclude()
+  expect(await yamlValidator(excludeMock)).toStrictEqual({
+    failed: 0,
+    passed: 0,
+    skipped: 1,
+    success: true,
+    violations: []
+  })
+})
+
 test('successfully validates a yaml file without using a schema', async () => {
   process.env.INPUT_YAML_SCHEMA = ''
   expect(await yamlValidator(excludeMock)).toStrictEqual({

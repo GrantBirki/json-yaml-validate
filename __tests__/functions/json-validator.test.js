@@ -42,6 +42,23 @@ test('successfully validates a json file without using a schema', async () => {
   })
 })
 
+test('successfully skips a file found in the exclude txt file', async () => {
+  process.env.INPUT_JSON_SCHEMA = ''
+  class Exclude {
+    isExcluded() {
+      return true
+    }
+  }
+  const excludeMock = new Exclude()
+  expect(await jsonValidator(excludeMock)).toStrictEqual({
+    failed: 0,
+    passed: 0,
+    skipped: 1,
+    success: true,
+    violations: []
+  })
+})
+
 test('successfully validates a json file with a schema and skips the schema as well', async () => {
   process.env.INPUT_JSON_SCHEMA =
     './__tests__/fixtures/json/project_dir/schemas/schema.json'
