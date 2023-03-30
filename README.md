@@ -20,7 +20,7 @@ You can provide schemas to check against, or just validate the syntax of the fil
 Here is a quick example of how to install this action in any workflow:
 
 ```yaml
-# checkout the repository
+# checkout the repository (required for this Action to work)
 - uses: actions/checkout@v3.5.0
 
 # validate JSON and YAML files
