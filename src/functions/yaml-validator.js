@@ -5,7 +5,7 @@ import {globSync} from 'glob'
 import {parse} from 'yaml'
 
 // Helper function to validate all yaml files in the baseDir
-export async function yamlValidator() {
+export async function yamlValidator(exclude) {
   const baseDir = core.getInput('base_dir').trim()
   const yamlExtension = core.getInput('yaml_extension').trim()
   const yamlExtensionShort = core.getInput('yaml_extension_short').trim()
@@ -52,6 +52,12 @@ export async function yamlValidator() {
         result.skipped++
         continue
       }
+    }
+
+    if (exclude.isExcluded(fullPath)) {
+      core.info(`skipping due to exclude match: ${fullPath}`)
+      result.skipped++
+      continue
     }
 
     try {

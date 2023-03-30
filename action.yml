@@ -49,6 +49,10 @@ inputs:
     description: A regex to exclude YAML files from validation (e.g. .*\.schema\.yaml$) - Default is "" which doesn't exclude any files
     required: false
     default: ""
+  exclude_file:
+    description: The full path to a file in the repository where this Action is running that contains a list of '.gitignore'-style patterns to exclude files from validation (e.g. ./exclude.txt)
+    required: false
+    default: ""
 outputs:
   success:
     description: Whether or not the validation was successful for all files - "true" or "false"

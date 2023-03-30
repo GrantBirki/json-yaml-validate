@@ -20,7 +20,7 @@ You can provide schemas to check against, or just validate the syntax of the fil
 Here is a quick example of how to install this action in any workflow:
 
 ```yaml
-# checkout the repository
+# checkout the repository (required for this Action to work)
 - uses: actions/checkout@v3.5.0
 
 # validate JSON and YAML files
@@ -42,6 +42,7 @@ Here is a quick example of how to install this action in any workflow:
 | `yaml_extension` | `false` | `".yaml"` | The file extension for YAML files (e.g. .yaml) |
 | `yaml_extension_short` | `false` | `".yml"` | The "short" file extension for YAML files (e.g. .yml) |
 | `yaml_exclude_regex` | `false` | `""` | A regex to exclude files from validation (e.g. `".*\.schema\.yaml$"` to exclude all files ending with `.schema.yaml`) - Default is `""` which doesn't exclude any files |
+| `exclude_file` | `false` | `""` | The full path to a file in the repository where this Action is running that contains a list of '.gitignore'-style patterns to exclude files from validation (e.g. ./exclude.txt) |
 | `github_token` | `false` | `${{ github.token }}` | The GitHub token used to create an authenticated client - Provided for you by default! |
 
 ## Outputs 📤
@@ -246,6 +247,41 @@ Details on the fields seen in the schema above:
 - `length` - The length of the field with `min` and `max` constraints
 - `required` - Whether or not the field is required
 - `enums` - An array of values that the field can be
+
+## Excluding Files
+
+There are three main ways you can go about excluding files from being validated with this Action:
+
+- `json_exclude_regex` - A regex string that will be used to exclude **JSON** files from being validated
+- `yaml_exclude_regex` - A regex string that will be used to exclude **YAML** files from being validated
+- `exclude_file` - **best** way to exclude files - A file that contains a list of files to exclude from being validated in *gitignore* format
+
+> It should be strongly noted that both `json_exclude_regex` and `yaml_exclude_regex` options get unwieldy very quickly and are not recommended. The `exclude_file` option is the best way to exclude files from being validated. Especially if you have a large repository with many files.
+
+Example of an `exclude_file`'s contents:
+
+```python
+# exclude all files in the test/ directory
+test/
+
+# exclude a yaml file at an exact path
+src/cool-path/example.yaml
+
+# exclude all json files with some glob matching
+*.test.json
+```
+
+If the file path to your `exclude_file` is `exclude.txt`, you would set the `exclude_file` input to `exclude.txt` like so:
+
+```yaml
+# checkout the repository
+- uses: actions/checkout@v3.5.0
+
+- name: json-yaml-validate
+  uses: GrantBirki/json-yaml-validate@vX.X.X # replace with the latest version
+  with:
+    exclude_file: exclude.txt # gitignore style file that contains a list of files to exclude
+```
 
 ## Violations Structure Explained
 

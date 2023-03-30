@@ -26,7 +26,7 @@ async function schema(jsonSchema) {
 }
 
 // Helper function to validate all json files in the baseDir
-export async function jsonValidator() {
+export async function jsonValidator(exclude) {
   const baseDir = core.getInput('base_dir').trim()
   const jsonExtension = core.getInput('json_extension').trim()
   const jsonExcludeRegex = core.getInput('json_exclude_regex').trim()
@@ -70,6 +70,12 @@ export async function jsonValidator() {
         result.skipped++
         continue
       }
+    }
+
+    if (exclude.isExcluded(fullPath)) {
+      core.info(`skipping due to exclude match: ${fullPath}`)
+      result.skipped++
+      continue
     }
 
     var data

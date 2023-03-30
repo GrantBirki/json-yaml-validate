@@ -1,0 +1,20 @@
+# this is an exclusion file that is similar to a .gitignore file
+
+exclude-me.json
+
+evil-base-dir/
+
+# here are some glob matches
+
+*.exclude
+
+# test a negate pattern where the negate pattern is the first pattern
+!cat.txt
+cat.txt
+
+# test a negate pattern where the negate pattern is the second pattern
+dog.txt
+!dog.txt
+
+# test with a regex pattern match
+/^.*cars.*\.txt$/

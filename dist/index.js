@@ -41603,7 +41603,7 @@ async function schema(jsonSchema) {
 }
 
 // Helper function to validate all json files in the baseDir
-async function jsonValidator() {
+async function jsonValidator(exclude) {
   const baseDir = core.getInput('base_dir').trim()
   const jsonExtension = core.getInput('json_extension').trim()
   const jsonExcludeRegex = core.getInput('json_exclude_regex').trim()
@@ -41647,6 +41647,12 @@ async function jsonValidator() {
         result.skipped++
         continue
       }
+    }
+
+    if (exclude.isExcluded(fullPath)) {
+      core.info(`skipping due to exclude match: ${fullPath}`)
+      result.skipped++
+      continue
     }
 
     var data
@@ -41722,7 +41728,7 @@ var dist = __nccwpck_require__(4083);
 
 
 // Helper function to validate all yaml files in the baseDir
-async function yamlValidator() {
+async function yamlValidator(exclude) {
   const baseDir = core.getInput('base_dir').trim()
   const yamlExtension = core.getInput('yaml_extension').trim()
   const yamlExtensionShort = core.getInput('yaml_extension_short').trim()
@@ -41769,6 +41775,12 @@ async function yamlValidator() {
         result.skipped++
         continue
       }
+    }
+
+    if (exclude.isExcluded(fullPath)) {
+      core.info(`skipping due to exclude match: ${fullPath}`)
+      result.skipped++
+      continue
     }
 
     try {
@@ -41989,14 +42001,100 @@ async function processResults(jsonResults, yamlResults) {
   return false
 }
 
+;// CONCATENATED MODULE: ./src/functions/exclude.js
+
+
+
+class Exclude {
+  constructor() {
+    this.path = core.getInput('exclude_file').trim()
+
+    // read the exclude file if it was used
+    if (this.path && this.path !== '') {
+      this.exclude = (0,external_fs_.readFileSync)(this.path, 'utf8')
+      // split the exclude file into an array of strings and trim each string
+      this.exclude = this.exclude.split('\n').map(item => item.trim())
+      // remove any empty strings
+      this.exclude = this.exclude.filter(item => item !== '')
+      // remove any comments
+      this.exclude = this.exclude.filter(item => !item.startsWith('#'))
+    } else {
+      this.exclude = []
+    }
+  }
+
+  isExcluded(file) {
+    // use .gitignore style matching
+    // https://git-scm.com/docs/gitignore
+
+    if (this.exclude.length === 0) {
+      return false
+    }
+
+    // remove the leading ./ if it exists
+    if (file.startsWith('./')) {
+      file = file.replace('./', '')
+    }
+
+    // loop through each exclude pattern
+    for (const pattern of this.exclude) {
+      // if the file exactly matches the pattern, return true
+      if (file === pattern) {
+        core.debug(`file exactly matches exclude pattern: ${pattern}`)
+        return true
+      }
+
+      // if the pattern is a negation, check if the file matches the negation
+      if (pattern.startsWith('!')) {
+        const regex = new RegExp(pattern.replace(/^!/, ''))
+        if (file.match(regex)) {
+          core.debug(`file matches exclude negation pattern: ${pattern}`)
+          return false
+        }
+      }
+
+      // if the pattern is a directory, check if the file is in that directory
+      if (pattern.endsWith('/')) {
+        if (file.startsWith(pattern)) {
+          core.debug(`file is in exclude directory: ${pattern}`)
+          return true
+        }
+      }
+
+      // if the pattern is a glob, check if the file matches the glob
+      if (pattern.includes('*')) {
+        const regex = new RegExp(pattern.replace(/\*/g, '.*'))
+        if (file.match(regex)) {
+          core.debug(`file matches exclude glob pattern: ${pattern}`)
+          return true
+        }
+      }
+
+      // if the pattern is a regex, check if the file matches the regex
+      if (pattern.startsWith('/') && pattern.endsWith('/')) {
+        const regex = new RegExp(pattern.replace(/\//g, ''))
+        if (file.match(regex)) {
+          core.debug(`file matches exclude regex pattern: ${pattern}`)
+          return true
+        }
+      }
+    }
+
+    // if the file did not match any exclude patterns, return false
+    core.debug(`file '${file}' did not match any exclude patterns`)
+    return false
+  }
+}
+
 ;// CONCATENATED MODULE: ./src/main.js
 
 
 
 
+
 async function run() {
-  const jsonResults = await jsonValidator()
-  const yamlResults = await yamlValidator()
+  const jsonResults = await jsonValidator(new Exclude())
+  const yamlResults = await yamlValidator(new Exclude())
   await processResults(jsonResults, yamlResults)
 }
 
