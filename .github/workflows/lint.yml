@@ -10,19 +10,12 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3.5.0
-
-      # check the node version from the .node-version file
-      - name: fetch node version
-        id: node-version
-        run: |
-          version=$(cat .node-version)
-          echo "version=${version}" >> $GITHUB_OUTPUT
+      - uses: actions/checkout@v3
 
       - name: setup node
         uses: actions/setup-node@v3.6.0
         with:
-          node-version: ${{ steps.node-version.outputs.version }}
+          node-version-file: .node-version
           cache: 'npm'
 
       - name: install dependencies
