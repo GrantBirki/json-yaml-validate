@@ -29048,7 +29048,7 @@ const prettifyError = (src, lc) => (error) => {
         let count = 1;
         const end = error.linePos[1];
         if (end && end.line === line && end.col > col) {
-            count = Math.min(end.col - col, 80 - ci);
+            count = Math.max(1, Math.min(end.col - col, 80 - ci));
         }
         const pointer = ' '.repeat(ci) + '^'.repeat(count);
         error.message += `:\n\n${lineStr}\n${pointer}\n`;
@@ -33958,7 +33958,7 @@ function stringifyFlowCollection({ comment, items }, ctx, { flowChars, itemInden
         }
     }
     if (comment) {
-        str += stringifyComment.lineComment(str, commentString(comment), indent);
+        str += stringifyComment.lineComment(str, indent, commentString(comment));
         if (onComment)
             onComment();
     }
@@ -34308,8 +34308,8 @@ exports.stringifyPair = stringifyPair;
 var Scalar = __nccwpck_require__(9338);
 var foldFlowLines = __nccwpck_require__(2889);
 
-const getFoldOptions = (ctx) => ({
-    indentAtStart: ctx.indentAtStart,
+const getFoldOptions = (ctx, isBlock) => ({
+    indentAtStart: isBlock ? ctx.indent.length : ctx.indentAtStart,
     lineWidth: ctx.options.lineWidth,
     minContentWidth: ctx.options.minContentWidth
 });
@@ -34422,7 +34422,7 @@ function doubleQuotedString(value, ctx) {
     str = start ? str + json.slice(start) : json;
     return implicitKey
         ? str
-        : foldFlowLines.foldFlowLines(str, indent, foldFlowLines.FOLD_QUOTED, getFoldOptions(ctx));
+        : foldFlowLines.foldFlowLines(str, indent, foldFlowLines.FOLD_QUOTED, getFoldOptions(ctx, false));
 }
 function singleQuotedString(value, ctx) {
     if (ctx.options.singleQuote === false ||
@@ -34434,7 +34434,7 @@ function singleQuotedString(value, ctx) {
     const res = "'" + value.replace(/'/g, "''").replace(/\n+/g, `$&\n${indent}`) + "'";
     return ctx.implicitKey
         ? res
-        : foldFlowLines.foldFlowLines(res, indent, foldFlowLines.FOLD_FLOW, getFoldOptions(ctx));
+        : foldFlowLines.foldFlowLines(res, indent, foldFlowLines.FOLD_FLOW, getFoldOptions(ctx, false));
 }
 function quotedString(value, ctx) {
     const { singleQuote } = ctx.options;
@@ -34532,7 +34532,7 @@ function blockString({ comment, type, value }, ctx, onComment, onChompKeep) {
         .replace(/(?:^|\n)([\t ].*)(?:([\n\t ]*)\n(?![\n\t ]))?/g, '$1$2') // more-indented lines aren't folded
         //                ^ more-ind. ^ empty     ^ capture next empty lines only at end of indent
         .replace(/\n+/g, `$&${indent}`);
-    const body = foldFlowLines.foldFlowLines(`${start}${value}${end}`, indent, foldFlowLines.FOLD_BLOCK, getFoldOptions(ctx));
+    const body = foldFlowLines.foldFlowLines(`${start}${value}${end}`, indent, foldFlowLines.FOLD_BLOCK, getFoldOptions(ctx, true));
     return `${header}\n${indent}${body}`;
 }
 function plainString(item, ctx, onComment, onChompKeep) {
@@ -34582,7 +34582,7 @@ function plainString(item, ctx, onComment, onChompKeep) {
     }
     return implicitKey
         ? str
-        : foldFlowLines.foldFlowLines(str, indent, foldFlowLines.FOLD_FLOW, getFoldOptions(ctx));
+        : foldFlowLines.foldFlowLines(str, indent, foldFlowLines.FOLD_FLOW, getFoldOptions(ctx, false));
 }
 function stringifyString(item, ctx, onComment, onChompKeep) {
     const { implicitKey, inFlow } = ctx;
@@ -35046,6 +35046,17 @@ var external_fs_ = __nccwpck_require__(7147);
 var external_fs_namespaceObject = /*#__PURE__*/__nccwpck_require__.t(external_fs_, 2);
 // EXTERNAL MODULE: ./node_modules/glob/node_modules/brace-expansion/index.js
 var brace_expansion = __nccwpck_require__(1046);
+;// CONCATENATED MODULE: ./node_modules/glob/node_modules/minimatch/dist/mjs/assert-valid-pattern.js
+const MAX_PATTERN_LENGTH = 1024 * 64;
+const assertValidPattern = (pattern) => {
+    if (typeof pattern !== 'string') {
+        throw new TypeError('invalid pattern');
+    }
+    if (pattern.length > MAX_PATTERN_LENGTH) {
+        throw new TypeError('pattern is too long');
+    }
+};
+//# sourceMappingURL=assert-valid-pattern.js.map
 ;// CONCATENATED MODULE: ./node_modules/glob/node_modules/minimatch/dist/mjs/brace-expressions.js
 // translate the various posix character classes into unicode properties
 // this works across all unicode locales
@@ -35195,25 +35206,6 @@ const parseClass = (glob, position) => {
     return [comb, uflag, endPos - pos, true];
 };
 //# sourceMappingURL=brace-expressions.js.map
-;// CONCATENATED MODULE: ./node_modules/glob/node_modules/minimatch/dist/mjs/escape.js
-/**
- * Escape all magic characters in a glob pattern.
- *
- * If the {@link windowsPathsNoEscape | GlobOptions.windowsPathsNoEscape}
- * option is used, then characters are escaped by wrapping in `[]`, because
- * a magic character wrapped in a character class can only be satisfied by
- * that exact character.  In this mode, `\` is _not_ escaped, because it is
- * not interpreted as a magic character, but instead as a path separator.
- */
-const escape_escape = (s, { windowsPathsNoEscape = false, } = {}) => {
-    // don't need to escape +@! because we escape the parens
-    // that make those magic, and escaping ! as [!] isn't valid,
-    // because [!]] is a valid glob class meaning not ']'.
-    return windowsPathsNoEscape
-        ? s.replace(/[?*()[\]]/g, '[$&]')
-        : s.replace(/[?*()[\]\\]/g, '\\$&');
-};
-//# sourceMappingURL=escape.js.map
 ;// CONCATENATED MODULE: ./node_modules/glob/node_modules/minimatch/dist/mjs/unescape.js
 /**
  * Un-escape a string that has been escaped with {@link escape}.
@@ -35235,7 +35227,590 @@ const unescape_unescape = (s, { windowsPathsNoEscape = false, } = {}) => {
         : s.replace(/((?!\\).|^)\[([^\/\\])\]/g, '$1$2').replace(/\\([^\/])/g, '$1');
 };
 //# sourceMappingURL=unescape.js.map
+;// CONCATENATED MODULE: ./node_modules/glob/node_modules/minimatch/dist/mjs/ast.js
+// parse a single path portion
+
+
+const types = new Set(['!', '?', '+', '*', '@']);
+const isExtglobType = (c) => types.has(c);
+// Patterns that get prepended to bind to the start of either the
+// entire string, or just a single path portion, to prevent dots
+// and/or traversal patterns, when needed.
+// Exts don't need the ^ or / bit, because the root binds that already.
+const startNoTraversal = '(?!\\.\\.?(?:$|/))';
+const startNoDot = '(?!\\.)';
+// characters that indicate a start of pattern needs the "no dots" bit,
+// because a dot *might* be matched. ( is not in the list, because in
+// the case of a child extglob, it will handle the prevention itself.
+const addPatternStart = new Set(['[', '.']);
+// cases where traversal is A-OK, no dot prevention needed
+const justDots = new Set(['..', '.']);
+const reSpecials = new Set('().*{}+?[]^$\\!');
+const regExpEscape = (s) => s.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&');
+// any single thing other than /
+const qmark = '[^/]';
+// * => any number of characters
+const star = qmark + '*?';
+// use + when we need to ensure that *something* matches, because the * is
+// the only thing in the path portion.
+const starNoEmpty = qmark + '+?';
+// remove the \ chars that we added if we end up doing a nonmagic compare
+// const deslash = (s: string) => s.replace(/\\(.)/g, '$1')
+class AST {
+    type;
+    #root;
+    #hasMagic;
+    #uflag = false;
+    #parts = [];
+    #parent;
+    #parentIndex;
+    #negs;
+    #filledNegs = false;
+    #options;
+    #toString;
+    // set to true if it's an extglob with no children
+    // (which really means one child of '')
+    #emptyExt = false;
+    constructor(type, parent, options = {}) {
+        this.type = type;
+        // extglobs are inherently magical
+        if (type)
+            this.#hasMagic = true;
+        this.#parent = parent;
+        this.#root = this.#parent ? this.#parent.#root : this;
+        this.#options = this.#root === this ? options : this.#root.#options;
+        this.#negs = this.#root === this ? [] : this.#root.#negs;
+        if (type === '!' && !this.#root.#filledNegs)
+            this.#negs.push(this);
+        this.#parentIndex = this.#parent ? this.#parent.#parts.length : 0;
+    }
+    get hasMagic() {
+        /* c8 ignore start */
+        if (this.#hasMagic !== undefined)
+            return this.#hasMagic;
+        /* c8 ignore stop */
+        for (const p of this.#parts) {
+            if (typeof p === 'string')
+                continue;
+            if (p.type || p.hasMagic)
+                return (this.#hasMagic = true);
+        }
+        // note: will be undefined until we generate the regexp src and find out
+        return this.#hasMagic;
+    }
+    // reconstructs the pattern
+    toString() {
+        if (this.#toString !== undefined)
+            return this.#toString;
+        if (!this.type) {
+            return (this.#toString = this.#parts.map(p => String(p)).join(''));
+        }
+        else {
+            return (this.#toString =
+                this.type + '(' + this.#parts.map(p => String(p)).join('|') + ')');
+        }
+    }
+    #fillNegs() {
+        /* c8 ignore start */
+        if (this !== this.#root)
+            throw new Error('should only call on root');
+        if (this.#filledNegs)
+            return this;
+        /* c8 ignore stop */
+        // call toString() once to fill this out
+        this.toString();
+        this.#filledNegs = true;
+        let n;
+        while ((n = this.#negs.pop())) {
+            if (n.type !== '!')
+                continue;
+            // walk up the tree, appending everthing that comes AFTER parentIndex
+            let p = n;
+            let pp = p.#parent;
+            while (pp) {
+                for (let i = p.#parentIndex + 1; !pp.type && i < pp.#parts.length; i++) {
+                    for (const part of n.#parts) {
+                        /* c8 ignore start */
+                        if (typeof part === 'string') {
+                            throw new Error('string part in extglob AST??');
+                        }
+                        /* c8 ignore stop */
+                        part.copyIn(pp.#parts[i]);
+                    }
+                }
+                p = pp;
+                pp = p.#parent;
+            }
+        }
+        return this;
+    }
+    push(...parts) {
+        for (const p of parts) {
+            if (p === '')
+                continue;
+            /* c8 ignore start */
+            if (typeof p !== 'string' && !(p instanceof AST && p.#parent === this)) {
+                throw new Error('invalid part: ' + p);
+            }
+            /* c8 ignore stop */
+            this.#parts.push(p);
+        }
+    }
+    toJSON() {
+        const ret = this.type === null
+            ? this.#parts.slice().map(p => (typeof p === 'string' ? p : p.toJSON()))
+            : [this.type, ...this.#parts.map(p => p.toJSON())];
+        if (this.isStart() && !this.type)
+            ret.unshift([]);
+        if (this.isEnd() &&
+            (this === this.#root ||
+                (this.#root.#filledNegs && this.#parent?.type === '!'))) {
+            ret.push({});
+        }
+        return ret;
+    }
+    isStart() {
+        if (this.#root === this)
+            return true;
+        // if (this.type) return !!this.#parent?.isStart()
+        if (!this.#parent?.isStart())
+            return false;
+        if (this.#parentIndex === 0)
+            return true;
+        // if everything AHEAD of this is a negation, then it's still the "start"
+        const p = this.#parent;
+        for (let i = 0; i < this.#parentIndex; i++) {
+            const pp = p.#parts[i];
+            if (!(pp instanceof AST && pp.type === '!')) {
+                return false;
+            }
+        }
+        return true;
+    }
+    isEnd() {
+        if (this.#root === this)
+            return true;
+        if (this.#parent?.type === '!')
+            return true;
+        if (!this.#parent?.isEnd())
+            return false;
+        if (!this.type)
+            return this.#parent?.isEnd();
+        // if not root, it'll always have a parent
+        /* c8 ignore start */
+        const pl = this.#parent ? this.#parent.#parts.length : 0;
+        /* c8 ignore stop */
+        return this.#parentIndex === pl - 1;
+    }
+    copyIn(part) {
+        if (typeof part === 'string')
+            this.push(part);
+        else
+            this.push(part.clone(this));
+    }
+    clone(parent) {
+        const c = new AST(this.type, parent);
+        for (const p of this.#parts) {
+            c.copyIn(p);
+        }
+        return c;
+    }
+    static #parseAST(str, ast, pos, opt) {
+        let escaping = false;
+        let inBrace = false;
+        let braceStart = -1;
+        let braceNeg = false;
+        if (ast.type === null) {
+            // outside of a extglob, append until we find a start
+            let i = pos;
+            let acc = '';
+            while (i < str.length) {
+                const c = str.charAt(i++);
+                // still accumulate escapes at this point, but we do ignore
+                // starts that are escaped
+                if (escaping || c === '\\') {
+                    escaping = !escaping;
+                    acc += c;
+                    continue;
+                }
+                if (inBrace) {
+                    if (i === braceStart + 1) {
+                        if (c === '^' || c === '!') {
+                            braceNeg = true;
+                        }
+                    }
+                    else if (c === ']' && !(i === braceStart + 2 && braceNeg)) {
+                        inBrace = false;
+                    }
+                    acc += c;
+                    continue;
+                }
+                else if (c === '[') {
+                    inBrace = true;
+                    braceStart = i;
+                    braceNeg = false;
+                    acc += c;
+                    continue;
+                }
+                if (!opt.noext && isExtglobType(c) && str.charAt(i) === '(') {
+                    ast.push(acc);
+                    acc = '';
+                    const ext = new AST(c, ast);
+                    i = AST.#parseAST(str, ext, i, opt);
+                    ast.push(ext);
+                    continue;
+                }
+                acc += c;
+            }
+            ast.push(acc);
+            return i;
+        }
+        // some kind of extglob, pos is at the (
+        // find the next | or )
+        let i = pos + 1;
+        let part = new AST(null, ast);
+        const parts = [];
+        let acc = '';
+        while (i < str.length) {
+            const c = str.charAt(i++);
+            // still accumulate escapes at this point, but we do ignore
+            // starts that are escaped
+            if (escaping || c === '\\') {
+                escaping = !escaping;
+                acc += c;
+                continue;
+            }
+            if (inBrace) {
+                if (i === braceStart + 1) {
+                    if (c === '^' || c === '!') {
+                        braceNeg = true;
+                    }
+                }
+                else if (c === ']' && !(i === braceStart + 2 && braceNeg)) {
+                    inBrace = false;
+                }
+                acc += c;
+                continue;
+            }
+            else if (c === '[') {
+                inBrace = true;
+                braceStart = i;
+                braceNeg = false;
+                acc += c;
+                continue;
+            }
+            if (isExtglobType(c) && str.charAt(i) === '(') {
+                part.push(acc);
+                acc = '';
+                const ext = new AST(c, part);
+                part.push(ext);
+                i = AST.#parseAST(str, ext, i, opt);
+                continue;
+            }
+            if (c === '|') {
+                part.push(acc);
+                acc = '';
+                parts.push(part);
+                part = new AST(null, ast);
+                continue;
+            }
+            if (c === ')') {
+                if (acc === '' && ast.#parts.length === 0) {
+                    ast.#emptyExt = true;
+                }
+                part.push(acc);
+                acc = '';
+                ast.push(...parts, part);
+                return i;
+            }
+            acc += c;
+        }
+        // unfinished extglob
+        // if we got here, it was a malformed extglob! not an extglob, but
+        // maybe something else in there.
+        ast.type = null;
+        ast.#hasMagic = undefined;
+        ast.#parts = [str.substring(pos - 1)];
+        return i;
+    }
+    static fromGlob(pattern, options = {}) {
+        const ast = new AST(null, undefined, options);
+        AST.#parseAST(pattern, ast, 0, options);
+        return ast;
+    }
+    // returns the regular expression if there's magic, or the unescaped
+    // string if not.
+    toMMPattern() {
+        // should only be called on root
+        /* c8 ignore start */
+        if (this !== this.#root)
+            return this.#root.toMMPattern();
+        /* c8 ignore stop */
+        const glob = this.toString();
+        const [re, body, hasMagic, uflag] = this.toRegExpSource();
+        // if we're in nocase mode, and not nocaseMagicOnly, then we do
+        // still need a regular expression if we have to case-insensitively
+        // match capital/lowercase characters.
+        const anyMagic = hasMagic ||
+            this.#hasMagic ||
+            (this.#options.nocase &&
+                !this.#options.nocaseMagicOnly &&
+                glob.toUpperCase() !== glob.toLowerCase());
+        if (!anyMagic) {
+            return body;
+        }
+        const flags = (this.#options.nocase ? 'i' : '') + (uflag ? 'u' : '');
+        return Object.assign(new RegExp(`^${re}$`, flags), {
+            _src: re,
+            _glob: glob,
+        });
+    }
+    // returns the string match, the regexp source, whether there's magic
+    // in the regexp (so a regular expression is required) and whether or
+    // not the uflag is needed for the regular expression (for posix classes)
+    // TODO: instead of injecting the start/end at this point, just return
+    // the BODY of the regexp, along with the start/end portions suitable
+    // for binding the start/end in either a joined full-path makeRe context
+    // (where we bind to (^|/), or a standalone matchPart context (where
+    // we bind to ^, and not /).  Otherwise slashes get duped!
+    //
+    // In part-matching mode, the start is:
+    // - if not isStart: nothing
+    // - if traversal possible, but not allowed: ^(?!\.\.?$)
+    // - if dots allowed or not possible: ^
+    // - if dots possible and not allowed: ^(?!\.)
+    // end is:
+    // - if not isEnd(): nothing
+    // - else: $
+    //
+    // In full-path matching mode, we put the slash at the START of the
+    // pattern, so start is:
+    // - if first pattern: same as part-matching mode
+    // - if not isStart(): nothing
+    // - if traversal possible, but not allowed: /(?!\.\.?(?:$|/))
+    // - if dots allowed or not possible: /
+    // - if dots possible and not allowed: /(?!\.)
+    // end is:
+    // - if last pattern, same as part-matching mode
+    // - else nothing
+    //
+    // Always put the (?:$|/) on negated tails, though, because that has to be
+    // there to bind the end of the negated pattern portion, and it's easier to
+    // just stick it in now rather than try to inject it later in the middle of
+    // the pattern.
+    //
+    // We can just always return the same end, and leave it up to the caller
+    // to know whether it's going to be used joined or in parts.
+    // And, if the start is adjusted slightly, can do the same there:
+    // - if not isStart: nothing
+    // - if traversal possible, but not allowed: (?:/|^)(?!\.\.?$)
+    // - if dots allowed or not possible: (?:/|^)
+    // - if dots possible and not allowed: (?:/|^)(?!\.)
+    //
+    // But it's better to have a simpler binding without a conditional, for
+    // performance, so probably better to return both start options.
+    //
+    // Then the caller just ignores the end if it's not the first pattern,
+    // and the start always gets applied.
+    //
+    // But that's always going to be $ if it's the ending pattern, or nothing,
+    // so the caller can just attach $ at the end of the pattern when building.
+    //
+    // So the todo is:
+    // - better detect what kind of start is needed
+    // - return both flavors of starting pattern
+    // - attach $ at the end of the pattern when creating the actual RegExp
+    //
+    // Ah, but wait, no, that all only applies to the root when the first pattern
+    // is not an extglob. If the first pattern IS an extglob, then we need all
+    // that dot prevention biz to live in the extglob portions, because eg
+    // +(*|.x*) can match .xy but not .yx.
+    //
+    // So, return the two flavors if it's #root and the first child is not an
+    // AST, otherwise leave it to the child AST to handle it, and there,
+    // use the (?:^|/) style of start binding.
+    //
+    // Even simplified further:
+    // - Since the start for a join is eg /(?!\.) and the start for a part
+    // is ^(?!\.), we can just prepend (?!\.) to the pattern (either root
+    // or start or whatever) and prepend ^ or / at the Regexp construction.
+    toRegExpSource() {
+        if (this.#root === this)
+            this.#fillNegs();
+        if (!this.type) {
+            const noEmpty = this.isStart() && this.isEnd();
+            const src = this.#parts
+                .map(p => {
+                const [re, _, hasMagic, uflag] = typeof p === 'string'
+                    ? AST.#parseGlob(p, this.#hasMagic, noEmpty)
+                    : p.toRegExpSource();
+                this.#hasMagic = this.#hasMagic || hasMagic;
+                this.#uflag = this.#uflag || uflag;
+                return re;
+            })
+                .join('');
+            let start = '';
+            if (this.isStart()) {
+                if (typeof this.#parts[0] === 'string') {
+                    // this is the string that will match the start of the pattern,
+                    // so we need to protect against dots and such.
+                    // '.' and '..' cannot match unless the pattern is that exactly,
+                    // even if it starts with . or dot:true is set.
+                    const dotTravAllowed = this.#parts.length === 1 && justDots.has(this.#parts[0]);
+                    if (!dotTravAllowed) {
+                        const aps = addPatternStart;
+                        // check if we have a possibility of matching . or ..,
+                        // and prevent that.
+                        const needNoTrav = 
+                        // dots are allowed, and the pattern starts with [ or .
+                        (this.#options.dot && aps.has(src.charAt(0))) ||
+                            // the pattern starts with \., and then [ or .
+                            (src.startsWith('\\.') && aps.has(src.charAt(2))) ||
+                            // the pattern starts with \.\., and then [ or .
+                            (src.startsWith('\\.\\.') && aps.has(src.charAt(4)));
+                        // no need to prevent dots if it can't match a dot, or if a
+                        // sub-pattern will be preventing it anyway.
+                        const needNoDot = !this.#options.dot && aps.has(src.charAt(0));
+                        start = needNoTrav ? startNoTraversal : needNoDot ? startNoDot : '';
+                    }
+                }
+            }
+            // append the "end of path portion" pattern to negation tails
+            let end = '';
+            if (this.isEnd() &&
+                this.#root.#filledNegs &&
+                this.#parent?.type === '!') {
+                end = '(?:$|\\/)';
+            }
+            const final = start + src + end;
+            return [
+                final,
+                unescape_unescape(src),
+                (this.#hasMagic = !!this.#hasMagic),
+                this.#uflag,
+            ];
+        }
+        // some kind of extglob
+        const start = this.type === '!' ? '(?:(?!(?:' : '(?:';
+        const body = this.#parts
+            .map(p => {
+            // extglob ASTs should only contain parent ASTs
+            /* c8 ignore start */
+            if (typeof p === 'string') {
+                throw new Error('string type in extglob ast??');
+            }
+            /* c8 ignore stop */
+            // can ignore hasMagic, because extglobs are already always magic
+            const [re, _, _hasMagic, uflag] = p.toRegExpSource();
+            this.#uflag = this.#uflag || uflag;
+            return re;
+        })
+            .filter(p => !(this.isStart() && this.isEnd()) || !!p)
+            .join('|');
+        if (this.isStart() && this.isEnd() && !body && this.type !== '!') {
+            // invalid extglob, has to at least be *something* present, if it's
+            // the entire path portion.
+            const s = this.toString();
+            this.#parts = [s];
+            this.type = null;
+            this.#hasMagic = undefined;
+            return [s, unescape_unescape(this.toString()), false, false];
+        }
+        // an empty !() is exactly equivalent to a starNoEmpty
+        let final = '';
+        if (this.type === '!' && this.#emptyExt) {
+            final =
+                (this.isStart() && !this.#options.dot ? startNoDot : '') + starNoEmpty;
+        }
+        else {
+            const close = this.type === '!'
+                ? // !() must match something,but !(x) can match ''
+                    '))' +
+                        (this.isStart() && !this.#options.dot ? startNoDot : '') +
+                        star +
+                        ')'
+                : this.type === '@'
+                    ? ')'
+                    : `)${this.type}`;
+            final = start + body + close;
+        }
+        return [
+            final,
+            unescape_unescape(body),
+            (this.#hasMagic = !!this.#hasMagic),
+            this.#uflag,
+        ];
+    }
+    static #parseGlob(glob, hasMagic, noEmpty = false) {
+        let escaping = false;
+        let re = '';
+        let uflag = false;
+        for (let i = 0; i < glob.length; i++) {
+            const c = glob.charAt(i);
+            if (escaping) {
+                escaping = false;
+                re += (reSpecials.has(c) ? '\\' : '') + c;
+                continue;
+            }
+            if (c === '\\') {
+                if (i === glob.length - 1) {
+                    re += '\\\\';
+                }
+                else {
+                    escaping = true;
+                }
+                continue;
+            }
+            if (c === '[') {
+                const [src, needUflag, consumed, magic] = parseClass(glob, i);
+                if (consumed) {
+                    re += src;
+                    uflag = uflag || needUflag;
+                    i += consumed - 1;
+                    hasMagic = hasMagic || magic;
+                    continue;
+                }
+            }
+            if (c === '*') {
+                if (noEmpty && glob === '*')
+                    re += starNoEmpty;
+                else
+                    re += star;
+                hasMagic = true;
+                continue;
+            }
+            if (c === '?') {
+                re += qmark;
+                hasMagic = true;
+                continue;
+            }
+            re += regExpEscape(c);
+        }
+        return [re, unescape_unescape(glob), !!hasMagic, uflag];
+    }
+}
+//# sourceMappingURL=ast.js.map
+;// CONCATENATED MODULE: ./node_modules/glob/node_modules/minimatch/dist/mjs/escape.js
+/**
+ * Escape all magic characters in a glob pattern.
+ *
+ * If the {@link windowsPathsNoEscape | GlobOptions.windowsPathsNoEscape}
+ * option is used, then characters are escaped by wrapping in `[]`, because
+ * a magic character wrapped in a character class can only be satisfied by
+ * that exact character.  In this mode, `\` is _not_ escaped, because it is
+ * not interpreted as a magic character, but instead as a path separator.
+ */
+const escape_escape = (s, { windowsPathsNoEscape = false, } = {}) => {
+    // don't need to escape +@! because we escape the parens
+    // that make those magic, and escaping ! as [!] isn't valid,
+    // because [!]] is a valid glob class meaning not ']'.
+    return windowsPathsNoEscape
+        ? s.replace(/[?*()[\]]/g, '[$&]')
+        : s.replace(/[?*()[\]\\]/g, '\\$&');
+};
+//# sourceMappingURL=escape.js.map
 ;// CONCATENATED MODULE: ./node_modules/glob/node_modules/minimatch/dist/mjs/index.js
+
 
 
 
@@ -35316,18 +35891,11 @@ const sep = defaultPlatform === 'win32' ? path.win32.sep : path.posix.sep;
 minimatch.sep = sep;
 const GLOBSTAR = Symbol('globstar **');
 minimatch.GLOBSTAR = GLOBSTAR;
-const plTypes = {
-    '!': { open: '(?:(?!(?:', close: '))[^/]*?)' },
-    '?': { open: '(?:', close: ')?' },
-    '+': { open: '(?:', close: ')+' },
-    '*': { open: '(?:', close: ')*' },
-    '@': { open: '(?:', close: ')' },
-};
 // any single thing other than /
 // don't need to escape / when using new RegExp()
-const qmark = '[^/]';
+const mjs_qmark = '[^/]';
 // * => any number of characters
-const star = qmark + '*?';
+const mjs_star = mjs_qmark + '*?';
 // ** when dots are allowed.  Anything goes, except .. and .
 // not (^ or / followed by one or two dots followed by $ or /),
 // followed by anything, any number of times.
@@ -35335,15 +35903,6 @@ const twoStarDot = '(?:(?!(?:\\/|^)(?:\\.{1,2})($|\\/)).)*?';
 // not a ^ or / followed by a dot,
 // followed by anything, any number of times.
 const twoStarNoDot = '(?:(?!(?:\\/|^)\\.).)*?';
-// "abc" -> { a:true, b:true, c:true }
-const charSet = (s) => s.split('').reduce((set, c) => {
-    set[c] = true;
-    return set;
-}, {});
-// characters that need to be escaped in RegExp.
-const reSpecials = charSet('().*{}+?[]^$\\!');
-// characters that indicate we have to add the pattern start
-const addPatternStartSet = charSet('[.(');
 const filter = (pattern, options = {}) => (p) => minimatch(p, pattern, options);
 minimatch.filter = filter;
 const ext = (a, b = {}) => Object.assign({}, a, b);
@@ -35360,6 +35919,16 @@ const defaults = (def) => {
             }
             static defaults(options) {
                 return orig.defaults(ext(def, options)).Minimatch;
+            }
+        },
+        AST: class AST extends orig.AST {
+            /* c8 ignore start */
+            constructor(type, parent, options = {}) {
+                super(type, parent, ext(def, options));
+            }
+            /* c8 ignore stop */
+            static fromGlob(pattern, options = {}) {
+                return orig.AST.fromGlob(pattern, ext(def, options));
             }
         },
         unescape: (s, options = {}) => orig.unescape(s, ext(def, options)),
@@ -35395,15 +35964,6 @@ const braceExpand = (pattern, options = {}) => {
     return brace_expansion(pattern);
 };
 minimatch.braceExpand = braceExpand;
-const MAX_PATTERN_LENGTH = 1024 * 64;
-const assertValidPattern = (pattern) => {
-    if (typeof pattern !== 'string') {
-        throw new TypeError('invalid pattern');
-    }
-    if (pattern.length > MAX_PATTERN_LENGTH) {
-        throw new TypeError('pattern is too long');
-    }
-};
 // parse a component of the expanded set.
 // At this point, no pattern may contain "/" in it
 // so we're going to return a 2d array, where each entry is the full
@@ -35427,9 +35987,8 @@ const match = (list, pattern, options = {}) => {
 };
 minimatch.match = match;
 // replace stuff like \* with *
-const globUnescape = (s) => s.replace(/\\(.)/g, '$1');
 const globMagic = /[?*]|[+@!]\(.*?\)|\[|\]/;
-const regExpEscape = (s) => s.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&');
+const mjs_regExpEscape = (s) => s.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&');
 class Minimatch {
     options;
     set;
@@ -36078,293 +36637,8 @@ class Minimatch {
         else if ((m = pattern.match(dotStarRE))) {
             fastTest = dotStarTest;
         }
-        let re = '';
-        let hasMagic = false;
-        let escaping = false;
-        // ? => one single character
-        const patternListStack = [];
-        const negativeLists = [];
-        let stateChar = false;
-        let uflag = false;
-        let pl;
-        // . and .. never match anything that doesn't start with .,
-        // even when options.dot is set.  However, if the pattern
-        // starts with ., then traversal patterns can match.
-        let dotTravAllowed = pattern.charAt(0) === '.';
-        let dotFileAllowed = options.dot || dotTravAllowed;
-        const patternStart = () => dotTravAllowed
-            ? ''
-            : dotFileAllowed
-                ? '(?!(?:^|\\/)\\.{1,2}(?:$|\\/))'
-                : '(?!\\.)';
-        const subPatternStart = (p) => p.charAt(0) === '.'
-            ? ''
-            : options.dot
-                ? '(?!(?:^|\\/)\\.{1,2}(?:$|\\/))'
-                : '(?!\\.)';
-        const clearStateChar = () => {
-            if (stateChar) {
-                // we had some state-tracking character
-                // that wasn't consumed by this pass.
-                switch (stateChar) {
-                    case '*':
-                        re += star;
-                        hasMagic = true;
-                        break;
-                    case '?':
-                        re += qmark;
-                        hasMagic = true;
-                        break;
-                    default:
-                        re += '\\' + stateChar;
-                        break;
-                }
-                this.debug('clearStateChar %j %j', stateChar, re);
-                stateChar = false;
-            }
-        };
-        for (let i = 0, c; i < pattern.length && (c = pattern.charAt(i)); i++) {
-            this.debug('%s\t%s %s %j', pattern, i, re, c);
-            // skip over any that are escaped.
-            if (escaping) {
-                // completely not allowed, even escaped.
-                // should be impossible.
-                /* c8 ignore start */
-                if (c === '/') {
-                    return false;
-                }
-                /* c8 ignore stop */
-                if (reSpecials[c]) {
-                    re += '\\';
-                }
-                re += c;
-                escaping = false;
-                continue;
-            }
-            switch (c) {
-                // Should already be path-split by now.
-                /* c8 ignore start */
-                case '/': {
-                    return false;
-                }
-                /* c8 ignore stop */
-                case '\\':
-                    clearStateChar();
-                    escaping = true;
-                    continue;
-                // the various stateChar values
-                // for the "extglob" stuff.
-                case '?':
-                case '*':
-                case '+':
-                case '@':
-                case '!':
-                    this.debug('%s\t%s %s %j <-- stateChar', pattern, i, re, c);
-                    // if we already have a stateChar, then it means
-                    // that there was something like ** or +? in there.
-                    // Handle the stateChar, then proceed with this one.
-                    this.debug('call clearStateChar %j', stateChar);
-                    clearStateChar();
-                    stateChar = c;
-                    // if extglob is disabled, then +(asdf|foo) isn't a thing.
-                    // just clear the statechar *now*, rather than even diving into
-                    // the patternList stuff.
-                    if (options.noext)
-                        clearStateChar();
-                    continue;
-                case '(': {
-                    if (!stateChar) {
-                        re += '\\(';
-                        continue;
-                    }
-                    const plEntry = {
-                        type: stateChar,
-                        start: i - 1,
-                        reStart: re.length,
-                        open: plTypes[stateChar].open,
-                        close: plTypes[stateChar].close,
-                    };
-                    this.debug(this.pattern, '\t', plEntry);
-                    patternListStack.push(plEntry);
-                    // negation is (?:(?!(?:js)(?:<rest>))[^/]*)
-                    re += plEntry.open;
-                    // next entry starts with a dot maybe?
-                    if (plEntry.start === 0 && plEntry.type !== '!') {
-                        dotTravAllowed = true;
-                        re += subPatternStart(pattern.slice(i + 1));
-                    }
-                    this.debug('plType %j %j', stateChar, re);
-                    stateChar = false;
-                    continue;
-                }
-                case ')': {
-                    const plEntry = patternListStack[patternListStack.length - 1];
-                    if (!plEntry) {
-                        re += '\\)';
-                        continue;
-                    }
-                    patternListStack.pop();
-                    // closing an extglob
-                    clearStateChar();
-                    hasMagic = true;
-                    pl = plEntry;
-                    // negation is (?:(?!js)[^/]*)
-                    // The others are (?:<pattern>)<type>
-                    re += pl.close;
-                    if (pl.type === '!') {
-                        negativeLists.push(Object.assign(pl, { reEnd: re.length }));
-                    }
-                    continue;
-                }
-                case '|': {
-                    const plEntry = patternListStack[patternListStack.length - 1];
-                    if (!plEntry) {
-                        re += '\\|';
-                        continue;
-                    }
-                    clearStateChar();
-                    re += '|';
-                    // next subpattern can start with a dot?
-                    if (plEntry.start === 0 && plEntry.type !== '!') {
-                        dotTravAllowed = true;
-                        re += subPatternStart(pattern.slice(i + 1));
-                    }
-                    continue;
-                }
-                // these are mostly the same in regexp and glob
-                case '[':
-                    // swallow any state-tracking char before the [
-                    clearStateChar();
-                    const [src, needUflag, consumed, magic] = parseClass(pattern, i);
-                    if (consumed) {
-                        re += src;
-                        uflag = uflag || needUflag;
-                        i += consumed - 1;
-                        hasMagic = hasMagic || magic;
-                    }
-                    else {
-                        re += '\\[';
-                    }
-                    continue;
-                case ']':
-                    re += '\\' + c;
-                    continue;
-                default:
-                    // swallow any state char that wasn't consumed
-                    clearStateChar();
-                    re += regExpEscape(c);
-                    break;
-            } // switch
-        } // for
-        // handle the case where we had a +( thing at the *end*
-        // of the pattern.
-        // each pattern list stack adds 3 chars, and we need to go through
-        // and escape any | chars that were passed through as-is for the regexp.
-        // Go through and escape them, taking care not to double-escape any
-        // | chars that were already escaped.
-        for (pl = patternListStack.pop(); pl; pl = patternListStack.pop()) {
-            let tail;
-            tail = re.slice(pl.reStart + pl.open.length);
-            this.debug(this.pattern, 'setting tail', re, pl);
-            // maybe some even number of \, then maybe 1 \, followed by a |
-            tail = tail.replace(/((?:\\{2}){0,64})(\\?)\|/g, (_, $1, $2) => {
-                if (!$2) {
-                    // the | isn't already escaped, so escape it.
-                    $2 = '\\';
-                    // should already be done
-                    /* c8 ignore start */
-                }
-                /* c8 ignore stop */
-                // need to escape all those slashes *again*, without escaping the
-                // one that we need for escaping the | character.  As it works out,
-                // escaping an even number of slashes can be done by simply repeating
-                // it exactly after itself.  That's why this trick works.
-                //
-                // I am sorry that you have to see this.
-                return $1 + $1 + $2 + '|';
-            });
-            this.debug('tail=%j\n   %s', tail, tail, pl, re);
-            const t = pl.type === '*' ? star : pl.type === '?' ? qmark : '\\' + pl.type;
-            hasMagic = true;
-            re = re.slice(0, pl.reStart) + t + '\\(' + tail;
-        }
-        // handle trailing things that only matter at the very end.
-        clearStateChar();
-        if (escaping) {
-            // trailing \\
-            re += '\\\\';
-        }
-        // only need to apply the nodot start if the re starts with
-        // something that could conceivably capture a dot
-        const addPatternStart = addPatternStartSet[re.charAt(0)];
-        // Hack to work around lack of negative lookbehind in JS
-        // A pattern like: *.!(x).!(y|z) needs to ensure that a name
-        // like 'a.xyz.yz' doesn't match.  So, the first negative
-        // lookahead, has to look ALL the way ahead, to the end of
-        // the pattern.
-        for (let n = negativeLists.length - 1; n > -1; n--) {
-            const nl = negativeLists[n];
-            const nlBefore = re.slice(0, nl.reStart);
-            const nlFirst = re.slice(nl.reStart, nl.reEnd - 8);
-            let nlAfter = re.slice(nl.reEnd);
-            const nlLast = re.slice(nl.reEnd - 8, nl.reEnd) + nlAfter;
-            // Handle nested stuff like *(*.js|!(*.json)), where open parens
-            // mean that we should *not* include the ) in the bit that is considered
-            // "after" the negated section.
-            const closeParensBefore = nlBefore.split(')').length;
-            const openParensBefore = nlBefore.split('(').length - closeParensBefore;
-            let cleanAfter = nlAfter;
-            for (let i = 0; i < openParensBefore; i++) {
-                cleanAfter = cleanAfter.replace(/\)[+*?]?/, '');
-            }
-            nlAfter = cleanAfter;
-            const dollar = nlAfter === '' ? '(?:$|\\/)' : '';
-            re = nlBefore + nlFirst + nlAfter + dollar + nlLast;
-        }
-        // if the re is not "" at this point, then we need to make sure
-        // it doesn't match against an empty path part.
-        // Otherwise a/* will match a/, which it should not.
-        if (re !== '' && hasMagic) {
-            re = '(?=.)' + re;
-        }
-        if (addPatternStart) {
-            re = patternStart() + re;
-        }
-        // if it's nocase, and the lcase/uppercase don't match, it's magic
-        if (options.nocase && !hasMagic && !options.nocaseMagicOnly) {
-            hasMagic = pattern.toUpperCase() !== pattern.toLowerCase();
-        }
-        // skip the regexp for non-magical patterns
-        // unescape anything in it, though, so that it'll be
-        // an exact match against a file etc.
-        if (!hasMagic) {
-            return globUnescape(re);
-        }
-        const flags = (options.nocase ? 'i' : '') + (uflag ? 'u' : '');
-        try {
-            const ext = fastTest
-                ? {
-                    _glob: pattern,
-                    _src: re,
-                    test: fastTest,
-                }
-                : {
-                    _glob: pattern,
-                    _src: re,
-                };
-            return Object.assign(new RegExp('^' + re + '$', flags), ext);
-            /* c8 ignore start */
-        }
-        catch (er) {
-            // should be impossible
-            // If it was an invalid regular expression, then it can't match
-            // anything.  This trick looks for a character after the end of
-            // the string, which is of course impossible, except in multi-line
-            // mode, but it's not a /m regex.
-            this.debug('invalid regexp', er);
-            return new RegExp('$.');
-        }
-        /* c8 ignore stop */
+        const re = AST.fromGlob(pattern, this.options).toMMPattern();
+        return fastTest ? Object.assign(re, { test: fastTest }) : re;
     }
     makeRe() {
         if (this.regexp || this.regexp === false)
@@ -36382,11 +36656,11 @@ class Minimatch {
         }
         const options = this.options;
         const twoStar = options.noglobstar
-            ? star
+            ? mjs_star
             : options.dot
                 ? twoStarDot
                 : twoStarNoDot;
-        const flags = options.nocase ? 'i' : '';
+        const flags = new Set(options.nocase ? ['i'] : []);
         // regexpify non-globstar patterns
         // if ** is only item, then we just do one twoStar
         // if ** is first, and there are more, prepend (\/|twoStar\/)? to next
@@ -36395,11 +36669,17 @@ class Minimatch {
         // then filter out GLOBSTAR symbols
         let re = set
             .map(pattern => {
-            const pp = pattern.map(p => typeof p === 'string'
-                ? regExpEscape(p)
-                : p === GLOBSTAR
-                    ? GLOBSTAR
-                    : p._src);
+            const pp = pattern.map(p => {
+                if (p instanceof RegExp) {
+                    for (const f of p.flags.split(''))
+                        flags.add(f);
+                }
+                return typeof p === 'string'
+                    ? mjs_regExpEscape(p)
+                    : p === GLOBSTAR
+                        ? GLOBSTAR
+                        : p._src;
+            });
             pp.forEach((p, i) => {
                 const next = pp[i + 1];
                 const prev = pp[i - 1];
@@ -36425,14 +36705,17 @@ class Minimatch {
             return pp.filter(p => p !== GLOBSTAR).join('/');
         })
             .join('|');
+        // need to wrap in parens if we had more than one thing with |,
+        // otherwise only the first will be anchored to ^ and the last to $
+        const [open, close] = set.length > 1 ? ['(?:', ')'] : ['', ''];
         // must match entire pattern
         // ending in a * or ** will make it less strict.
-        re = '^(?:' + re + ')$';
+        re = '^' + open + re + close + '$';
         // can match anything, as long as it's not this.
         if (this.negate)
-            re = '^(?!' + re + ').*$';
+            re = '^(?!' + re + ').+$';
         try {
-            this.regexp = new RegExp(re, flags);
+            this.regexp = new RegExp(re, [...flags].join(''));
             /* c8 ignore start */
         }
         catch (ex) {
@@ -36520,1240 +36803,1400 @@ class Minimatch {
 /* c8 ignore start */
 
 
+
 /* c8 ignore stop */
+minimatch.AST = AST;
 minimatch.Minimatch = Minimatch;
 minimatch.escape = escape_escape;
 minimatch.unescape = unescape_unescape;
 //# sourceMappingURL=index.js.map
-;// CONCATENATED MODULE: ./node_modules/path-scurry/node_modules/lru-cache/index.mjs
-const perf =
-  typeof performance === 'object' &&
-  performance &&
-  typeof performance.now === 'function'
+;// CONCATENATED MODULE: ./node_modules/path-scurry/node_modules/lru-cache/dist/mjs/index.js
+/**
+ * @module LRUCache
+ */
+const perf = typeof performance === 'object' &&
+    performance &&
+    typeof performance.now === 'function'
     ? performance
-    : Date
-
-const hasAbortController = typeof AbortController === 'function'
-
-// minimal backwards-compatibility polyfill
-// this doesn't have nearly all the checks and whatnot that
-// actual AbortController/Signal has, but it's enough for
-// our purposes, and if used properly, behaves the same.
-const AC = hasAbortController
-  ? AbortController
-  : class AbortController {
-      constructor() {
-        this.signal = new AS()
-      }
-      abort(reason = new Error('This operation was aborted')) {
-        this.signal.reason = this.signal.reason || reason
-        this.signal.aborted = true
-        this.signal.dispatchEvent({
-          type: 'abort',
-          target: this.signal,
-        })
-      }
-    }
-
-const hasAbortSignal = typeof AbortSignal === 'function'
-// Some polyfills put this on the AC class, not global
-const hasACAbortSignal = typeof AC.AbortSignal === 'function'
-const AS = hasAbortSignal
-  ? AbortSignal
-  : hasACAbortSignal
-  ? AC.AbortController
-  : class AbortSignal {
-      constructor() {
-        this.reason = undefined
-        this.aborted = false
-        this._listeners = []
-      }
-      dispatchEvent(e) {
-        if (e.type === 'abort') {
-          this.aborted = true
-          this.onabort(e)
-          this._listeners.forEach(f => f(e), this)
+    : Date;
+const warned = new Set();
+/* c8 ignore start */
+const PROCESS = (typeof process === 'object' && !!process ? process : {});
+/* c8 ignore start */
+const emitWarning = (msg, type, code, fn) => {
+    typeof PROCESS.emitWarning === 'function'
+        ? PROCESS.emitWarning(msg, type, code, fn)
+        : console.error(`[${code}] ${type}: ${msg}`);
+};
+let AC = globalThis.AbortController;
+let AS = globalThis.AbortSignal;
+/* c8 ignore start */
+if (typeof AC === 'undefined') {
+    //@ts-ignore
+    AS = class AbortSignal {
+        onabort;
+        _onabort = [];
+        reason;
+        aborted = false;
+        addEventListener(_, fn) {
+            this._onabort.push(fn);
         }
-      }
-      onabort() {}
-      addEventListener(ev, fn) {
-        if (ev === 'abort') {
-          this._listeners.push(fn)
+    };
+    //@ts-ignore
+    AC = class AbortController {
+        constructor() {
+            warnACPolyfill();
         }
-      }
-      removeEventListener(ev, fn) {
-        if (ev === 'abort') {
-          this._listeners = this._listeners.filter(f => f !== fn)
+        signal = new AS();
+        abort(reason) {
+            if (this.signal.aborted)
+                return;
+            //@ts-ignore
+            this.signal.reason = reason;
+            //@ts-ignore
+            this.signal.aborted = true;
+            //@ts-ignore
+            for (const fn of this.signal._onabort) {
+                fn(reason);
+            }
+            this.signal.onabort?.(reason);
         }
-      }
-    }
-
-const warned = new Set()
-const deprecatedOption = (opt, instead) => {
-  const code = `LRU_CACHE_OPTION_${opt}`
-  if (shouldWarn(code)) {
-    warn(code, `${opt} option`, `options.${instead}`, LRUCache)
-  }
+    };
+    let printACPolyfillWarning = PROCESS.env?.LRU_CACHE_IGNORE_AC_WARNING !== '1';
+    const warnACPolyfill = () => {
+        if (!printACPolyfillWarning)
+            return;
+        printACPolyfillWarning = false;
+        emitWarning('AbortController is not defined. If using lru-cache in ' +
+            'node 14, load an AbortController polyfill from the ' +
+            '`node-abort-controller` package. A minimal polyfill is ' +
+            'provided for use by LRUCache.fetch(), but it should not be ' +
+            'relied upon in other contexts (eg, passing it to other APIs that ' +
+            'use AbortController/AbortSignal might have undesirable effects). ' +
+            'You may disable this with LRU_CACHE_IGNORE_AC_WARNING=1 in the env.', 'NO_ABORT_CONTROLLER', 'ENOTSUP', warnACPolyfill);
+    };
 }
-const deprecatedMethod = (method, instead) => {
-  const code = `LRU_CACHE_METHOD_${method}`
-  if (shouldWarn(code)) {
-    const { prototype } = LRUCache
-    const { get } = Object.getOwnPropertyDescriptor(prototype, method)
-    warn(code, `${method} method`, `cache.${instead}()`, get)
-  }
-}
-const deprecatedProperty = (field, instead) => {
-  const code = `LRU_CACHE_PROPERTY_${field}`
-  if (shouldWarn(code)) {
-    const { prototype } = LRUCache
-    const { get } = Object.getOwnPropertyDescriptor(prototype, field)
-    warn(code, `${field} property`, `cache.${instead}`, get)
-  }
-}
-
-const emitWarning = (...a) => {
-  typeof process === 'object' &&
-  process &&
-  typeof process.emitWarning === 'function'
-    ? process.emitWarning(...a)
-    : console.error(...a)
-}
-
-const shouldWarn = code => !warned.has(code)
-
-const warn = (code, what, instead, fn) => {
-  warned.add(code)
-  const msg = `The ${what} is deprecated. Please use ${instead} instead.`
-  emitWarning(msg, 'DeprecationWarning', code, fn)
-}
-
-const isPosInt = n => n && n === Math.floor(n) && n > 0 && isFinite(n)
-
-/* istanbul ignore next - This is a little bit ridiculous, tbh.
- * The maximum array length is 2^32-1 or thereabouts on most JS impls.
- * And well before that point, you're caching the entire world, I mean,
- * that's ~32GB of just integers for the next/prev links, plus whatever
- * else to hold that many keys and values.  Just filling the memory with
- * zeroes at init time is brutal when you get that big.
- * But why not be complete?
- * Maybe in the future, these limits will have expanded. */
-const getUintArray = max =>
-  !isPosInt(max)
+/* c8 ignore stop */
+const shouldWarn = (code) => !warned.has(code);
+const TYPE = Symbol('type');
+const isPosInt = (n) => n && n === Math.floor(n) && n > 0 && isFinite(n);
+/* c8 ignore start */
+// This is a little bit ridiculous, tbh.
+// The maximum array length is 2^32-1 or thereabouts on most JS impls.
+// And well before that point, you're caching the entire world, I mean,
+// that's ~32GB of just integers for the next/prev links, plus whatever
+// else to hold that many keys and values.  Just filling the memory with
+// zeroes at init time is brutal when you get that big.
+// But why not be complete?
+// Maybe in the future, these limits will have expanded.
+const getUintArray = (max) => !isPosInt(max)
     ? null
     : max <= Math.pow(2, 8)
-    ? Uint8Array
-    : max <= Math.pow(2, 16)
-    ? Uint16Array
-    : max <= Math.pow(2, 32)
-    ? Uint32Array
-    : max <= Number.MAX_SAFE_INTEGER
-    ? ZeroArray
-    : null
-
+        ? Uint8Array
+        : max <= Math.pow(2, 16)
+            ? Uint16Array
+            : max <= Math.pow(2, 32)
+                ? Uint32Array
+                : max <= Number.MAX_SAFE_INTEGER
+                    ? ZeroArray
+                    : null;
+/* c8 ignore stop */
 class ZeroArray extends Array {
-  constructor(size) {
-    super(size)
-    this.fill(0)
-  }
+    constructor(size) {
+        super(size);
+        this.fill(0);
+    }
 }
-
 class Stack {
-  constructor(max) {
-    if (max === 0) {
-      return []
+    heap;
+    length;
+    // private constructor
+    static #constructing = false;
+    static create(max) {
+        const HeapCls = getUintArray(max);
+        if (!HeapCls)
+            return [];
+        Stack.#constructing = true;
+        const s = new Stack(max, HeapCls);
+        Stack.#constructing = false;
+        return s;
     }
-    const UintArray = getUintArray(max)
-    this.heap = new UintArray(max)
-    this.length = 0
-  }
-  push(n) {
-    this.heap[this.length++] = n
-  }
-  pop() {
-    return this.heap[--this.length]
-  }
+    constructor(max, HeapCls) {
+        /* c8 ignore start */
+        if (!Stack.#constructing) {
+            throw new TypeError('instantiate Stack using Stack.create(n)');
+        }
+        /* c8 ignore stop */
+        this.heap = new HeapCls(max);
+        this.length = 0;
+    }
+    push(n) {
+        this.heap[this.length++] = n;
+    }
+    pop() {
+        return this.heap[--this.length];
+    }
 }
-
+/**
+ * Default export, the thing you're using this module to get.
+ *
+ * All properties from the options object (with the exception of
+ * {@link OptionsBase.max} and {@link OptionsBase.maxSize}) are added as
+ * normal public members. (`max` and `maxBase` are read-only getters.)
+ * Changing any of these will alter the defaults for subsequent method calls,
+ * but is otherwise safe.
+ */
 class LRUCache {
-  constructor(options = {}) {
-    const {
-      max = 0,
-      ttl,
-      ttlResolution = 1,
-      ttlAutopurge,
-      updateAgeOnGet,
-      updateAgeOnHas,
-      allowStale,
-      dispose,
-      disposeAfter,
-      noDisposeOnSet,
-      noUpdateTTL,
-      maxSize = 0,
-      maxEntrySize = 0,
-      sizeCalculation,
-      fetchMethod,
-      fetchContext,
-      noDeleteOnFetchRejection,
-      noDeleteOnStaleGet,
-      allowStaleOnFetchRejection,
-      allowStaleOnFetchAbort,
-      ignoreFetchAbort,
-    } = options
-
-    // deprecated options, don't trigger a warning for getting them if
-    // the thing being passed in is another LRUCache we're copying.
-    const { length, maxAge, stale } =
-      options instanceof LRUCache ? {} : options
-
-    if (max !== 0 && !isPosInt(max)) {
-      throw new TypeError('max option must be a nonnegative integer')
+    // properties coming in from the options of these, only max and maxSize
+    // really *need* to be protected. The rest can be modified, as they just
+    // set defaults for various methods.
+    #max;
+    #maxSize;
+    #dispose;
+    #disposeAfter;
+    #fetchMethod;
+    /**
+     * {@link LRUCache.OptionsBase.ttl}
+     */
+    ttl;
+    /**
+     * {@link LRUCache.OptionsBase.ttlResolution}
+     */
+    ttlResolution;
+    /**
+     * {@link LRUCache.OptionsBase.ttlAutopurge}
+     */
+    ttlAutopurge;
+    /**
+     * {@link LRUCache.OptionsBase.updateAgeOnGet}
+     */
+    updateAgeOnGet;
+    /**
+     * {@link LRUCache.OptionsBase.updateAgeOnHas}
+     */
+    updateAgeOnHas;
+    /**
+     * {@link LRUCache.OptionsBase.allowStale}
+     */
+    allowStale;
+    /**
+     * {@link LRUCache.OptionsBase.noDisposeOnSet}
+     */
+    noDisposeOnSet;
+    /**
+     * {@link LRUCache.OptionsBase.noUpdateTTL}
+     */
+    noUpdateTTL;
+    /**
+     * {@link LRUCache.OptionsBase.maxEntrySize}
+     */
+    maxEntrySize;
+    /**
+     * {@link LRUCache.OptionsBase.sizeCalculation}
+     */
+    sizeCalculation;
+    /**
+     * {@link LRUCache.OptionsBase.noDeleteOnFetchRejection}
+     */
+    noDeleteOnFetchRejection;
+    /**
+     * {@link LRUCache.OptionsBase.noDeleteOnStaleGet}
+     */
+    noDeleteOnStaleGet;
+    /**
+     * {@link LRUCache.OptionsBase.allowStaleOnFetchAbort}
+     */
+    allowStaleOnFetchAbort;
+    /**
+     * {@link LRUCache.OptionsBase.allowStaleOnFetchRejection}
+     */
+    allowStaleOnFetchRejection;
+    /**
+     * {@link LRUCache.OptionsBase.ignoreFetchAbort}
+     */
+    ignoreFetchAbort;
+    // computed properties
+    #size;
+    #calculatedSize;
+    #keyMap;
+    #keyList;
+    #valList;
+    #next;
+    #prev;
+    #head;
+    #tail;
+    #free;
+    #disposed;
+    #sizes;
+    #starts;
+    #ttls;
+    #hasDispose;
+    #hasFetchMethod;
+    #hasDisposeAfter;
+    /**
+     * Do not call this method unless you need to inspect the
+     * inner workings of the cache.  If anything returned by this
+     * object is modified in any way, strange breakage may occur.
+     *
+     * These fields are private for a reason!
+     *
+     * @internal
+     */
+    static unsafeExposeInternals(c) {
+        return {
+            // properties
+            starts: c.#starts,
+            ttls: c.#ttls,
+            sizes: c.#sizes,
+            keyMap: c.#keyMap,
+            keyList: c.#keyList,
+            valList: c.#valList,
+            next: c.#next,
+            prev: c.#prev,
+            get head() {
+                return c.#head;
+            },
+            get tail() {
+                return c.#tail;
+            },
+            free: c.#free,
+            // methods
+            isBackgroundFetch: (p) => c.#isBackgroundFetch(p),
+            backgroundFetch: (k, index, options, context) => c.#backgroundFetch(k, index, options, context),
+            moveToTail: (index) => c.#moveToTail(index),
+            indexes: (options) => c.#indexes(options),
+            rindexes: (options) => c.#rindexes(options),
+            isStale: (index) => c.#isStale(index),
+        };
     }
-
-    const UintArray = max ? getUintArray(max) : Array
-    if (!UintArray) {
-      throw new Error('invalid max value: ' + max)
+    // Protected read-only members
+    /**
+     * {@link LRUCache.OptionsBase.max} (read-only)
+     */
+    get max() {
+        return this.#max;
     }
-
-    this.max = max
-    this.maxSize = maxSize
-    this.maxEntrySize = maxEntrySize || this.maxSize
-    this.sizeCalculation = sizeCalculation || length
-    if (this.sizeCalculation) {
-      if (!this.maxSize && !this.maxEntrySize) {
-        throw new TypeError(
-          'cannot set sizeCalculation without setting maxSize or maxEntrySize'
-        )
-      }
-      if (typeof this.sizeCalculation !== 'function') {
-        throw new TypeError('sizeCalculation set to non-function')
-      }
+    /**
+     * {@link LRUCache.OptionsBase.maxSize} (read-only)
+     */
+    get maxSize() {
+        return this.#maxSize;
     }
-
-    this.fetchMethod = fetchMethod || null
-    if (this.fetchMethod && typeof this.fetchMethod !== 'function') {
-      throw new TypeError(
-        'fetchMethod must be a function if specified'
-      )
+    /**
+     * The total computed size of items in the cache (read-only)
+     */
+    get calculatedSize() {
+        return this.#calculatedSize;
     }
-
-    this.fetchContext = fetchContext
-    if (!this.fetchMethod && fetchContext !== undefined) {
-      throw new TypeError(
-        'cannot set fetchContext without fetchMethod'
-      )
+    /**
+     * The number of items stored in the cache (read-only)
+     */
+    get size() {
+        return this.#size;
     }
-
-    this.keyMap = new Map()
-    this.keyList = new Array(max).fill(null)
-    this.valList = new Array(max).fill(null)
-    this.next = new UintArray(max)
-    this.prev = new UintArray(max)
-    this.head = 0
-    this.tail = 0
-    this.free = new Stack(max)
-    this.initialFill = 1
-    this.size = 0
-
-    if (typeof dispose === 'function') {
-      this.dispose = dispose
+    /**
+     * {@link LRUCache.OptionsBase.fetchMethod} (read-only)
+     */
+    get fetchMethod() {
+        return this.#fetchMethod;
     }
-    if (typeof disposeAfter === 'function') {
-      this.disposeAfter = disposeAfter
-      this.disposed = []
-    } else {
-      this.disposeAfter = null
-      this.disposed = null
+    /**
+     * {@link LRUCache.OptionsBase.dispose} (read-only)
+     */
+    get dispose() {
+        return this.#dispose;
     }
-    this.noDisposeOnSet = !!noDisposeOnSet
-    this.noUpdateTTL = !!noUpdateTTL
-    this.noDeleteOnFetchRejection = !!noDeleteOnFetchRejection
-    this.allowStaleOnFetchRejection = !!allowStaleOnFetchRejection
-    this.allowStaleOnFetchAbort = !!allowStaleOnFetchAbort
-    this.ignoreFetchAbort = !!ignoreFetchAbort
-
-    // NB: maxEntrySize is set to maxSize if it's set
-    if (this.maxEntrySize !== 0) {
-      if (this.maxSize !== 0) {
-        if (!isPosInt(this.maxSize)) {
-          throw new TypeError(
-            'maxSize must be a positive integer if specified'
-          )
+    /**
+     * {@link LRUCache.OptionsBase.disposeAfter} (read-only)
+     */
+    get disposeAfter() {
+        return this.#disposeAfter;
+    }
+    constructor(options) {
+        const { max = 0, ttl, ttlResolution = 1, ttlAutopurge, updateAgeOnGet, updateAgeOnHas, allowStale, dispose, disposeAfter, noDisposeOnSet, noUpdateTTL, maxSize = 0, maxEntrySize = 0, sizeCalculation, fetchMethod, noDeleteOnFetchRejection, noDeleteOnStaleGet, allowStaleOnFetchRejection, allowStaleOnFetchAbort, ignoreFetchAbort, } = options;
+        if (max !== 0 && !isPosInt(max)) {
+            throw new TypeError('max option must be a nonnegative integer');
         }
-      }
-      if (!isPosInt(this.maxEntrySize)) {
-        throw new TypeError(
-          'maxEntrySize must be a positive integer if specified'
-        )
-      }
-      this.initializeSizeTracking()
-    }
-
-    this.allowStale = !!allowStale || !!stale
-    this.noDeleteOnStaleGet = !!noDeleteOnStaleGet
-    this.updateAgeOnGet = !!updateAgeOnGet
-    this.updateAgeOnHas = !!updateAgeOnHas
-    this.ttlResolution =
-      isPosInt(ttlResolution) || ttlResolution === 0
-        ? ttlResolution
-        : 1
-    this.ttlAutopurge = !!ttlAutopurge
-    this.ttl = ttl || maxAge || 0
-    if (this.ttl) {
-      if (!isPosInt(this.ttl)) {
-        throw new TypeError(
-          'ttl must be a positive integer if specified'
-        )
-      }
-      this.initializeTTLTracking()
-    }
-
-    // do not allow completely unbounded caches
-    if (this.max === 0 && this.ttl === 0 && this.maxSize === 0) {
-      throw new TypeError(
-        'At least one of max, maxSize, or ttl is required'
-      )
-    }
-    if (!this.ttlAutopurge && !this.max && !this.maxSize) {
-      const code = 'LRU_CACHE_UNBOUNDED'
-      if (shouldWarn(code)) {
-        warned.add(code)
-        const msg =
-          'TTL caching without ttlAutopurge, max, or maxSize can ' +
-          'result in unbounded memory consumption.'
-        emitWarning(msg, 'UnboundedCacheWarning', code, LRUCache)
-      }
-    }
-
-    if (stale) {
-      deprecatedOption('stale', 'allowStale')
-    }
-    if (maxAge) {
-      deprecatedOption('maxAge', 'ttl')
-    }
-    if (length) {
-      deprecatedOption('length', 'sizeCalculation')
-    }
-  }
-
-  getRemainingTTL(key) {
-    return this.has(key, { updateAgeOnHas: false }) ? Infinity : 0
-  }
-
-  initializeTTLTracking() {
-    this.ttls = new ZeroArray(this.max)
-    this.starts = new ZeroArray(this.max)
-
-    this.setItemTTL = (index, ttl, start = perf.now()) => {
-      this.starts[index] = ttl !== 0 ? start : 0
-      this.ttls[index] = ttl
-      if (ttl !== 0 && this.ttlAutopurge) {
-        const t = setTimeout(() => {
-          if (this.isStale(index)) {
-            this.delete(this.keyList[index])
-          }
-        }, ttl + 1)
-        /* istanbul ignore else - unref() not supported on all platforms */
-        if (t.unref) {
-          t.unref()
+        const UintArray = max ? getUintArray(max) : Array;
+        if (!UintArray) {
+            throw new Error('invalid max value: ' + max);
         }
-      }
-    }
-
-    this.updateItemAge = index => {
-      this.starts[index] = this.ttls[index] !== 0 ? perf.now() : 0
-    }
-
-    this.statusTTL = (status, index) => {
-      if (status) {
-        status.ttl = this.ttls[index]
-        status.start = this.starts[index]
-        status.now = cachedNow || getNow()
-        status.remainingTTL = status.now + status.ttl - status.start
-      }
-    }
-
-    // debounce calls to perf.now() to 1s so we're not hitting
-    // that costly call repeatedly.
-    let cachedNow = 0
-    const getNow = () => {
-      const n = perf.now()
-      if (this.ttlResolution > 0) {
-        cachedNow = n
-        const t = setTimeout(
-          () => (cachedNow = 0),
-          this.ttlResolution
-        )
-        /* istanbul ignore else - not available on all platforms */
-        if (t.unref) {
-          t.unref()
-        }
-      }
-      return n
-    }
-
-    this.getRemainingTTL = key => {
-      const index = this.keyMap.get(key)
-      if (index === undefined) {
-        return 0
-      }
-      return this.ttls[index] === 0 || this.starts[index] === 0
-        ? Infinity
-        : this.starts[index] +
-            this.ttls[index] -
-            (cachedNow || getNow())
-    }
-
-    this.isStale = index => {
-      return (
-        this.ttls[index] !== 0 &&
-        this.starts[index] !== 0 &&
-        (cachedNow || getNow()) - this.starts[index] >
-          this.ttls[index]
-      )
-    }
-  }
-  updateItemAge(_index) {}
-  statusTTL(_status, _index) {}
-  setItemTTL(_index, _ttl, _start) {}
-  isStale(_index) {
-    return false
-  }
-
-  initializeSizeTracking() {
-    this.calculatedSize = 0
-    this.sizes = new ZeroArray(this.max)
-    this.removeItemSize = index => {
-      this.calculatedSize -= this.sizes[index]
-      this.sizes[index] = 0
-    }
-    this.requireSize = (k, v, size, sizeCalculation) => {
-      // provisionally accept background fetches.
-      // actual value size will be checked when they return.
-      if (this.isBackgroundFetch(v)) {
-        return 0
-      }
-      if (!isPosInt(size)) {
-        if (sizeCalculation) {
-          if (typeof sizeCalculation !== 'function') {
-            throw new TypeError('sizeCalculation must be a function')
-          }
-          size = sizeCalculation(v, k)
-          if (!isPosInt(size)) {
-            throw new TypeError(
-              'sizeCalculation return invalid (expect positive integer)'
-            )
-          }
-        } else {
-          throw new TypeError(
-            'invalid size value (must be positive integer). ' +
-              'When maxSize or maxEntrySize is used, sizeCalculation or size ' +
-              'must be set.'
-          )
-        }
-      }
-      return size
-    }
-    this.addItemSize = (index, size, status) => {
-      this.sizes[index] = size
-      if (this.maxSize) {
-        const maxSize = this.maxSize - this.sizes[index]
-        while (this.calculatedSize > maxSize) {
-          this.evict(true)
-        }
-      }
-      this.calculatedSize += this.sizes[index]
-      if (status) {
-        status.entrySize = size
-        status.totalCalculatedSize = this.calculatedSize
-      }
-    }
-  }
-  removeItemSize(_index) {}
-  addItemSize(_index, _size) {}
-  requireSize(_k, _v, size, sizeCalculation) {
-    if (size || sizeCalculation) {
-      throw new TypeError(
-        'cannot set size without setting maxSize or maxEntrySize on cache'
-      )
-    }
-  }
-
-  *indexes({ allowStale = this.allowStale } = {}) {
-    if (this.size) {
-      for (let i = this.tail; true; ) {
-        if (!this.isValidIndex(i)) {
-          break
-        }
-        if (allowStale || !this.isStale(i)) {
-          yield i
-        }
-        if (i === this.head) {
-          break
-        } else {
-          i = this.prev[i]
-        }
-      }
-    }
-  }
-
-  *rindexes({ allowStale = this.allowStale } = {}) {
-    if (this.size) {
-      for (let i = this.head; true; ) {
-        if (!this.isValidIndex(i)) {
-          break
-        }
-        if (allowStale || !this.isStale(i)) {
-          yield i
-        }
-        if (i === this.tail) {
-          break
-        } else {
-          i = this.next[i]
-        }
-      }
-    }
-  }
-
-  isValidIndex(index) {
-    return (
-      index !== undefined &&
-      this.keyMap.get(this.keyList[index]) === index
-    )
-  }
-
-  *entries() {
-    for (const i of this.indexes()) {
-      if (
-        this.valList[i] !== undefined &&
-        this.keyList[i] !== undefined &&
-        !this.isBackgroundFetch(this.valList[i])
-      ) {
-        yield [this.keyList[i], this.valList[i]]
-      }
-    }
-  }
-  *rentries() {
-    for (const i of this.rindexes()) {
-      if (
-        this.valList[i] !== undefined &&
-        this.keyList[i] !== undefined &&
-        !this.isBackgroundFetch(this.valList[i])
-      ) {
-        yield [this.keyList[i], this.valList[i]]
-      }
-    }
-  }
-
-  *keys() {
-    for (const i of this.indexes()) {
-      if (
-        this.keyList[i] !== undefined &&
-        !this.isBackgroundFetch(this.valList[i])
-      ) {
-        yield this.keyList[i]
-      }
-    }
-  }
-  *rkeys() {
-    for (const i of this.rindexes()) {
-      if (
-        this.keyList[i] !== undefined &&
-        !this.isBackgroundFetch(this.valList[i])
-      ) {
-        yield this.keyList[i]
-      }
-    }
-  }
-
-  *values() {
-    for (const i of this.indexes()) {
-      if (
-        this.valList[i] !== undefined &&
-        !this.isBackgroundFetch(this.valList[i])
-      ) {
-        yield this.valList[i]
-      }
-    }
-  }
-  *rvalues() {
-    for (const i of this.rindexes()) {
-      if (
-        this.valList[i] !== undefined &&
-        !this.isBackgroundFetch(this.valList[i])
-      ) {
-        yield this.valList[i]
-      }
-    }
-  }
-
-  [Symbol.iterator]() {
-    return this.entries()
-  }
-
-  find(fn, getOptions) {
-    for (const i of this.indexes()) {
-      const v = this.valList[i]
-      const value = this.isBackgroundFetch(v)
-        ? v.__staleWhileFetching
-        : v
-      if (value === undefined) continue
-      if (fn(value, this.keyList[i], this)) {
-        return this.get(this.keyList[i], getOptions)
-      }
-    }
-  }
-
-  forEach(fn, thisp = this) {
-    for (const i of this.indexes()) {
-      const v = this.valList[i]
-      const value = this.isBackgroundFetch(v)
-        ? v.__staleWhileFetching
-        : v
-      if (value === undefined) continue
-      fn.call(thisp, value, this.keyList[i], this)
-    }
-  }
-
-  rforEach(fn, thisp = this) {
-    for (const i of this.rindexes()) {
-      const v = this.valList[i]
-      const value = this.isBackgroundFetch(v)
-        ? v.__staleWhileFetching
-        : v
-      if (value === undefined) continue
-      fn.call(thisp, value, this.keyList[i], this)
-    }
-  }
-
-  get prune() {
-    deprecatedMethod('prune', 'purgeStale')
-    return this.purgeStale
-  }
-
-  purgeStale() {
-    let deleted = false
-    for (const i of this.rindexes({ allowStale: true })) {
-      if (this.isStale(i)) {
-        this.delete(this.keyList[i])
-        deleted = true
-      }
-    }
-    return deleted
-  }
-
-  dump() {
-    const arr = []
-    for (const i of this.indexes({ allowStale: true })) {
-      const key = this.keyList[i]
-      const v = this.valList[i]
-      const value = this.isBackgroundFetch(v)
-        ? v.__staleWhileFetching
-        : v
-      if (value === undefined) continue
-      const entry = { value }
-      if (this.ttls) {
-        entry.ttl = this.ttls[i]
-        // always dump the start relative to a portable timestamp
-        // it's ok for this to be a bit slow, it's a rare operation.
-        const age = perf.now() - this.starts[i]
-        entry.start = Math.floor(Date.now() - age)
-      }
-      if (this.sizes) {
-        entry.size = this.sizes[i]
-      }
-      arr.unshift([key, entry])
-    }
-    return arr
-  }
-
-  load(arr) {
-    this.clear()
-    for (const [key, entry] of arr) {
-      if (entry.start) {
-        // entry.start is a portable timestamp, but we may be using
-        // node's performance.now(), so calculate the offset.
-        // it's ok for this to be a bit slow, it's a rare operation.
-        const age = Date.now() - entry.start
-        entry.start = perf.now() - age
-      }
-      this.set(key, entry.value, entry)
-    }
-  }
-
-  dispose(_v, _k, _reason) {}
-
-  set(
-    k,
-    v,
-    {
-      ttl = this.ttl,
-      start,
-      noDisposeOnSet = this.noDisposeOnSet,
-      size = 0,
-      sizeCalculation = this.sizeCalculation,
-      noUpdateTTL = this.noUpdateTTL,
-      status,
-    } = {}
-  ) {
-    size = this.requireSize(k, v, size, sizeCalculation)
-    // if the item doesn't fit, don't do anything
-    // NB: maxEntrySize set to maxSize by default
-    if (this.maxEntrySize && size > this.maxEntrySize) {
-      if (status) {
-        status.set = 'miss'
-        status.maxEntrySizeExceeded = true
-      }
-      // have to delete, in case a background fetch is there already.
-      // in non-async cases, this is a no-op
-      this.delete(k)
-      return this
-    }
-    let index = this.size === 0 ? undefined : this.keyMap.get(k)
-    if (index === undefined) {
-      // addition
-      index = this.newIndex()
-      this.keyList[index] = k
-      this.valList[index] = v
-      this.keyMap.set(k, index)
-      this.next[this.tail] = index
-      this.prev[index] = this.tail
-      this.tail = index
-      this.size++
-      this.addItemSize(index, size, status)
-      if (status) {
-        status.set = 'add'
-      }
-      noUpdateTTL = false
-    } else {
-      // update
-      this.moveToTail(index)
-      const oldVal = this.valList[index]
-      if (v !== oldVal) {
-        if (this.isBackgroundFetch(oldVal)) {
-          oldVal.__abortController.abort(new Error('replaced'))
-        } else {
-          if (!noDisposeOnSet) {
-            this.dispose(oldVal, k, 'set')
-            if (this.disposeAfter) {
-              this.disposed.push([oldVal, k, 'set'])
+        this.#max = max;
+        this.#maxSize = maxSize;
+        this.maxEntrySize = maxEntrySize || this.#maxSize;
+        this.sizeCalculation = sizeCalculation;
+        if (this.sizeCalculation) {
+            if (!this.#maxSize && !this.maxEntrySize) {
+                throw new TypeError('cannot set sizeCalculation without setting maxSize or maxEntrySize');
             }
-          }
+            if (typeof this.sizeCalculation !== 'function') {
+                throw new TypeError('sizeCalculation set to non-function');
+            }
         }
-        this.removeItemSize(index)
-        this.valList[index] = v
-        this.addItemSize(index, size, status)
-        if (status) {
-          status.set = 'replace'
-          const oldValue =
-            oldVal && this.isBackgroundFetch(oldVal)
-              ? oldVal.__staleWhileFetching
-              : oldVal
-          if (oldValue !== undefined) status.oldValue = oldValue
+        if (fetchMethod !== undefined &&
+            typeof fetchMethod !== 'function') {
+            throw new TypeError('fetchMethod must be a function if specified');
         }
-      } else if (status) {
-        status.set = 'update'
-      }
-    }
-    if (ttl !== 0 && this.ttl === 0 && !this.ttls) {
-      this.initializeTTLTracking()
-    }
-    if (!noUpdateTTL) {
-      this.setItemTTL(index, ttl, start)
-    }
-    this.statusTTL(status, index)
-    if (this.disposeAfter) {
-      while (this.disposed.length) {
-        this.disposeAfter(...this.disposed.shift())
-      }
-    }
-    return this
-  }
-
-  newIndex() {
-    if (this.size === 0) {
-      return this.tail
-    }
-    if (this.size === this.max && this.max !== 0) {
-      return this.evict(false)
-    }
-    if (this.free.length !== 0) {
-      return this.free.pop()
-    }
-    // initial fill, just keep writing down the list
-    return this.initialFill++
-  }
-
-  pop() {
-    if (this.size) {
-      const val = this.valList[this.head]
-      this.evict(true)
-      return val
-    }
-  }
-
-  evict(free) {
-    const head = this.head
-    const k = this.keyList[head]
-    const v = this.valList[head]
-    if (this.isBackgroundFetch(v)) {
-      v.__abortController.abort(new Error('evicted'))
-    } else {
-      this.dispose(v, k, 'evict')
-      if (this.disposeAfter) {
-        this.disposed.push([v, k, 'evict'])
-      }
-    }
-    this.removeItemSize(head)
-    // if we aren't about to use the index, then null these out
-    if (free) {
-      this.keyList[head] = null
-      this.valList[head] = null
-      this.free.push(head)
-    }
-    this.head = this.next[head]
-    this.keyMap.delete(k)
-    this.size--
-    return head
-  }
-
-  has(k, { updateAgeOnHas = this.updateAgeOnHas, status } = {}) {
-    const index = this.keyMap.get(k)
-    if (index !== undefined) {
-      if (!this.isStale(index)) {
-        if (updateAgeOnHas) {
-          this.updateItemAge(index)
+        this.#fetchMethod = fetchMethod;
+        this.#hasFetchMethod = !!fetchMethod;
+        this.#keyMap = new Map();
+        this.#keyList = new Array(max).fill(undefined);
+        this.#valList = new Array(max).fill(undefined);
+        this.#next = new UintArray(max);
+        this.#prev = new UintArray(max);
+        this.#head = 0;
+        this.#tail = 0;
+        this.#free = Stack.create(max);
+        this.#size = 0;
+        this.#calculatedSize = 0;
+        if (typeof dispose === 'function') {
+            this.#dispose = dispose;
         }
-        if (status) status.has = 'hit'
-        this.statusTTL(status, index)
-        return true
-      } else if (status) {
-        status.has = 'stale'
-        this.statusTTL(status, index)
-      }
-    } else if (status) {
-      status.has = 'miss'
-    }
-    return false
-  }
-
-  // like get(), but without any LRU updating or TTL expiration
-  peek(k, { allowStale = this.allowStale } = {}) {
-    const index = this.keyMap.get(k)
-    if (index !== undefined && (allowStale || !this.isStale(index))) {
-      const v = this.valList[index]
-      // either stale and allowed, or forcing a refresh of non-stale value
-      return this.isBackgroundFetch(v) ? v.__staleWhileFetching : v
-    }
-  }
-
-  backgroundFetch(k, index, options, context) {
-    const v = index === undefined ? undefined : this.valList[index]
-    if (this.isBackgroundFetch(v)) {
-      return v
-    }
-    const ac = new AC()
-    if (options.signal) {
-      options.signal.addEventListener('abort', () =>
-        ac.abort(options.signal.reason)
-      )
-    }
-    const fetchOpts = {
-      signal: ac.signal,
-      options,
-      context,
-    }
-    const cb = (v, updateCache = false) => {
-      const { aborted } = ac.signal
-      const ignoreAbort = options.ignoreFetchAbort && v !== undefined
-      if (options.status) {
-        if (aborted && !updateCache) {
-          options.status.fetchAborted = true
-          options.status.fetchError = ac.signal.reason
-          if (ignoreAbort) options.status.fetchAbortIgnored = true
-        } else {
-          options.status.fetchResolved = true
+        if (typeof disposeAfter === 'function') {
+            this.#disposeAfter = disposeAfter;
+            this.#disposed = [];
         }
-      }
-      if (aborted && !ignoreAbort && !updateCache) {
-        return fetchFail(ac.signal.reason)
-      }
-      // either we didn't abort, and are still here, or we did, and ignored
-      if (this.valList[index] === p) {
+        else {
+            this.#disposeAfter = undefined;
+            this.#disposed = undefined;
+        }
+        this.#hasDispose = !!this.#dispose;
+        this.#hasDisposeAfter = !!this.#disposeAfter;
+        this.noDisposeOnSet = !!noDisposeOnSet;
+        this.noUpdateTTL = !!noUpdateTTL;
+        this.noDeleteOnFetchRejection = !!noDeleteOnFetchRejection;
+        this.allowStaleOnFetchRejection = !!allowStaleOnFetchRejection;
+        this.allowStaleOnFetchAbort = !!allowStaleOnFetchAbort;
+        this.ignoreFetchAbort = !!ignoreFetchAbort;
+        // NB: maxEntrySize is set to maxSize if it's set
+        if (this.maxEntrySize !== 0) {
+            if (this.#maxSize !== 0) {
+                if (!isPosInt(this.#maxSize)) {
+                    throw new TypeError('maxSize must be a positive integer if specified');
+                }
+            }
+            if (!isPosInt(this.maxEntrySize)) {
+                throw new TypeError('maxEntrySize must be a positive integer if specified');
+            }
+            this.#initializeSizeTracking();
+        }
+        this.allowStale = !!allowStale;
+        this.noDeleteOnStaleGet = !!noDeleteOnStaleGet;
+        this.updateAgeOnGet = !!updateAgeOnGet;
+        this.updateAgeOnHas = !!updateAgeOnHas;
+        this.ttlResolution =
+            isPosInt(ttlResolution) || ttlResolution === 0
+                ? ttlResolution
+                : 1;
+        this.ttlAutopurge = !!ttlAutopurge;
+        this.ttl = ttl || 0;
+        if (this.ttl) {
+            if (!isPosInt(this.ttl)) {
+                throw new TypeError('ttl must be a positive integer if specified');
+            }
+            this.#initializeTTLTracking();
+        }
+        // do not allow completely unbounded caches
+        if (this.#max === 0 && this.ttl === 0 && this.#maxSize === 0) {
+            throw new TypeError('At least one of max, maxSize, or ttl is required');
+        }
+        if (!this.ttlAutopurge && !this.#max && !this.#maxSize) {
+            const code = 'LRU_CACHE_UNBOUNDED';
+            if (shouldWarn(code)) {
+                warned.add(code);
+                const msg = 'TTL caching without ttlAutopurge, max, or maxSize can ' +
+                    'result in unbounded memory consumption.';
+                emitWarning(msg, 'UnboundedCacheWarning', code, LRUCache);
+            }
+        }
+    }
+    /**
+     * Return the remaining TTL time for a given entry key
+     */
+    getRemainingTTL(key) {
+        return this.#keyMap.has(key) ? Infinity : 0;
+    }
+    #initializeTTLTracking() {
+        const ttls = new ZeroArray(this.#max);
+        const starts = new ZeroArray(this.#max);
+        this.#ttls = ttls;
+        this.#starts = starts;
+        this.#setItemTTL = (index, ttl, start = perf.now()) => {
+            starts[index] = ttl !== 0 ? start : 0;
+            ttls[index] = ttl;
+            if (ttl !== 0 && this.ttlAutopurge) {
+                const t = setTimeout(() => {
+                    if (this.#isStale(index)) {
+                        this.delete(this.#keyList[index]);
+                    }
+                }, ttl + 1);
+                // unref() not supported on all platforms
+                /* c8 ignore start */
+                if (t.unref) {
+                    t.unref();
+                }
+                /* c8 ignore stop */
+            }
+        };
+        this.#updateItemAge = index => {
+            starts[index] = ttls[index] !== 0 ? perf.now() : 0;
+        };
+        this.#statusTTL = (status, index) => {
+            if (ttls[index]) {
+                const ttl = ttls[index];
+                const start = starts[index];
+                status.ttl = ttl;
+                status.start = start;
+                status.now = cachedNow || getNow();
+                status.remainingTTL = status.now + ttl - start;
+            }
+        };
+        // debounce calls to perf.now() to 1s so we're not hitting
+        // that costly call repeatedly.
+        let cachedNow = 0;
+        const getNow = () => {
+            const n = perf.now();
+            if (this.ttlResolution > 0) {
+                cachedNow = n;
+                const t = setTimeout(() => (cachedNow = 0), this.ttlResolution);
+                // not available on all platforms
+                /* c8 ignore start */
+                if (t.unref) {
+                    t.unref();
+                }
+                /* c8 ignore stop */
+            }
+            return n;
+        };
+        this.getRemainingTTL = key => {
+            const index = this.#keyMap.get(key);
+            if (index === undefined) {
+                return 0;
+            }
+            return ttls[index] === 0 || starts[index] === 0
+                ? Infinity
+                : starts[index] + ttls[index] - (cachedNow || getNow());
+        };
+        this.#isStale = index => {
+            return (ttls[index] !== 0 &&
+                starts[index] !== 0 &&
+                (cachedNow || getNow()) - starts[index] > ttls[index]);
+        };
+    }
+    // conditionally set private methods related to TTL
+    #updateItemAge = () => { };
+    #statusTTL = () => { };
+    #setItemTTL = () => { };
+    /* c8 ignore stop */
+    #isStale = () => false;
+    #initializeSizeTracking() {
+        const sizes = new ZeroArray(this.#max);
+        this.#calculatedSize = 0;
+        this.#sizes = sizes;
+        this.#removeItemSize = index => {
+            this.#calculatedSize -= sizes[index];
+            sizes[index] = 0;
+        };
+        this.#requireSize = (k, v, size, sizeCalculation) => {
+            // provisionally accept background fetches.
+            // actual value size will be checked when they return.
+            if (this.#isBackgroundFetch(v)) {
+                return 0;
+            }
+            if (!isPosInt(size)) {
+                if (sizeCalculation) {
+                    if (typeof sizeCalculation !== 'function') {
+                        throw new TypeError('sizeCalculation must be a function');
+                    }
+                    size = sizeCalculation(v, k);
+                    if (!isPosInt(size)) {
+                        throw new TypeError('sizeCalculation return invalid (expect positive integer)');
+                    }
+                }
+                else {
+                    throw new TypeError('invalid size value (must be positive integer). ' +
+                        'When maxSize or maxEntrySize is used, sizeCalculation ' +
+                        'or size must be set.');
+                }
+            }
+            return size;
+        };
+        this.#addItemSize = (index, size, status) => {
+            sizes[index] = size;
+            if (this.#maxSize) {
+                const maxSize = this.#maxSize - sizes[index];
+                while (this.#calculatedSize > maxSize) {
+                    this.#evict(true);
+                }
+            }
+            this.#calculatedSize += sizes[index];
+            if (status) {
+                status.entrySize = size;
+                status.totalCalculatedSize = this.#calculatedSize;
+            }
+        };
+    }
+    #removeItemSize = _i => { };
+    #addItemSize = (_i, _s, _st) => { };
+    #requireSize = (_k, _v, size, sizeCalculation) => {
+        if (size || sizeCalculation) {
+            throw new TypeError('cannot set size without setting maxSize or maxEntrySize on cache');
+        }
+        return 0;
+    };
+    *#indexes({ allowStale = this.allowStale } = {}) {
+        if (this.#size) {
+            for (let i = this.#tail; true;) {
+                if (!this.#isValidIndex(i)) {
+                    break;
+                }
+                if (allowStale || !this.#isStale(i)) {
+                    yield i;
+                }
+                if (i === this.#head) {
+                    break;
+                }
+                else {
+                    i = this.#prev[i];
+                }
+            }
+        }
+    }
+    *#rindexes({ allowStale = this.allowStale } = {}) {
+        if (this.#size) {
+            for (let i = this.#head; true;) {
+                if (!this.#isValidIndex(i)) {
+                    break;
+                }
+                if (allowStale || !this.#isStale(i)) {
+                    yield i;
+                }
+                if (i === this.#tail) {
+                    break;
+                }
+                else {
+                    i = this.#next[i];
+                }
+            }
+        }
+    }
+    #isValidIndex(index) {
+        return (index !== undefined &&
+            this.#keyMap.get(this.#keyList[index]) === index);
+    }
+    /**
+     * Return a generator yielding `[key, value]` pairs,
+     * in order from most recently used to least recently used.
+     */
+    *entries() {
+        for (const i of this.#indexes()) {
+            if (this.#valList[i] !== undefined &&
+                this.#keyList[i] !== undefined &&
+                !this.#isBackgroundFetch(this.#valList[i])) {
+                yield [this.#keyList[i], this.#valList[i]];
+            }
+        }
+    }
+    /**
+     * Inverse order version of {@link LRUCache.entries}
+     *
+     * Return a generator yielding `[key, value]` pairs,
+     * in order from least recently used to most recently used.
+     */
+    *rentries() {
+        for (const i of this.#rindexes()) {
+            if (this.#valList[i] !== undefined &&
+                this.#keyList[i] !== undefined &&
+                !this.#isBackgroundFetch(this.#valList[i])) {
+                yield [this.#keyList[i], this.#valList[i]];
+            }
+        }
+    }
+    /**
+     * Return a generator yielding the keys in the cache,
+     * in order from most recently used to least recently used.
+     */
+    *keys() {
+        for (const i of this.#indexes()) {
+            const k = this.#keyList[i];
+            if (k !== undefined &&
+                !this.#isBackgroundFetch(this.#valList[i])) {
+                yield k;
+            }
+        }
+    }
+    /**
+     * Inverse order version of {@link LRUCache.keys}
+     *
+     * Return a generator yielding the keys in the cache,
+     * in order from least recently used to most recently used.
+     */
+    *rkeys() {
+        for (const i of this.#rindexes()) {
+            const k = this.#keyList[i];
+            if (k !== undefined &&
+                !this.#isBackgroundFetch(this.#valList[i])) {
+                yield k;
+            }
+        }
+    }
+    /**
+     * Return a generator yielding the values in the cache,
+     * in order from most recently used to least recently used.
+     */
+    *values() {
+        for (const i of this.#indexes()) {
+            const v = this.#valList[i];
+            if (v !== undefined &&
+                !this.#isBackgroundFetch(this.#valList[i])) {
+                yield this.#valList[i];
+            }
+        }
+    }
+    /**
+     * Inverse order version of {@link LRUCache.values}
+     *
+     * Return a generator yielding the values in the cache,
+     * in order from least recently used to most recently used.
+     */
+    *rvalues() {
+        for (const i of this.#rindexes()) {
+            const v = this.#valList[i];
+            if (v !== undefined &&
+                !this.#isBackgroundFetch(this.#valList[i])) {
+                yield this.#valList[i];
+            }
+        }
+    }
+    /**
+     * Iterating over the cache itself yields the same results as
+     * {@link LRUCache.entries}
+     */
+    [Symbol.iterator]() {
+        return this.entries();
+    }
+    /**
+     * Find a value for which the supplied fn method returns a truthy value,
+     * similar to Array.find().  fn is called as fn(value, key, cache).
+     */
+    find(fn, getOptions = {}) {
+        for (const i of this.#indexes()) {
+            const v = this.#valList[i];
+            const value = this.#isBackgroundFetch(v)
+                ? v.__staleWhileFetching
+                : v;
+            if (value === undefined)
+                continue;
+            if (fn(value, this.#keyList[i], this)) {
+                return this.get(this.#keyList[i], getOptions);
+            }
+        }
+    }
+    /**
+     * Call the supplied function on each item in the cache, in order from
+     * most recently used to least recently used.  fn is called as
+     * fn(value, key, cache).  Does not update age or recenty of use.
+     * Does not iterate over stale values.
+     */
+    forEach(fn, thisp = this) {
+        for (const i of this.#indexes()) {
+            const v = this.#valList[i];
+            const value = this.#isBackgroundFetch(v)
+                ? v.__staleWhileFetching
+                : v;
+            if (value === undefined)
+                continue;
+            fn.call(thisp, value, this.#keyList[i], this);
+        }
+    }
+    /**
+     * The same as {@link LRUCache.forEach} but items are iterated over in
+     * reverse order.  (ie, less recently used items are iterated over first.)
+     */
+    rforEach(fn, thisp = this) {
+        for (const i of this.#rindexes()) {
+            const v = this.#valList[i];
+            const value = this.#isBackgroundFetch(v)
+                ? v.__staleWhileFetching
+                : v;
+            if (value === undefined)
+                continue;
+            fn.call(thisp, value, this.#keyList[i], this);
+        }
+    }
+    /**
+     * Delete any stale entries. Returns true if anything was removed,
+     * false otherwise.
+     */
+    purgeStale() {
+        let deleted = false;
+        for (const i of this.#rindexes({ allowStale: true })) {
+            if (this.#isStale(i)) {
+                this.delete(this.#keyList[i]);
+                deleted = true;
+            }
+        }
+        return deleted;
+    }
+    /**
+     * Return an array of [key, {@link LRUCache.Entry}] tuples which can be
+     * passed to cache.load()
+     */
+    dump() {
+        const arr = [];
+        for (const i of this.#indexes({ allowStale: true })) {
+            const key = this.#keyList[i];
+            const v = this.#valList[i];
+            const value = this.#isBackgroundFetch(v)
+                ? v.__staleWhileFetching
+                : v;
+            if (value === undefined || key === undefined)
+                continue;
+            const entry = { value };
+            if (this.#ttls && this.#starts) {
+                entry.ttl = this.#ttls[i];
+                // always dump the start relative to a portable timestamp
+                // it's ok for this to be a bit slow, it's a rare operation.
+                const age = perf.now() - this.#starts[i];
+                entry.start = Math.floor(Date.now() - age);
+            }
+            if (this.#sizes) {
+                entry.size = this.#sizes[i];
+            }
+            arr.unshift([key, entry]);
+        }
+        return arr;
+    }
+    /**
+     * Reset the cache and load in the items in entries in the order listed.
+     * Note that the shape of the resulting cache may be different if the
+     * same options are not used in both caches.
+     */
+    load(arr) {
+        this.clear();
+        for (const [key, entry] of arr) {
+            if (entry.start) {
+                // entry.start is a portable timestamp, but we may be using
+                // node's performance.now(), so calculate the offset, so that
+                // we get the intended remaining TTL, no matter how long it's
+                // been on ice.
+                //
+                // it's ok for this to be a bit slow, it's a rare operation.
+                const age = Date.now() - entry.start;
+                entry.start = perf.now() - age;
+            }
+            this.set(key, entry.value, entry);
+        }
+    }
+    /**
+     * Add a value to the cache.
+     *
+     * Note: if `undefined` is specified as a value, this is an alias for
+     * {@link LRUCache#delete}
+     */
+    set(k, v, setOptions = {}) {
         if (v === undefined) {
-          if (p.__staleWhileFetching) {
-            this.valList[index] = p.__staleWhileFetching
-          } else {
-            this.delete(k)
-          }
-        } else {
-          if (options.status) options.status.fetchUpdated = true
-          this.set(k, v, fetchOpts.options)
+            this.delete(k);
+            return this;
         }
-      }
-      return v
-    }
-    const eb = er => {
-      if (options.status) {
-        options.status.fetchRejected = true
-        options.status.fetchError = er
-      }
-      return fetchFail(er)
-    }
-    const fetchFail = er => {
-      const { aborted } = ac.signal
-      const allowStaleAborted =
-        aborted && options.allowStaleOnFetchAbort
-      const allowStale =
-        allowStaleAborted || options.allowStaleOnFetchRejection
-      const noDelete = allowStale || options.noDeleteOnFetchRejection
-      if (this.valList[index] === p) {
-        // if we allow stale on fetch rejections, then we need to ensure that
-        // the stale value is not removed from the cache when the fetch fails.
-        const del = !noDelete || p.__staleWhileFetching === undefined
-        if (del) {
-          this.delete(k)
-        } else if (!allowStaleAborted) {
-          // still replace the *promise* with the stale value,
-          // since we are done with the promise at this point.
-          // leave it untouched if we're still waiting for an
-          // aborted background fetch that hasn't yet returned.
-          this.valList[index] = p.__staleWhileFetching
-        }
-      }
-      if (allowStale) {
-        if (options.status && p.__staleWhileFetching !== undefined) {
-          options.status.returnedStale = true
-        }
-        return p.__staleWhileFetching
-      } else if (p.__returned === p) {
-        throw er
-      }
-    }
-    const pcall = (res, rej) => {
-      this.fetchMethod(k, v, fetchOpts).then(v => res(v), rej)
-      // ignored, we go until we finish, regardless.
-      // defer check until we are actually aborting,
-      // so fetchMethod can override.
-      ac.signal.addEventListener('abort', () => {
-        if (
-          !options.ignoreFetchAbort ||
-          options.allowStaleOnFetchAbort
-        ) {
-          res()
-          // when it eventually resolves, update the cache.
-          if (options.allowStaleOnFetchAbort) {
-            res = v => cb(v, true)
-          }
-        }
-      })
-    }
-    if (options.status) options.status.fetchDispatched = true
-    const p = new Promise(pcall).then(cb, eb)
-    p.__abortController = ac
-    p.__staleWhileFetching = v
-    p.__returned = null
-    if (index === undefined) {
-      // internal, don't expose status.
-      this.set(k, p, { ...fetchOpts.options, status: undefined })
-      index = this.keyMap.get(k)
-    } else {
-      this.valList[index] = p
-    }
-    return p
-  }
-
-  isBackgroundFetch(p) {
-    return (
-      p &&
-      typeof p === 'object' &&
-      typeof p.then === 'function' &&
-      Object.prototype.hasOwnProperty.call(
-        p,
-        '__staleWhileFetching'
-      ) &&
-      Object.prototype.hasOwnProperty.call(p, '__returned') &&
-      (p.__returned === p || p.__returned === null)
-    )
-  }
-
-  // this takes the union of get() and set() opts, because it does both
-  async fetch(
-    k,
-    {
-      // get options
-      allowStale = this.allowStale,
-      updateAgeOnGet = this.updateAgeOnGet,
-      noDeleteOnStaleGet = this.noDeleteOnStaleGet,
-      // set options
-      ttl = this.ttl,
-      noDisposeOnSet = this.noDisposeOnSet,
-      size = 0,
-      sizeCalculation = this.sizeCalculation,
-      noUpdateTTL = this.noUpdateTTL,
-      // fetch exclusive options
-      noDeleteOnFetchRejection = this.noDeleteOnFetchRejection,
-      allowStaleOnFetchRejection = this.allowStaleOnFetchRejection,
-      ignoreFetchAbort = this.ignoreFetchAbort,
-      allowStaleOnFetchAbort = this.allowStaleOnFetchAbort,
-      fetchContext = this.fetchContext,
-      forceRefresh = false,
-      status,
-      signal,
-    } = {}
-  ) {
-    if (!this.fetchMethod) {
-      if (status) status.fetch = 'get'
-      return this.get(k, {
-        allowStale,
-        updateAgeOnGet,
-        noDeleteOnStaleGet,
-        status,
-      })
-    }
-
-    const options = {
-      allowStale,
-      updateAgeOnGet,
-      noDeleteOnStaleGet,
-      ttl,
-      noDisposeOnSet,
-      size,
-      sizeCalculation,
-      noUpdateTTL,
-      noDeleteOnFetchRejection,
-      allowStaleOnFetchRejection,
-      allowStaleOnFetchAbort,
-      ignoreFetchAbort,
-      status,
-      signal,
-    }
-
-    let index = this.keyMap.get(k)
-    if (index === undefined) {
-      if (status) status.fetch = 'miss'
-      const p = this.backgroundFetch(k, index, options, fetchContext)
-      return (p.__returned = p)
-    } else {
-      // in cache, maybe already fetching
-      const v = this.valList[index]
-      if (this.isBackgroundFetch(v)) {
-        const stale =
-          allowStale && v.__staleWhileFetching !== undefined
-        if (status) {
-          status.fetch = 'inflight'
-          if (stale) status.returnedStale = true
-        }
-        return stale ? v.__staleWhileFetching : (v.__returned = v)
-      }
-
-      // if we force a refresh, that means do NOT serve the cached value,
-      // unless we are already in the process of refreshing the cache.
-      const isStale = this.isStale(index)
-      if (!forceRefresh && !isStale) {
-        if (status) status.fetch = 'hit'
-        this.moveToTail(index)
-        if (updateAgeOnGet) {
-          this.updateItemAge(index)
-        }
-        this.statusTTL(status, index)
-        return v
-      }
-
-      // ok, it is stale or a forced refresh, and not already fetching.
-      // refresh the cache.
-      const p = this.backgroundFetch(k, index, options, fetchContext)
-      const hasStale = p.__staleWhileFetching !== undefined
-      const staleVal = hasStale && allowStale
-      if (status) {
-        status.fetch = hasStale && isStale ? 'stale' : 'refresh'
-        if (staleVal && isStale) status.returnedStale = true
-      }
-      return staleVal ? p.__staleWhileFetching : (p.__returned = p)
-    }
-  }
-
-  get(
-    k,
-    {
-      allowStale = this.allowStale,
-      updateAgeOnGet = this.updateAgeOnGet,
-      noDeleteOnStaleGet = this.noDeleteOnStaleGet,
-      status,
-    } = {}
-  ) {
-    const index = this.keyMap.get(k)
-    if (index !== undefined) {
-      const value = this.valList[index]
-      const fetching = this.isBackgroundFetch(value)
-      this.statusTTL(status, index)
-      if (this.isStale(index)) {
-        if (status) status.get = 'stale'
-        // delete only if not an in-flight background fetch
-        if (!fetching) {
-          if (!noDeleteOnStaleGet) {
-            this.delete(k)
-          }
-          if (status) status.returnedStale = allowStale
-          return allowStale ? value : undefined
-        } else {
-          if (status) {
-            status.returnedStale =
-              allowStale && value.__staleWhileFetching !== undefined
-          }
-          return allowStale ? value.__staleWhileFetching : undefined
-        }
-      } else {
-        if (status) status.get = 'hit'
-        // if we're currently fetching it, we don't actually have it yet
-        // it's not stale, which means this isn't a staleWhileRefetching.
-        // If it's not stale, and fetching, AND has a __staleWhileFetching
-        // value, then that means the user fetched with {forceRefresh:true},
-        // so it's safe to return that value.
-        if (fetching) {
-          return value.__staleWhileFetching
-        }
-        this.moveToTail(index)
-        if (updateAgeOnGet) {
-          this.updateItemAge(index)
-        }
-        return value
-      }
-    } else if (status) {
-      status.get = 'miss'
-    }
-  }
-
-  connect(p, n) {
-    this.prev[n] = p
-    this.next[p] = n
-  }
-
-  moveToTail(index) {
-    // if tail already, nothing to do
-    // if head, move head to next[index]
-    // else
-    //   move next[prev[index]] to next[index] (head has no prev)
-    //   move prev[next[index]] to prev[index]
-    // prev[index] = tail
-    // next[tail] = index
-    // tail = index
-    if (index !== this.tail) {
-      if (index === this.head) {
-        this.head = this.next[index]
-      } else {
-        this.connect(this.prev[index], this.next[index])
-      }
-      this.connect(this.tail, index)
-      this.tail = index
-    }
-  }
-
-  get del() {
-    deprecatedMethod('del', 'delete')
-    return this.delete
-  }
-
-  delete(k) {
-    let deleted = false
-    if (this.size !== 0) {
-      const index = this.keyMap.get(k)
-      if (index !== undefined) {
-        deleted = true
-        if (this.size === 1) {
-          this.clear()
-        } else {
-          this.removeItemSize(index)
-          const v = this.valList[index]
-          if (this.isBackgroundFetch(v)) {
-            v.__abortController.abort(new Error('deleted'))
-          } else {
-            this.dispose(v, k, 'delete')
-            if (this.disposeAfter) {
-              this.disposed.push([v, k, 'delete'])
+        const { ttl = this.ttl, start, noDisposeOnSet = this.noDisposeOnSet, sizeCalculation = this.sizeCalculation, status, } = setOptions;
+        let { noUpdateTTL = this.noUpdateTTL } = setOptions;
+        const size = this.#requireSize(k, v, setOptions.size || 0, sizeCalculation);
+        // if the item doesn't fit, don't do anything
+        // NB: maxEntrySize set to maxSize by default
+        if (this.maxEntrySize && size > this.maxEntrySize) {
+            if (status) {
+                status.set = 'miss';
+                status.maxEntrySizeExceeded = true;
             }
-          }
-          this.keyMap.delete(k)
-          this.keyList[index] = null
-          this.valList[index] = null
-          if (index === this.tail) {
-            this.tail = this.prev[index]
-          } else if (index === this.head) {
-            this.head = this.next[index]
-          } else {
-            this.next[this.prev[index]] = this.next[index]
-            this.prev[this.next[index]] = this.prev[index]
-          }
-          this.size--
-          this.free.push(index)
+            // have to delete, in case something is there already.
+            this.delete(k);
+            return this;
         }
-      }
-    }
-    if (this.disposed) {
-      while (this.disposed.length) {
-        this.disposeAfter(...this.disposed.shift())
-      }
-    }
-    return deleted
-  }
-
-  clear() {
-    for (const index of this.rindexes({ allowStale: true })) {
-      const v = this.valList[index]
-      if (this.isBackgroundFetch(v)) {
-        v.__abortController.abort(new Error('deleted'))
-      } else {
-        const k = this.keyList[index]
-        this.dispose(v, k, 'delete')
-        if (this.disposeAfter) {
-          this.disposed.push([v, k, 'delete'])
+        let index = this.#size === 0 ? undefined : this.#keyMap.get(k);
+        if (index === undefined) {
+            // addition
+            index = (this.#size === 0
+                ? this.#tail
+                : this.#free.length !== 0
+                    ? this.#free.pop()
+                    : this.#size === this.#max
+                        ? this.#evict(false)
+                        : this.#size);
+            this.#keyList[index] = k;
+            this.#valList[index] = v;
+            this.#keyMap.set(k, index);
+            this.#next[this.#tail] = index;
+            this.#prev[index] = this.#tail;
+            this.#tail = index;
+            this.#size++;
+            this.#addItemSize(index, size, status);
+            if (status)
+                status.set = 'add';
+            noUpdateTTL = false;
         }
-      }
+        else {
+            // update
+            this.#moveToTail(index);
+            const oldVal = this.#valList[index];
+            if (v !== oldVal) {
+                if (this.#hasFetchMethod && this.#isBackgroundFetch(oldVal)) {
+                    oldVal.__abortController.abort(new Error('replaced'));
+                }
+                else if (!noDisposeOnSet) {
+                    if (this.#hasDispose) {
+                        this.#dispose?.(oldVal, k, 'set');
+                    }
+                    if (this.#hasDisposeAfter) {
+                        this.#disposed?.push([oldVal, k, 'set']);
+                    }
+                }
+                this.#removeItemSize(index);
+                this.#addItemSize(index, size, status);
+                this.#valList[index] = v;
+                if (status) {
+                    status.set = 'replace';
+                    const oldValue = oldVal && this.#isBackgroundFetch(oldVal)
+                        ? oldVal.__staleWhileFetching
+                        : oldVal;
+                    if (oldValue !== undefined)
+                        status.oldValue = oldValue;
+                }
+            }
+            else if (status) {
+                status.set = 'update';
+            }
+        }
+        if (ttl !== 0 && !this.#ttls) {
+            this.#initializeTTLTracking();
+        }
+        if (this.#ttls) {
+            if (!noUpdateTTL) {
+                this.#setItemTTL(index, ttl, start);
+            }
+            if (status)
+                this.#statusTTL(status, index);
+        }
+        if (!noDisposeOnSet && this.#hasDisposeAfter && this.#disposed) {
+            const dt = this.#disposed;
+            let task;
+            while ((task = dt?.shift())) {
+                this.#disposeAfter?.(...task);
+            }
+        }
+        return this;
     }
-
-    this.keyMap.clear()
-    this.valList.fill(null)
-    this.keyList.fill(null)
-    if (this.ttls) {
-      this.ttls.fill(0)
-      this.starts.fill(0)
+    /**
+     * Evict the least recently used item, returning its value or
+     * `undefined` if cache is empty.
+     */
+    pop() {
+        try {
+            while (this.#size) {
+                const val = this.#valList[this.#head];
+                this.#evict(true);
+                if (this.#isBackgroundFetch(val)) {
+                    if (val.__staleWhileFetching) {
+                        return val.__staleWhileFetching;
+                    }
+                }
+                else if (val !== undefined) {
+                    return val;
+                }
+            }
+        }
+        finally {
+            if (this.#hasDisposeAfter && this.#disposed) {
+                const dt = this.#disposed;
+                let task;
+                while ((task = dt?.shift())) {
+                    this.#disposeAfter?.(...task);
+                }
+            }
+        }
     }
-    if (this.sizes) {
-      this.sizes.fill(0)
+    #evict(free) {
+        const head = this.#head;
+        const k = this.#keyList[head];
+        const v = this.#valList[head];
+        if (this.#hasFetchMethod && this.#isBackgroundFetch(v)) {
+            v.__abortController.abort(new Error('evicted'));
+        }
+        else if (this.#hasDispose || this.#hasDisposeAfter) {
+            if (this.#hasDispose) {
+                this.#dispose?.(v, k, 'evict');
+            }
+            if (this.#hasDisposeAfter) {
+                this.#disposed?.push([v, k, 'evict']);
+            }
+        }
+        this.#removeItemSize(head);
+        // if we aren't about to use the index, then null these out
+        if (free) {
+            this.#keyList[head] = undefined;
+            this.#valList[head] = undefined;
+            this.#free.push(head);
+        }
+        if (this.#size === 1) {
+            this.#head = this.#tail = 0;
+            this.#free.length = 0;
+        }
+        else {
+            this.#head = this.#next[head];
+        }
+        this.#keyMap.delete(k);
+        this.#size--;
+        return head;
     }
-    this.head = 0
-    this.tail = 0
-    this.initialFill = 1
-    this.free.length = 0
-    this.calculatedSize = 0
-    this.size = 0
-    if (this.disposed) {
-      while (this.disposed.length) {
-        this.disposeAfter(...this.disposed.shift())
-      }
+    /**
+     * Check if a key is in the cache, without updating the recency of use.
+     * Will return false if the item is stale, even though it is technically
+     * in the cache.
+     *
+     * Will not update item age unless
+     * {@link LRUCache.OptionsBase.updateAgeOnHas} is set.
+     */
+    has(k, hasOptions = {}) {
+        const { updateAgeOnHas = this.updateAgeOnHas, status } = hasOptions;
+        const index = this.#keyMap.get(k);
+        if (index !== undefined) {
+            const v = this.#valList[index];
+            if (this.#isBackgroundFetch(v) &&
+                v.__staleWhileFetching === undefined) {
+                return false;
+            }
+            if (!this.#isStale(index)) {
+                if (updateAgeOnHas) {
+                    this.#updateItemAge(index);
+                }
+                if (status) {
+                    status.has = 'hit';
+                    this.#statusTTL(status, index);
+                }
+                return true;
+            }
+            else if (status) {
+                status.has = 'stale';
+                this.#statusTTL(status, index);
+            }
+        }
+        else if (status) {
+            status.has = 'miss';
+        }
+        return false;
     }
-  }
-
-  get reset() {
-    deprecatedMethod('reset', 'clear')
-    return this.clear
-  }
-
-  get length() {
-    deprecatedProperty('length', 'size')
-    return this.size
-  }
-
-  static get AbortController() {
-    return AC
-  }
-  static get AbortSignal() {
-    return AS
-  }
+    /**
+     * Like {@link LRUCache#get} but doesn't update recency or delete stale
+     * items.
+     *
+     * Returns `undefined` if the item is stale, unless
+     * {@link LRUCache.OptionsBase.allowStale} is set.
+     */
+    peek(k, peekOptions = {}) {
+        const { allowStale = this.allowStale } = peekOptions;
+        const index = this.#keyMap.get(k);
+        if (index !== undefined &&
+            (allowStale || !this.#isStale(index))) {
+            const v = this.#valList[index];
+            // either stale and allowed, or forcing a refresh of non-stale value
+            return this.#isBackgroundFetch(v) ? v.__staleWhileFetching : v;
+        }
+    }
+    #backgroundFetch(k, index, options, context) {
+        const v = index === undefined ? undefined : this.#valList[index];
+        if (this.#isBackgroundFetch(v)) {
+            return v;
+        }
+        const ac = new AC();
+        const { signal } = options;
+        // when/if our AC signals, then stop listening to theirs.
+        signal?.addEventListener('abort', () => ac.abort(signal.reason), {
+            signal: ac.signal,
+        });
+        const fetchOpts = {
+            signal: ac.signal,
+            options,
+            context,
+        };
+        const cb = (v, updateCache = false) => {
+            const { aborted } = ac.signal;
+            const ignoreAbort = options.ignoreFetchAbort && v !== undefined;
+            if (options.status) {
+                if (aborted && !updateCache) {
+                    options.status.fetchAborted = true;
+                    options.status.fetchError = ac.signal.reason;
+                    if (ignoreAbort)
+                        options.status.fetchAbortIgnored = true;
+                }
+                else {
+                    options.status.fetchResolved = true;
+                }
+            }
+            if (aborted && !ignoreAbort && !updateCache) {
+                return fetchFail(ac.signal.reason);
+            }
+            // either we didn't abort, and are still here, or we did, and ignored
+            const bf = p;
+            if (this.#valList[index] === p) {
+                if (v === undefined) {
+                    if (bf.__staleWhileFetching) {
+                        this.#valList[index] = bf.__staleWhileFetching;
+                    }
+                    else {
+                        this.delete(k);
+                    }
+                }
+                else {
+                    if (options.status)
+                        options.status.fetchUpdated = true;
+                    this.set(k, v, fetchOpts.options);
+                }
+            }
+            return v;
+        };
+        const eb = (er) => {
+            if (options.status) {
+                options.status.fetchRejected = true;
+                options.status.fetchError = er;
+            }
+            return fetchFail(er);
+        };
+        const fetchFail = (er) => {
+            const { aborted } = ac.signal;
+            const allowStaleAborted = aborted && options.allowStaleOnFetchAbort;
+            const allowStale = allowStaleAborted || options.allowStaleOnFetchRejection;
+            const noDelete = allowStale || options.noDeleteOnFetchRejection;
+            const bf = p;
+            if (this.#valList[index] === p) {
+                // if we allow stale on fetch rejections, then we need to ensure that
+                // the stale value is not removed from the cache when the fetch fails.
+                const del = !noDelete || bf.__staleWhileFetching === undefined;
+                if (del) {
+                    this.delete(k);
+                }
+                else if (!allowStaleAborted) {
+                    // still replace the *promise* with the stale value,
+                    // since we are done with the promise at this point.
+                    // leave it untouched if we're still waiting for an
+                    // aborted background fetch that hasn't yet returned.
+                    this.#valList[index] = bf.__staleWhileFetching;
+                }
+            }
+            if (allowStale) {
+                if (options.status && bf.__staleWhileFetching !== undefined) {
+                    options.status.returnedStale = true;
+                }
+                return bf.__staleWhileFetching;
+            }
+            else if (bf.__returned === bf) {
+                throw er;
+            }
+        };
+        const pcall = (res, rej) => {
+            const fmp = this.#fetchMethod?.(k, v, fetchOpts);
+            if (fmp && fmp instanceof Promise) {
+                fmp.then(v => res(v), rej);
+            }
+            // ignored, we go until we finish, regardless.
+            // defer check until we are actually aborting,
+            // so fetchMethod can override.
+            ac.signal.addEventListener('abort', () => {
+                if (!options.ignoreFetchAbort ||
+                    options.allowStaleOnFetchAbort) {
+                    res();
+                    // when it eventually resolves, update the cache.
+                    if (options.allowStaleOnFetchAbort) {
+                        res = v => cb(v, true);
+                    }
+                }
+            });
+        };
+        if (options.status)
+            options.status.fetchDispatched = true;
+        const p = new Promise(pcall).then(cb, eb);
+        const bf = Object.assign(p, {
+            __abortController: ac,
+            __staleWhileFetching: v,
+            __returned: undefined,
+        });
+        if (index === undefined) {
+            // internal, don't expose status.
+            this.set(k, bf, { ...fetchOpts.options, status: undefined });
+            index = this.#keyMap.get(k);
+        }
+        else {
+            this.#valList[index] = bf;
+        }
+        return bf;
+    }
+    #isBackgroundFetch(p) {
+        if (!this.#hasFetchMethod)
+            return false;
+        const b = p;
+        return (!!b &&
+            b instanceof Promise &&
+            b.hasOwnProperty('__staleWhileFetching') &&
+            b.__abortController instanceof AC);
+    }
+    async fetch(k, fetchOptions = {}) {
+        const { 
+        // get options
+        allowStale = this.allowStale, updateAgeOnGet = this.updateAgeOnGet, noDeleteOnStaleGet = this.noDeleteOnStaleGet, 
+        // set options
+        ttl = this.ttl, noDisposeOnSet = this.noDisposeOnSet, size = 0, sizeCalculation = this.sizeCalculation, noUpdateTTL = this.noUpdateTTL, 
+        // fetch exclusive options
+        noDeleteOnFetchRejection = this.noDeleteOnFetchRejection, allowStaleOnFetchRejection = this.allowStaleOnFetchRejection, ignoreFetchAbort = this.ignoreFetchAbort, allowStaleOnFetchAbort = this.allowStaleOnFetchAbort, context, forceRefresh = false, status, signal, } = fetchOptions;
+        if (!this.#hasFetchMethod) {
+            if (status)
+                status.fetch = 'get';
+            return this.get(k, {
+                allowStale,
+                updateAgeOnGet,
+                noDeleteOnStaleGet,
+                status,
+            });
+        }
+        const options = {
+            allowStale,
+            updateAgeOnGet,
+            noDeleteOnStaleGet,
+            ttl,
+            noDisposeOnSet,
+            size,
+            sizeCalculation,
+            noUpdateTTL,
+            noDeleteOnFetchRejection,
+            allowStaleOnFetchRejection,
+            allowStaleOnFetchAbort,
+            ignoreFetchAbort,
+            status,
+            signal,
+        };
+        let index = this.#keyMap.get(k);
+        if (index === undefined) {
+            if (status)
+                status.fetch = 'miss';
+            const p = this.#backgroundFetch(k, index, options, context);
+            return (p.__returned = p);
+        }
+        else {
+            // in cache, maybe already fetching
+            const v = this.#valList[index];
+            if (this.#isBackgroundFetch(v)) {
+                const stale = allowStale && v.__staleWhileFetching !== undefined;
+                if (status) {
+                    status.fetch = 'inflight';
+                    if (stale)
+                        status.returnedStale = true;
+                }
+                return stale ? v.__staleWhileFetching : (v.__returned = v);
+            }
+            // if we force a refresh, that means do NOT serve the cached value,
+            // unless we are already in the process of refreshing the cache.
+            const isStale = this.#isStale(index);
+            if (!forceRefresh && !isStale) {
+                if (status)
+                    status.fetch = 'hit';
+                this.#moveToTail(index);
+                if (updateAgeOnGet) {
+                    this.#updateItemAge(index);
+                }
+                if (status)
+                    this.#statusTTL(status, index);
+                return v;
+            }
+            // ok, it is stale or a forced refresh, and not already fetching.
+            // refresh the cache.
+            const p = this.#backgroundFetch(k, index, options, context);
+            const hasStale = p.__staleWhileFetching !== undefined;
+            const staleVal = hasStale && allowStale;
+            if (status) {
+                status.fetch = isStale ? 'stale' : 'refresh';
+                if (staleVal && isStale)
+                    status.returnedStale = true;
+            }
+            return staleVal ? p.__staleWhileFetching : (p.__returned = p);
+        }
+    }
+    /**
+     * Return a value from the cache. Will update the recency of the cache
+     * entry found.
+     *
+     * If the key is not found, get() will return `undefined`.
+     */
+    get(k, getOptions = {}) {
+        const { allowStale = this.allowStale, updateAgeOnGet = this.updateAgeOnGet, noDeleteOnStaleGet = this.noDeleteOnStaleGet, status, } = getOptions;
+        const index = this.#keyMap.get(k);
+        if (index !== undefined) {
+            const value = this.#valList[index];
+            const fetching = this.#isBackgroundFetch(value);
+            if (status)
+                this.#statusTTL(status, index);
+            if (this.#isStale(index)) {
+                if (status)
+                    status.get = 'stale';
+                // delete only if not an in-flight background fetch
+                if (!fetching) {
+                    if (!noDeleteOnStaleGet) {
+                        this.delete(k);
+                    }
+                    if (status && allowStale)
+                        status.returnedStale = true;
+                    return allowStale ? value : undefined;
+                }
+                else {
+                    if (status &&
+                        allowStale &&
+                        value.__staleWhileFetching !== undefined) {
+                        status.returnedStale = true;
+                    }
+                    return allowStale ? value.__staleWhileFetching : undefined;
+                }
+            }
+            else {
+                if (status)
+                    status.get = 'hit';
+                // if we're currently fetching it, we don't actually have it yet
+                // it's not stale, which means this isn't a staleWhileRefetching.
+                // If it's not stale, and fetching, AND has a __staleWhileFetching
+                // value, then that means the user fetched with {forceRefresh:true},
+                // so it's safe to return that value.
+                if (fetching) {
+                    return value.__staleWhileFetching;
+                }
+                this.#moveToTail(index);
+                if (updateAgeOnGet) {
+                    this.#updateItemAge(index);
+                }
+                return value;
+            }
+        }
+        else if (status) {
+            status.get = 'miss';
+        }
+    }
+    #connect(p, n) {
+        this.#prev[n] = p;
+        this.#next[p] = n;
+    }
+    #moveToTail(index) {
+        // if tail already, nothing to do
+        // if head, move head to next[index]
+        // else
+        //   move next[prev[index]] to next[index] (head has no prev)
+        //   move prev[next[index]] to prev[index]
+        // prev[index] = tail
+        // next[tail] = index
+        // tail = index
+        if (index !== this.#tail) {
+            if (index === this.#head) {
+                this.#head = this.#next[index];
+            }
+            else {
+                this.#connect(this.#prev[index], this.#next[index]);
+            }
+            this.#connect(this.#tail, index);
+            this.#tail = index;
+        }
+    }
+    /**
+     * Deletes a key out of the cache.
+     * Returns true if the key was deleted, false otherwise.
+     */
+    delete(k) {
+        let deleted = false;
+        if (this.#size !== 0) {
+            const index = this.#keyMap.get(k);
+            if (index !== undefined) {
+                deleted = true;
+                if (this.#size === 1) {
+                    this.clear();
+                }
+                else {
+                    this.#removeItemSize(index);
+                    const v = this.#valList[index];
+                    if (this.#isBackgroundFetch(v)) {
+                        v.__abortController.abort(new Error('deleted'));
+                    }
+                    else if (this.#hasDispose || this.#hasDisposeAfter) {
+                        if (this.#hasDispose) {
+                            this.#dispose?.(v, k, 'delete');
+                        }
+                        if (this.#hasDisposeAfter) {
+                            this.#disposed?.push([v, k, 'delete']);
+                        }
+                    }
+                    this.#keyMap.delete(k);
+                    this.#keyList[index] = undefined;
+                    this.#valList[index] = undefined;
+                    if (index === this.#tail) {
+                        this.#tail = this.#prev[index];
+                    }
+                    else if (index === this.#head) {
+                        this.#head = this.#next[index];
+                    }
+                    else {
+                        this.#next[this.#prev[index]] = this.#next[index];
+                        this.#prev[this.#next[index]] = this.#prev[index];
+                    }
+                    this.#size--;
+                    this.#free.push(index);
+                }
+            }
+        }
+        if (this.#hasDisposeAfter && this.#disposed?.length) {
+            const dt = this.#disposed;
+            let task;
+            while ((task = dt?.shift())) {
+                this.#disposeAfter?.(...task);
+            }
+        }
+        return deleted;
+    }
+    /**
+     * Clear the cache entirely, throwing away all values.
+     */
+    clear() {
+        for (const index of this.#rindexes({ allowStale: true })) {
+            const v = this.#valList[index];
+            if (this.#isBackgroundFetch(v)) {
+                v.__abortController.abort(new Error('deleted'));
+            }
+            else {
+                const k = this.#keyList[index];
+                if (this.#hasDispose) {
+                    this.#dispose?.(v, k, 'delete');
+                }
+                if (this.#hasDisposeAfter) {
+                    this.#disposed?.push([v, k, 'delete']);
+                }
+            }
+        }
+        this.#keyMap.clear();
+        this.#valList.fill(undefined);
+        this.#keyList.fill(undefined);
+        if (this.#ttls && this.#starts) {
+            this.#ttls.fill(0);
+            this.#starts.fill(0);
+        }
+        if (this.#sizes) {
+            this.#sizes.fill(0);
+        }
+        this.#head = 0;
+        this.#tail = 0;
+        this.#free.length = 0;
+        this.#calculatedSize = 0;
+        this.#size = 0;
+        if (this.#hasDisposeAfter && this.#disposed) {
+            const dt = this.#disposed;
+            let task;
+            while ((task = dt?.shift())) {
+                this.#disposeAfter?.(...task);
+            }
+        }
+    }
 }
-
-/* harmony default export */ const lru_cache = (LRUCache);
-
+//# sourceMappingURL=index.js.map
 // EXTERNAL MODULE: external "path"
 var external_path_ = __nccwpck_require__(1017);
 // EXTERNAL MODULE: external "url"
@@ -37766,7 +38209,7 @@ var external_events_ = __nccwpck_require__(2361);
 var external_stream_ = __nccwpck_require__(2781);
 ;// CONCATENATED MODULE: external "string_decoder"
 const external_string_decoder_namespaceObject = require("string_decoder");
-;// CONCATENATED MODULE: ./node_modules/minipass/index.mjs
+;// CONCATENATED MODULE: ./node_modules/path-scurry/node_modules/minipass/index.mjs
 
 const proc =
   typeof process === 'object' && process
@@ -38468,7 +38911,7 @@ class Minipass extends external_stream_ {
   }
 }
 
-/* harmony default export */ const minipass = (Minipass);
+
 
 ;// CONCATENATED MODULE: ./node_modules/path-scurry/dist/mjs/index.js
 
@@ -38575,7 +39018,7 @@ const normalizeNocase = (s) => {
  * An LRUCache for storing resolved path strings or Path objects.
  * @internal
  */
-class ResolveCache extends lru_cache {
+class ResolveCache extends LRUCache {
     constructor() {
         super({ max: 256 });
     }
@@ -38595,7 +39038,7 @@ class ResolveCache extends lru_cache {
  * an LRUCache for storing child entries.
  * @internal
  */
-class ChildrenCache extends lru_cache {
+class ChildrenCache extends LRUCache {
     constructor(maxSize = 16 * 1024) {
         super({
             maxSize,
@@ -38729,7 +39172,9 @@ class PathBase {
     #matchName;
     #depth;
     #fullpath;
+    #fullpathPosix;
     #relative;
+    #relativePosix;
     #type;
     #children;
     #linkTarget;
@@ -38750,6 +39195,7 @@ class PathBase {
         this.#children = children;
         this.#fullpath = opts.fullpath;
         this.#relative = opts.relative;
+        this.#relativePosix = opts.relativePosix;
         this.parent = opts.parent;
         if (this.parent) {
             this.#fs = this.parent.#fs;
@@ -38870,8 +39316,6 @@ class PathBase {
      * The relative path from the cwd. If it does not share an ancestor with
      * the cwd, then this ends up being equivalent to the fullpath()
      */
-    // TODO: instead of taking a param here, set it to '' in the constructor
-    // for the CWD, and set it to this.name for any roots.
     relative() {
         if (this.#relative !== undefined) {
             return this.#relative;
@@ -38884,6 +39328,26 @@ class PathBase {
         const pv = p.relative();
         const rp = pv + (!pv || !p.parent ? '' : this.sep) + name;
         return (this.#relative = rp);
+    }
+    /**
+     * The relative path from the cwd, using / as the path separator.
+     * If it does not share an ancestor with
+     * the cwd, then this ends up being equivalent to the fullpathPosix()
+     * On posix systems, this is identical to relative().
+     */
+    relativePosix() {
+        if (this.sep === '/')
+            return this.relative();
+        if (this.#relativePosix !== undefined)
+            return this.#relativePosix;
+        const name = this.name;
+        const p = this.parent;
+        if (!p) {
+            return (this.#relativePosix = this.fullpathPosix());
+        }
+        const pv = p.relativePosix();
+        const rp = pv + (!pv || !p.parent ? '' : '/') + name;
+        return (this.#relativePosix = rp);
     }
     /**
      * The fully resolved path string for this Path entry
@@ -38900,6 +39364,31 @@ class PathBase {
         const pv = p.fullpath();
         const fp = pv + (!p.parent ? '' : this.sep) + name;
         return (this.#fullpath = fp);
+    }
+    /**
+     * On platforms other than windows, this is identical to fullpath.
+     *
+     * On windows, this is overridden to return the forward-slash form of the
+     * full UNC path.
+     */
+    fullpathPosix() {
+        if (this.#fullpathPosix !== undefined)
+            return this.#fullpathPosix;
+        if (this.sep === '/')
+            return (this.#fullpathPosix = this.fullpath());
+        if (!this.parent) {
+            const p = this.fullpath().replace(/\\/g, '/');
+            if (/^[a-z]:\//i.test(p)) {
+                return (this.#fullpathPosix = `//?/${p}`);
+            }
+            else {
+                return (this.#fullpathPosix = p);
+            }
+        }
+        const p = this.parent;
+        const pfpp = p.fullpathPosix();
+        const fpp = pfpp + (!pfpp || !p.parent ? '' : '/') + this.name;
+        return (this.#fullpathPosix = fpp);
     }
     /**
      * Is the Path of an unknown type?
@@ -39646,6 +40135,7 @@ class PathScurryBase {
      */
     cwd;
     #resolveCache;
+    #resolvePosixCache;
     #children;
     /**
      * Perform path comparisons case-insensitively.
@@ -39672,6 +40162,7 @@ class PathScurryBase {
         this.roots = Object.create(null);
         this.rootPath = this.parseRootPath(cwdPath);
         this.#resolveCache = new ResolveCache();
+        this.#resolvePosixCache = new ResolveCache();
         this.#children = new ChildrenCache(childrenCacheSize);
         const split = cwdPath.substring(this.rootPath.length).split(sep);
         // resolve('/') leaves '', splits to [''], we don't want that.
@@ -39692,8 +40183,10 @@ class PathScurryBase {
         let abs = this.rootPath;
         let sawFirst = false;
         for (const part of split) {
+            const l = len--;
             prev = prev.child(part, {
-                relative: new Array(len--).fill('..').join(joinSep),
+                relative: new Array(l).fill('..').join(joinSep),
+                relativePosix: new Array(l).fill('..').join('/'),
                 fullpath: (abs += (sawFirst ? '' : joinSep) + part),
             });
             sawFirst = true;
@@ -39749,6 +40242,38 @@ class PathScurryBase {
         return result;
     }
     /**
+     * Resolve one or more path strings to a resolved string, returning
+     * the posix path.  Identical to .resolve() on posix systems, but on
+     * windows will return a forward-slash separated UNC path.
+     *
+     * Same interface as require('path').resolve.
+     *
+     * Much faster than path.resolve() when called multiple times for the same
+     * path, because the resolved Path objects are cached.  Much slower
+     * otherwise.
+     */
+    resolvePosix(...paths) {
+        // first figure out the minimum number of paths we have to test
+        // we always start at cwd, but any absolutes will bump the start
+        let r = '';
+        for (let i = paths.length - 1; i >= 0; i--) {
+            const p = paths[i];
+            if (!p || p === '.')
+                continue;
+            r = r ? `${p}/${r}` : p;
+            if (this.isAbsolute(p)) {
+                break;
+            }
+        }
+        const cached = this.#resolvePosixCache.get(r);
+        if (cached !== undefined) {
+            return cached;
+        }
+        const result = this.cwd.resolve(r).fullpathPosix();
+        this.#resolvePosixCache.set(r, result);
+        return result;
+    }
+    /**
      * find the relative path from the cwd to the supplied path string or entry
      */
     relative(entry = this.cwd) {
@@ -39756,6 +40281,16 @@ class PathScurryBase {
             entry = this.cwd.resolve(entry);
         }
         return entry.relative();
+    }
+    /**
+     * find the relative path from the cwd to the supplied path string or
+     * entry, using / as the path delimiter, even on Windows.
+     */
+    relativePosix(entry = this.cwd) {
+        if (typeof entry === 'string') {
+            entry = this.cwd.resolve(entry);
+        }
+        return entry.relativePosix();
     }
     /**
      * Return the basename for the provided string or Path object
@@ -40066,7 +40601,7 @@ class PathScurryBase {
             entry = this.cwd;
         }
         const { withFileTypes = true, follow = false, filter, walkFilter, } = opts;
-        const results = new minipass({ objectMode: true });
+        const results = new Minipass({ objectMode: true });
         if (!filter || filter(entry)) {
             results.write(withFileTypes ? entry : entry.fullpath());
         }
@@ -40142,7 +40677,7 @@ class PathScurryBase {
             entry = this.cwd;
         }
         const { withFileTypes = true, follow = false, filter, walkFilter, } = opts;
-        const results = new minipass({ objectMode: true });
+        const results = new Minipass({ objectMode: true });
         const dirs = new Set();
         if (!filter || filter(entry)) {
             results.write(withFileTypes ? entry : entry.fullpath());
@@ -40514,6 +41049,710 @@ class Pattern {
     }
 }
 //# sourceMappingURL=pattern.js.map
+;// CONCATENATED MODULE: ./node_modules/minipass/index.mjs
+
+const minipass_proc =
+  typeof process === 'object' && process
+    ? process
+    : {
+        stdout: null,
+        stderr: null,
+      }
+;
+
+
+const minipass_SD = external_string_decoder_namespaceObject.StringDecoder
+
+const minipass_EOF = Symbol('EOF')
+const minipass_MAYBE_EMIT_END = Symbol('maybeEmitEnd')
+const minipass_EMITTED_END = Symbol('emittedEnd')
+const minipass_EMITTING_END = Symbol('emittingEnd')
+const minipass_EMITTED_ERROR = Symbol('emittedError')
+const minipass_CLOSED = Symbol('closed')
+const minipass_READ = Symbol('read')
+const minipass_FLUSH = Symbol('flush')
+const minipass_FLUSHCHUNK = Symbol('flushChunk')
+const minipass_ENCODING = Symbol('encoding')
+const minipass_DECODER = Symbol('decoder')
+const minipass_FLOWING = Symbol('flowing')
+const minipass_PAUSED = Symbol('paused')
+const minipass_RESUME = Symbol('resume')
+const minipass_BUFFER = Symbol('buffer')
+const minipass_PIPES = Symbol('pipes')
+const minipass_BUFFERLENGTH = Symbol('bufferLength')
+const minipass_BUFFERPUSH = Symbol('bufferPush')
+const minipass_BUFFERSHIFT = Symbol('bufferShift')
+const minipass_OBJECTMODE = Symbol('objectMode')
+// internal event when stream is destroyed
+const minipass_DESTROYED = Symbol('destroyed')
+// internal event when stream has an error
+const minipass_ERROR = Symbol('error')
+const minipass_EMITDATA = Symbol('emitData')
+const minipass_EMITEND = Symbol('emitEnd')
+const minipass_EMITEND2 = Symbol('emitEnd2')
+const minipass_ASYNC = Symbol('async')
+const minipass_ABORT = Symbol('abort')
+const minipass_ABORTED = Symbol('aborted')
+const minipass_SIGNAL = Symbol('signal')
+
+const minipass_defer = fn => Promise.resolve().then(fn)
+
+// TODO remove when Node v8 support drops
+const minipass_doIter = global._MP_NO_ITERATOR_SYMBOLS_ !== '1'
+const minipass_ASYNCITERATOR =
+  (minipass_doIter && Symbol.asyncIterator) || Symbol('asyncIterator not implemented')
+const minipass_ITERATOR =
+  (minipass_doIter && Symbol.iterator) || Symbol('iterator not implemented')
+
+// events that mean 'the stream is over'
+// these are treated specially, and re-emitted
+// if they are listened for after emitting.
+const minipass_isEndish = ev => ev === 'end' || ev === 'finish' || ev === 'prefinish'
+
+const minipass_isArrayBuffer = b =>
+  b instanceof ArrayBuffer ||
+  (typeof b === 'object' &&
+    b.constructor &&
+    b.constructor.name === 'ArrayBuffer' &&
+    b.byteLength >= 0)
+
+const minipass_isArrayBufferView = b => !Buffer.isBuffer(b) && ArrayBuffer.isView(b)
+
+class minipass_Pipe {
+  constructor(src, dest, opts) {
+    this.src = src
+    this.dest = dest
+    this.opts = opts
+    this.ondrain = () => src[minipass_RESUME]()
+    dest.on('drain', this.ondrain)
+  }
+  unpipe() {
+    this.dest.removeListener('drain', this.ondrain)
+  }
+  // istanbul ignore next - only here for the prototype
+  proxyErrors() {}
+  end() {
+    this.unpipe()
+    if (this.opts.end) this.dest.end()
+  }
+}
+
+class minipass_PipeProxyErrors extends minipass_Pipe {
+  unpipe() {
+    this.src.removeListener('error', this.proxyErrors)
+    super.unpipe()
+  }
+  constructor(src, dest, opts) {
+    super(src, dest, opts)
+    this.proxyErrors = er => dest.emit('error', er)
+    src.on('error', this.proxyErrors)
+  }
+}
+
+class minipass_Minipass extends external_stream_ {
+  constructor(options) {
+    super()
+    this[minipass_FLOWING] = false
+    // whether we're explicitly paused
+    this[minipass_PAUSED] = false
+    this[minipass_PIPES] = []
+    this[minipass_BUFFER] = []
+    this[minipass_OBJECTMODE] = (options && options.objectMode) || false
+    if (this[minipass_OBJECTMODE]) this[minipass_ENCODING] = null
+    else this[minipass_ENCODING] = (options && options.encoding) || null
+    if (this[minipass_ENCODING] === 'buffer') this[minipass_ENCODING] = null
+    this[minipass_ASYNC] = (options && !!options.async) || false
+    this[minipass_DECODER] = this[minipass_ENCODING] ? new minipass_SD(this[minipass_ENCODING]) : null
+    this[minipass_EOF] = false
+    this[minipass_EMITTED_END] = false
+    this[minipass_EMITTING_END] = false
+    this[minipass_CLOSED] = false
+    this[minipass_EMITTED_ERROR] = null
+    this.writable = true
+    this.readable = true
+    this[minipass_BUFFERLENGTH] = 0
+    this[minipass_DESTROYED] = false
+    if (options && options.debugExposeBuffer === true) {
+      Object.defineProperty(this, 'buffer', { get: () => this[minipass_BUFFER] })
+    }
+    if (options && options.debugExposePipes === true) {
+      Object.defineProperty(this, 'pipes', { get: () => this[minipass_PIPES] })
+    }
+    this[minipass_SIGNAL] = options && options.signal
+    this[minipass_ABORTED] = false
+    if (this[minipass_SIGNAL]) {
+      this[minipass_SIGNAL].addEventListener('abort', () => this[minipass_ABORT]())
+      if (this[minipass_SIGNAL].aborted) {
+        this[minipass_ABORT]()
+      }
+    }
+  }
+
+  get bufferLength() {
+    return this[minipass_BUFFERLENGTH]
+  }
+
+  get encoding() {
+    return this[minipass_ENCODING]
+  }
+  set encoding(enc) {
+    if (this[minipass_OBJECTMODE]) throw new Error('cannot set encoding in objectMode')
+
+    if (
+      this[minipass_ENCODING] &&
+      enc !== this[minipass_ENCODING] &&
+      ((this[minipass_DECODER] && this[minipass_DECODER].lastNeed) || this[minipass_BUFFERLENGTH])
+    )
+      throw new Error('cannot change encoding')
+
+    if (this[minipass_ENCODING] !== enc) {
+      this[minipass_DECODER] = enc ? new minipass_SD(enc) : null
+      if (this[minipass_BUFFER].length)
+        this[minipass_BUFFER] = this[minipass_BUFFER].map(chunk => this[minipass_DECODER].write(chunk))
+    }
+
+    this[minipass_ENCODING] = enc
+  }
+
+  setEncoding(enc) {
+    this.encoding = enc
+  }
+
+  get objectMode() {
+    return this[minipass_OBJECTMODE]
+  }
+  set objectMode(om) {
+    this[minipass_OBJECTMODE] = this[minipass_OBJECTMODE] || !!om
+  }
+
+  get ['async']() {
+    return this[minipass_ASYNC]
+  }
+  set ['async'](a) {
+    this[minipass_ASYNC] = this[minipass_ASYNC] || !!a
+  }
+
+  // drop everything and get out of the flow completely
+  [minipass_ABORT]() {
+    this[minipass_ABORTED] = true
+    this.emit('abort', this[minipass_SIGNAL].reason)
+    this.destroy(this[minipass_SIGNAL].reason)
+  }
+
+  get aborted() {
+    return this[minipass_ABORTED]
+  }
+  set aborted(_) {}
+
+  write(chunk, encoding, cb) {
+    if (this[minipass_ABORTED]) return false
+    if (this[minipass_EOF]) throw new Error('write after end')
+
+    if (this[minipass_DESTROYED]) {
+      this.emit(
+        'error',
+        Object.assign(
+          new Error('Cannot call write after a stream was destroyed'),
+          { code: 'ERR_STREAM_DESTROYED' }
+        )
+      )
+      return true
+    }
+
+    if (typeof encoding === 'function') (cb = encoding), (encoding = 'utf8')
+
+    if (!encoding) encoding = 'utf8'
+
+    const fn = this[minipass_ASYNC] ? minipass_defer : f => f()
+
+    // convert array buffers and typed array views into buffers
+    // at some point in the future, we may want to do the opposite!
+    // leave strings and buffers as-is
+    // anything else switches us into object mode
+    if (!this[minipass_OBJECTMODE] && !Buffer.isBuffer(chunk)) {
+      if (minipass_isArrayBufferView(chunk))
+        chunk = Buffer.from(chunk.buffer, chunk.byteOffset, chunk.byteLength)
+      else if (minipass_isArrayBuffer(chunk)) chunk = Buffer.from(chunk)
+      else if (typeof chunk !== 'string')
+        // use the setter so we throw if we have encoding set
+        this.objectMode = true
+    }
+
+    // handle object mode up front, since it's simpler
+    // this yields better performance, fewer checks later.
+    if (this[minipass_OBJECTMODE]) {
+      /* istanbul ignore if - maybe impossible? */
+      if (this.flowing && this[minipass_BUFFERLENGTH] !== 0) this[minipass_FLUSH](true)
+
+      if (this.flowing) this.emit('data', chunk)
+      else this[minipass_BUFFERPUSH](chunk)
+
+      if (this[minipass_BUFFERLENGTH] !== 0) this.emit('readable')
+
+      if (cb) fn(cb)
+
+      return this.flowing
+    }
+
+    // at this point the chunk is a buffer or string
+    // don't buffer it up or send it to the decoder
+    if (!chunk.length) {
+      if (this[minipass_BUFFERLENGTH] !== 0) this.emit('readable')
+      if (cb) fn(cb)
+      return this.flowing
+    }
+
+    // fast-path writing strings of same encoding to a stream with
+    // an empty buffer, skipping the buffer/decoder dance
+    if (
+      typeof chunk === 'string' &&
+      // unless it is a string already ready for us to use
+      !(encoding === this[minipass_ENCODING] && !this[minipass_DECODER].lastNeed)
+    ) {
+      chunk = Buffer.from(chunk, encoding)
+    }
+
+    if (Buffer.isBuffer(chunk) && this[minipass_ENCODING])
+      chunk = this[minipass_DECODER].write(chunk)
+
+    // Note: flushing CAN potentially switch us into not-flowing mode
+    if (this.flowing && this[minipass_BUFFERLENGTH] !== 0) this[minipass_FLUSH](true)
+
+    if (this.flowing) this.emit('data', chunk)
+    else this[minipass_BUFFERPUSH](chunk)
+
+    if (this[minipass_BUFFERLENGTH] !== 0) this.emit('readable')
+
+    if (cb) fn(cb)
+
+    return this.flowing
+  }
+
+  read(n) {
+    if (this[minipass_DESTROYED]) return null
+
+    if (this[minipass_BUFFERLENGTH] === 0 || n === 0 || n > this[minipass_BUFFERLENGTH]) {
+      this[minipass_MAYBE_EMIT_END]()
+      return null
+    }
+
+    if (this[minipass_OBJECTMODE]) n = null
+
+    if (this[minipass_BUFFER].length > 1 && !this[minipass_OBJECTMODE]) {
+      if (this.encoding) this[minipass_BUFFER] = [this[minipass_BUFFER].join('')]
+      else this[minipass_BUFFER] = [Buffer.concat(this[minipass_BUFFER], this[minipass_BUFFERLENGTH])]
+    }
+
+    const ret = this[minipass_READ](n || null, this[minipass_BUFFER][0])
+    this[minipass_MAYBE_EMIT_END]()
+    return ret
+  }
+
+  [minipass_READ](n, chunk) {
+    if (n === chunk.length || n === null) this[minipass_BUFFERSHIFT]()
+    else {
+      this[minipass_BUFFER][0] = chunk.slice(n)
+      chunk = chunk.slice(0, n)
+      this[minipass_BUFFERLENGTH] -= n
+    }
+
+    this.emit('data', chunk)
+
+    if (!this[minipass_BUFFER].length && !this[minipass_EOF]) this.emit('drain')
+
+    return chunk
+  }
+
+  end(chunk, encoding, cb) {
+    if (typeof chunk === 'function') (cb = chunk), (chunk = null)
+    if (typeof encoding === 'function') (cb = encoding), (encoding = 'utf8')
+    if (chunk) this.write(chunk, encoding)
+    if (cb) this.once('end', cb)
+    this[minipass_EOF] = true
+    this.writable = false
+
+    // if we haven't written anything, then go ahead and emit,
+    // even if we're not reading.
+    // we'll re-emit if a new 'end' listener is added anyway.
+    // This makes MP more suitable to write-only use cases.
+    if (this.flowing || !this[minipass_PAUSED]) this[minipass_MAYBE_EMIT_END]()
+    return this
+  }
+
+  // don't let the internal resume be overwritten
+  [minipass_RESUME]() {
+    if (this[minipass_DESTROYED]) return
+
+    this[minipass_PAUSED] = false
+    this[minipass_FLOWING] = true
+    this.emit('resume')
+    if (this[minipass_BUFFER].length) this[minipass_FLUSH]()
+    else if (this[minipass_EOF]) this[minipass_MAYBE_EMIT_END]()
+    else this.emit('drain')
+  }
+
+  resume() {
+    return this[minipass_RESUME]()
+  }
+
+  pause() {
+    this[minipass_FLOWING] = false
+    this[minipass_PAUSED] = true
+  }
+
+  get destroyed() {
+    return this[minipass_DESTROYED]
+  }
+
+  get flowing() {
+    return this[minipass_FLOWING]
+  }
+
+  get paused() {
+    return this[minipass_PAUSED]
+  }
+
+  [minipass_BUFFERPUSH](chunk) {
+    if (this[minipass_OBJECTMODE]) this[minipass_BUFFERLENGTH] += 1
+    else this[minipass_BUFFERLENGTH] += chunk.length
+    this[minipass_BUFFER].push(chunk)
+  }
+
+  [minipass_BUFFERSHIFT]() {
+    if (this[minipass_OBJECTMODE]) this[minipass_BUFFERLENGTH] -= 1
+    else this[minipass_BUFFERLENGTH] -= this[minipass_BUFFER][0].length
+    return this[minipass_BUFFER].shift()
+  }
+
+  [minipass_FLUSH](noDrain) {
+    do {} while (this[minipass_FLUSHCHUNK](this[minipass_BUFFERSHIFT]()) && this[minipass_BUFFER].length)
+
+    if (!noDrain && !this[minipass_BUFFER].length && !this[minipass_EOF]) this.emit('drain')
+  }
+
+  [minipass_FLUSHCHUNK](chunk) {
+    this.emit('data', chunk)
+    return this.flowing
+  }
+
+  pipe(dest, opts) {
+    if (this[minipass_DESTROYED]) return
+
+    const ended = this[minipass_EMITTED_END]
+    opts = opts || {}
+    if (dest === minipass_proc.stdout || dest === minipass_proc.stderr) opts.end = false
+    else opts.end = opts.end !== false
+    opts.proxyErrors = !!opts.proxyErrors
+
+    // piping an ended stream ends immediately
+    if (ended) {
+      if (opts.end) dest.end()
+    } else {
+      this[minipass_PIPES].push(
+        !opts.proxyErrors
+          ? new minipass_Pipe(this, dest, opts)
+          : new minipass_PipeProxyErrors(this, dest, opts)
+      )
+      if (this[minipass_ASYNC]) minipass_defer(() => this[minipass_RESUME]())
+      else this[minipass_RESUME]()
+    }
+
+    return dest
+  }
+
+  unpipe(dest) {
+    const p = this[minipass_PIPES].find(p => p.dest === dest)
+    if (p) {
+      this[minipass_PIPES].splice(this[minipass_PIPES].indexOf(p), 1)
+      p.unpipe()
+    }
+  }
+
+  addListener(ev, fn) {
+    return this.on(ev, fn)
+  }
+
+  on(ev, fn) {
+    const ret = super.on(ev, fn)
+    if (ev === 'data' && !this[minipass_PIPES].length && !this.flowing) this[minipass_RESUME]()
+    else if (ev === 'readable' && this[minipass_BUFFERLENGTH] !== 0)
+      super.emit('readable')
+    else if (minipass_isEndish(ev) && this[minipass_EMITTED_END]) {
+      super.emit(ev)
+      this.removeAllListeners(ev)
+    } else if (ev === 'error' && this[minipass_EMITTED_ERROR]) {
+      if (this[minipass_ASYNC]) minipass_defer(() => fn.call(this, this[minipass_EMITTED_ERROR]))
+      else fn.call(this, this[minipass_EMITTED_ERROR])
+    }
+    return ret
+  }
+
+  get emittedEnd() {
+    return this[minipass_EMITTED_END]
+  }
+
+  [minipass_MAYBE_EMIT_END]() {
+    if (
+      !this[minipass_EMITTING_END] &&
+      !this[minipass_EMITTED_END] &&
+      !this[minipass_DESTROYED] &&
+      this[minipass_BUFFER].length === 0 &&
+      this[minipass_EOF]
+    ) {
+      this[minipass_EMITTING_END] = true
+      this.emit('end')
+      this.emit('prefinish')
+      this.emit('finish')
+      if (this[minipass_CLOSED]) this.emit('close')
+      this[minipass_EMITTING_END] = false
+    }
+  }
+
+  emit(ev, data, ...extra) {
+    // error and close are only events allowed after calling destroy()
+    if (ev !== 'error' && ev !== 'close' && ev !== minipass_DESTROYED && this[minipass_DESTROYED])
+      return
+    else if (ev === 'data') {
+      return !this[minipass_OBJECTMODE] && !data
+        ? false
+        : this[minipass_ASYNC]
+        ? minipass_defer(() => this[minipass_EMITDATA](data))
+        : this[minipass_EMITDATA](data)
+    } else if (ev === 'end') {
+      return this[minipass_EMITEND]()
+    } else if (ev === 'close') {
+      this[minipass_CLOSED] = true
+      // don't emit close before 'end' and 'finish'
+      if (!this[minipass_EMITTED_END] && !this[minipass_DESTROYED]) return
+      const ret = super.emit('close')
+      this.removeAllListeners('close')
+      return ret
+    } else if (ev === 'error') {
+      this[minipass_EMITTED_ERROR] = data
+      super.emit(minipass_ERROR, data)
+      const ret =
+        !this[minipass_SIGNAL] || this.listeners('error').length
+          ? super.emit('error', data)
+          : false
+      this[minipass_MAYBE_EMIT_END]()
+      return ret
+    } else if (ev === 'resume') {
+      const ret = super.emit('resume')
+      this[minipass_MAYBE_EMIT_END]()
+      return ret
+    } else if (ev === 'finish' || ev === 'prefinish') {
+      const ret = super.emit(ev)
+      this.removeAllListeners(ev)
+      return ret
+    }
+
+    // Some other unknown event
+    const ret = super.emit(ev, data, ...extra)
+    this[minipass_MAYBE_EMIT_END]()
+    return ret
+  }
+
+  [minipass_EMITDATA](data) {
+    for (const p of this[minipass_PIPES]) {
+      if (p.dest.write(data) === false) this.pause()
+    }
+    const ret = super.emit('data', data)
+    this[minipass_MAYBE_EMIT_END]()
+    return ret
+  }
+
+  [minipass_EMITEND]() {
+    if (this[minipass_EMITTED_END]) return
+
+    this[minipass_EMITTED_END] = true
+    this.readable = false
+    if (this[minipass_ASYNC]) minipass_defer(() => this[minipass_EMITEND2]())
+    else this[minipass_EMITEND2]()
+  }
+
+  [minipass_EMITEND2]() {
+    if (this[minipass_DECODER]) {
+      const data = this[minipass_DECODER].end()
+      if (data) {
+        for (const p of this[minipass_PIPES]) {
+          p.dest.write(data)
+        }
+        super.emit('data', data)
+      }
+    }
+
+    for (const p of this[minipass_PIPES]) {
+      p.end()
+    }
+    const ret = super.emit('end')
+    this.removeAllListeners('end')
+    return ret
+  }
+
+  // const all = await stream.collect()
+  collect() {
+    const buf = []
+    if (!this[minipass_OBJECTMODE]) buf.dataLength = 0
+    // set the promise first, in case an error is raised
+    // by triggering the flow here.
+    const p = this.promise()
+    this.on('data', c => {
+      buf.push(c)
+      if (!this[minipass_OBJECTMODE]) buf.dataLength += c.length
+    })
+    return p.then(() => buf)
+  }
+
+  // const data = await stream.concat()
+  concat() {
+    return this[minipass_OBJECTMODE]
+      ? Promise.reject(new Error('cannot concat in objectMode'))
+      : this.collect().then(buf =>
+          this[minipass_OBJECTMODE]
+            ? Promise.reject(new Error('cannot concat in objectMode'))
+            : this[minipass_ENCODING]
+            ? buf.join('')
+            : Buffer.concat(buf, buf.dataLength)
+        )
+  }
+
+  // stream.promise().then(() => done, er => emitted error)
+  promise() {
+    return new Promise((resolve, reject) => {
+      this.on(minipass_DESTROYED, () => reject(new Error('stream destroyed')))
+      this.on('error', er => reject(er))
+      this.on('end', () => resolve())
+    })
+  }
+
+  // for await (let chunk of stream)
+  [minipass_ASYNCITERATOR]() {
+    let stopped = false
+    const stop = () => {
+      this.pause()
+      stopped = true
+      return Promise.resolve({ done: true })
+    }
+    const next = () => {
+      if (stopped) return stop()
+      const res = this.read()
+      if (res !== null) return Promise.resolve({ done: false, value: res })
+
+      if (this[minipass_EOF]) return stop()
+
+      let resolve = null
+      let reject = null
+      const onerr = er => {
+        this.removeListener('data', ondata)
+        this.removeListener('end', onend)
+        this.removeListener(minipass_DESTROYED, ondestroy)
+        stop()
+        reject(er)
+      }
+      const ondata = value => {
+        this.removeListener('error', onerr)
+        this.removeListener('end', onend)
+        this.removeListener(minipass_DESTROYED, ondestroy)
+        this.pause()
+        resolve({ value: value, done: !!this[minipass_EOF] })
+      }
+      const onend = () => {
+        this.removeListener('error', onerr)
+        this.removeListener('data', ondata)
+        this.removeListener(minipass_DESTROYED, ondestroy)
+        stop()
+        resolve({ done: true })
+      }
+      const ondestroy = () => onerr(new Error('stream destroyed'))
+      return new Promise((res, rej) => {
+        reject = rej
+        resolve = res
+        this.once(minipass_DESTROYED, ondestroy)
+        this.once('error', onerr)
+        this.once('end', onend)
+        this.once('data', ondata)
+      })
+    }
+
+    return {
+      next,
+      throw: stop,
+      return: stop,
+      [minipass_ASYNCITERATOR]() {
+        return this
+      },
+    }
+  }
+
+  // for (let chunk of stream)
+  [minipass_ITERATOR]() {
+    let stopped = false
+    const stop = () => {
+      this.pause()
+      this.removeListener(minipass_ERROR, stop)
+      this.removeListener(minipass_DESTROYED, stop)
+      this.removeListener('end', stop)
+      stopped = true
+      return { done: true }
+    }
+
+    const next = () => {
+      if (stopped) return stop()
+      const value = this.read()
+      return value === null ? stop() : { value }
+    }
+    this.once('end', stop)
+    this.once(minipass_ERROR, stop)
+    this.once(minipass_DESTROYED, stop)
+
+    return {
+      next,
+      throw: stop,
+      return: stop,
+      [minipass_ITERATOR]() {
+        return this
+      },
+    }
+  }
+
+  destroy(er) {
+    if (this[minipass_DESTROYED]) {
+      if (er) this.emit('error', er)
+      else this.emit(minipass_DESTROYED)
+      return this
+    }
+
+    this[minipass_DESTROYED] = true
+
+    // throw away all buffered data, it's never coming out
+    this[minipass_BUFFER].length = 0
+    this[minipass_BUFFERLENGTH] = 0
+
+    if (typeof this.close === 'function' && !this[minipass_CLOSED]) this.close()
+
+    if (er) this.emit('error', er)
+    // if no error to emit, still reject pending promises
+    else this.emit(minipass_DESTROYED)
+
+    return this
+  }
+
+  static isStream(s) {
+    return (
+      !!s &&
+      (s instanceof minipass_Minipass ||
+        s instanceof external_stream_ ||
+        (s instanceof external_events_ &&
+          // readable
+          (typeof s.pipe === 'function' ||
+            // writable
+            (typeof s.write === 'function' && typeof s.end === 'function'))))
+    )
+  }
+}
+
+/* harmony default export */ const minipass = (minipass_Minipass);
+
 ;// CONCATENATED MODULE: ./node_modules/glob/dist/mjs/ignore.js
 // give it a pattern, and it'll be able to tell you if
 // a given path should be ignored.
@@ -41413,6 +42652,7 @@ class Glob {
             optimizationLevel: 2,
             platform: this.platform,
             windowsPathsNoEscape: this.windowsPathsNoEscape,
+            debug: !!this.opts.debug,
         };
         const mms = this.pattern.map(p => new Minimatch(p, mmo));
         const [matchSet, globParts] = mms.reduce((set, m) => {
