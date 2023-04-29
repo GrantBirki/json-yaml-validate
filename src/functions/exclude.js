@@ -39,7 +39,7 @@ export class Exclude {
         // add the git ignore patterns to the exclude patterns
         this.exclude = this.exclude.concat(gitIgnoreExclude)
       } catch (error) {
-        core.debug(`no .gitignore file found`)
+        core.warning(`error reading .gitignore file: ${error}`)
       }
     }
   }
