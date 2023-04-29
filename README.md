@@ -43,6 +43,8 @@ Here is a quick example of how to install this action in any workflow:
 | `yaml_extension_short` | `false` | `".yml"` | The "short" file extension for YAML files (e.g. .yml) |
 | `yaml_exclude_regex` | `false` | `""` | A regex to exclude files from validation (e.g. `".*\.schema\.yaml$"` to exclude all files ending with `.schema.yaml`) - Default is `""` which doesn't exclude any files |
 | `exclude_file` | `false` | `""` | The full path to a file in the repository where this Action is running that contains a list of '.gitignore'-style patterns to exclude files from validation (e.g. ./exclude.txt) |
+| `use_gitignore` | `true` | `true` | Whetheror not to use the .gitignore file in the root of the repository to exclude files from validation - `"true"` or `"false"` - Default is `"true"` |
+| `git_ignore_path` | `false` | `".gitignore"` | The full path to the .gitignore file to use if use_gitignore is set to "true" (e.g. ./src/.gitignore) - Default is ".gitignore" which uses the .gitignore file in the root of the repository |
 | `github_token` | `false` | `${{ github.token }}` | The GitHub token used to create an authenticated client - Provided for you by default! |
 
 ## Outputs 📤
@@ -318,3 +320,11 @@ The example above contains two violations - one for a JSON file and one for a YA
   - `message` - The error message
 
 In the example above, the `path` for the JSON file is `null` and the message says `Invalid JSON`. This means that the entire file could not be parsed as JSON. Likewise, if you see `null` for the `path` and the message says `Invalid YAML`, this means that the entire file could not be parsed as YAML.
+
+## Known Issues
+
+This section documents known issues and workarounds / fixes
+
+### .gitignore directory exclusion
+
+If you plan on using your `.gitignore` file, you should always include a trailing slash when excluding a directory. For example, instead of `node_modules` use `node_modules/`. This will ensure the Action correctly detects the directory as a directory and not a file.

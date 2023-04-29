@@ -43248,6 +43248,10 @@ async function processResults(jsonResults, yamlResults) {
 class Exclude {
   constructor() {
     this.path = core.getInput('exclude_file').trim()
+    this.gitTrackedOnly = core.getInput('use_gitignore').trim() === 'true'
+
+    // initialize the exclude array
+    this.exclude = []
 
     // read the exclude file if it was used
     if (this.path && this.path !== '') {
@@ -43258,8 +43262,28 @@ class Exclude {
       this.exclude = this.exclude.filter(item => item !== '')
       // remove any comments
       this.exclude = this.exclude.filter(item => !item.startsWith('#'))
-    } else {
-      this.exclude = []
+    }
+
+    // if gitTrackOnly is true, add the git exclude patterns from the .gitignore file if it exists
+    if (this.gitTrackedOnly) {
+      const gitIgnorePath = core.getInput('git_ignore_path').trim()
+      var gitIgnoreExclude = []
+      try {
+        const gitIgnore = (0,external_fs_.readFileSync)(gitIgnorePath, 'utf8')
+        // split the git ignore file into an array of strings and trim each string
+        const gitIgnorePatterns = gitIgnore.split('\n').map(item => item.trim())
+        // remove any empty strings
+        gitIgnoreExclude = gitIgnorePatterns.filter(item => item !== '')
+        // remove any comments
+        gitIgnoreExclude = gitIgnoreExclude.filter(
+          item => !item.startsWith('#')
+        )
+
+        // add the git ignore patterns to the exclude patterns
+        this.exclude = this.exclude.concat(gitIgnoreExclude)
+      } catch (error) {
+        core.warning(`error reading .gitignore file: ${error}`)
+      }
     }
   }
 
