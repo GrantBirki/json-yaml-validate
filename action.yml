@@ -53,12 +53,12 @@ inputs:
     description: The full path to a file in the repository where this Action is running that contains a list of '.gitignore'-style patterns to exclude files from validation (e.g. ./exclude.txt)
     required: false
     default: ""
-  git_tracked_files_only:
-    description: Whether or not to only validate files that are tracked by Git - "true" or "false" - Default is "false"
+  use_gitignore:
+    description: Whetheror not to use the .gitignore file in the root of the repository to exclude files from validation - "true" or "false" - Default is "true"
     required: true
-    default: "false"
+    default: "true"
   git_ignore_path:
-    description: The full path to the .gitignore file to use if git_tracked_files_only is set to "true" (e.g. ./src/.gitignore) - Default is ".gitignore" which uses the .gitignore file in the root of the repository
+    description: The full path to the .gitignore file to use if use_gitignore is set to "true" (e.g. ./src/.gitignore) - Default is ".gitignore" which uses the .gitignore file in the root of the repository
     required: false
     default: ".gitignore"
 outputs:
