@@ -1,1 +1,1 @@
-.github/
+__tests__
