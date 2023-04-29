@@ -320,3 +320,11 @@ The example above contains two violations - one for a JSON file and one for a YA
   - `message` - The error message
 
 In the example above, the `path` for the JSON file is `null` and the message says `Invalid JSON`. This means that the entire file could not be parsed as JSON. Likewise, if you see `null` for the `path` and the message says `Invalid YAML`, this means that the entire file could not be parsed as YAML.
+
+## Known Issues
+
+This section documents known issues and workarounds / fixes
+
+### .gitignore directory exclusion
+
+If you plan on using your `.gitignore` file, you should always include a trailing slash when excluding a directory. For example, instead of `node_modules` use `node_modules/`. This will ensure the Action correctly detects the directory as a directory and not a file.
