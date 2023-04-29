@@ -9,7 +9,7 @@ beforeEach(() => {
   jest.clearAllMocks()
   process.env.INPUT_EXCLUDE_FILE = '__tests__/fixtures/exclude/exclude.txt'
   process.env.INPUT_GIT_IGNORE_PATH = '.gitignore'
-  process.env.INPUT_USE_GIT_IGNORE = 'true'
+  process.env.INPUT_USE_GITIGNORE = 'true'
   exclude = new Exclude()
 })
 
@@ -73,7 +73,7 @@ test('successfully checks a file and finds that it is not excluded', () => {
 
 test('does not exclude any files when no exclude file is used', () => {
   process.env.INPUT_EXCLUDE_FILE = ''
-  process.env.INPUT_USE_GIT_IGNORE = 'false'
+  process.env.INPUT_USE_GITIGNORE = 'false'
   const exclude = new Exclude()
   expect(exclude.isExcluded('exclude-me.json')).toBe(false)
   expect(debugMock).not.toHaveBeenCalled()

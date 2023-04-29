@@ -43248,7 +43248,7 @@ async function processResults(jsonResults, yamlResults) {
 class Exclude {
   constructor() {
     this.path = core.getInput('exclude_file').trim()
-    this.gitTrackedOnly = core.getInput('use_git_ignore').trim() === 'true'
+    this.gitTrackedOnly = core.getInput('use_gitignore').trim() === 'true'
 
     // initialize the exclude array
     this.exclude = []
