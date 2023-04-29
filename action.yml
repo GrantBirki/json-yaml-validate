@@ -57,6 +57,10 @@ inputs:
     description: Whether or not to only validate files that are tracked by Git - "true" or "false" - Default is "false"
     required: true
     default: "false"
+  git_ignore_path:
+    description: The full path to the .gitignore file to use if git_tracked_files_only is set to "true" (e.g. ./src/.gitignore) - Default is ".gitignore" which uses the .gitignore file in the root of the repository
+    required: false
+    default: ".gitignore"
 outputs:
   success:
     description: Whether or not the validation was successful for all files - "true" or "false"
