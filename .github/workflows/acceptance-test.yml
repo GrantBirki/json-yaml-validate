@@ -11,7 +11,7 @@ permissions:
   pull-requests: write
 
 jobs:
-  sample:
+  test:
     runs-on: ubuntu-latest
     steps:
       # Need to checkout for testing the Action in this repo
@@ -20,4 +20,4 @@ jobs:
       - uses: ./
         id: json-yaml-validate
         with:
-            exclude_file: __tests__/fixtures/exclude/exclude.txt
+          exclude_file: .github/config/exclude.txt
