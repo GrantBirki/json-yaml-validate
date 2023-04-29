@@ -53,6 +53,10 @@ inputs:
     description: The full path to a file in the repository where this Action is running that contains a list of '.gitignore'-style patterns to exclude files from validation (e.g. ./exclude.txt)
     required: false
     default: ""
+  git_tracked_files_only:
+    description: Whether or not to only validate files that are tracked by Git - "true" or "false" - Default is "false"
+    required: true
+    default: "false"
 outputs:
   success:
     description: Whether or not the validation was successful for all files - "true" or "false"
