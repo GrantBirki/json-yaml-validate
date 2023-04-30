@@ -31,4 +31,5 @@ jobs:
       - uses: ./
         id: json-yaml-validate
         with:
+          comment: "true"
           exclude_file: .github/config/exclude.txt
