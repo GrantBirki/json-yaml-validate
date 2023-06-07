@@ -1,9 +1,9 @@
-import { jsonValidator } from '../../src/functions/json-validator'
+import {jsonValidator} from '../../src/functions/json-validator'
 import * as core from '@actions/core'
 
-const debugMock = jest.spyOn(core, 'debug').mockImplementation(() => { })
-const infoMock = jest.spyOn(core, 'info').mockImplementation(() => { })
-const errorMock = jest.spyOn(core, 'error').mockImplementation(() => { })
+const debugMock = jest.spyOn(core, 'debug').mockImplementation(() => {})
+const infoMock = jest.spyOn(core, 'info').mockImplementation(() => {})
+const errorMock = jest.spyOn(core, 'error').mockImplementation(() => {})
 
 class Exclude {
   isExcluded() {
@@ -188,7 +188,7 @@ test('fails to validate a yaml file with an incorrect schema when yaml_as_json i
         errors: [
           {
             path: null,
-            message: 'must have required property \'foo\''
+            message: "must have required property 'foo'"
           }
         ]
       }
@@ -200,4 +200,3 @@ test('fails to validate a yaml file with an incorrect schema when yaml_as_json i
     )
   )
 })
-

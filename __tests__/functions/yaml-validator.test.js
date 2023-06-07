@@ -1,9 +1,9 @@
-import { yamlValidator } from '../../src/functions/yaml-validator'
+import {yamlValidator} from '../../src/functions/yaml-validator'
 import * as core from '@actions/core'
 
-const debugMock = jest.spyOn(core, 'debug').mockImplementation(() => { })
-const infoMock = jest.spyOn(core, 'info').mockImplementation(() => { })
-const errorMock = jest.spyOn(core, 'error').mockImplementation(() => { })
+const debugMock = jest.spyOn(core, 'debug').mockImplementation(() => {})
+const infoMock = jest.spyOn(core, 'info').mockImplementation(() => {})
+const errorMock = jest.spyOn(core, 'error').mockImplementation(() => {})
 
 class Exclude {
   isExcluded() {
@@ -179,7 +179,7 @@ test('skips all files when yaml_as_json is true', async () => {
   expect(debugMock).toHaveBeenCalledWith(
     'skipping yaml since it should be treated as json: ./__tests__/fixtures/yaml/valid/yaml1.yaml'
   )
-});
+})
 
 test('skips all files when yaml_as_json is true, even invalid ones', async () => {
   process.env.INPUT_YAML_AS_JSON = true
@@ -198,4 +198,4 @@ test('skips all files when yaml_as_json is true, even invalid ones', async () =>
   expect(debugMock).toHaveBeenCalledWith(
     'skipping yaml since it should be treated as json: ./__tests__/fixtures/yaml/invalid/skip-bad.yaml'
   )
-});
+})

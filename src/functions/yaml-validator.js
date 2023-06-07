@@ -1,8 +1,8 @@
 import * as core from '@actions/core'
 import validateSchema from 'yaml-schema-validator'
-import { readFileSync } from 'fs'
-import { globSync } from 'glob'
-import { parse } from 'yaml'
+import {readFileSync} from 'fs'
+import {globSync} from 'glob'
+import {parse} from 'yaml'
 
 // Helper function to validate all yaml files in the baseDir
 export async function yamlValidator(exclude) {
@@ -35,7 +35,7 @@ export async function yamlValidator(exclude) {
       '.',
       ''
     )}}`,
-    { cwd: baseDirSanitized }
+    {cwd: baseDirSanitized}
   )
   for (const file of files) {
     // construct the full path to the file

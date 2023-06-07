@@ -42856,7 +42856,7 @@ async function jsonValidator(exclude) {
   const jsonExtension = core.getInput('json_extension').trim()
   const jsonExcludeRegex = core.getInput('json_exclude_regex').trim()
   const jsonSchema = core.getInput('json_schema').trim()
-  const yamlAsJson = core.getInput('yaml_as_json').trim()
+  const yamlAsJson = core.getInput('yaml_as_json').trim() === 'true'
   const yamlExtension = core.getInput('yaml_extension').trim()
   const yamlExtensionShort = core.getInput('yaml_extension_short').trim()
 
@@ -42881,17 +42881,16 @@ async function jsonValidator(exclude) {
     violations: []
   }
 
-  const yamlGlob = yamlAsJson
-    ? `, ${yamlExtension.replace('.', '')}, ${yamlExtensionShort.replace(
-        '.',
-        ''
-      )}`
-    : ''
+  const yamlGlob = `${yamlExtension.replace(
+    '.',
+    ''
+  )}, ${yamlExtensionShort.replace('.', '')}`
 
-  const files = globSync(
-    `**/*.{${jsonExtension.replace('.', '')} ${yamlGlob}}`,
-    {cwd: baseDirSanitized}
-  )
+  const glob = yamlAsJson
+    ? `**/*{${jsonExtension},${yamlGlob}}`
+    : `**/*${jsonExtension}`
+
+  const files = globSync(glob, {cwd: baseDirSanitized})
   for (const file of files) {
     // construct the full path to the file
     const fullPath = `${baseDirSanitized}/${file}`
@@ -42998,7 +42997,7 @@ async function yamlValidator(exclude) {
   const yamlExtensionShort = core.getInput('yaml_extension_short').trim()
   const yamlSchema = core.getInput('yaml_schema').trim()
   const yamlExcludeRegex = core.getInput('yaml_exclude_regex').trim()
-  const yamlAsJson = core.getInput('yaml_as_json').trim()
+  const yamlAsJson = core.getInput('yaml_as_json').trim() === 'true'
 
   // remove trailing slash from baseDir
   const baseDirSanitized = baseDir.replace(/\/$/, '')
@@ -43037,6 +43036,7 @@ async function yamlValidator(exclude) {
       core.debug(
         `skipping yaml since it should be treated as json: ${fullPath}`
       )
+      result.skipped++
       continue
     }
 

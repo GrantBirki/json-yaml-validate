@@ -1,8 +1,8 @@
 import * as core from '@actions/core'
 import Ajv from 'ajv'
-import { readFileSync } from 'fs'
-import { globSync } from 'glob'
-import { parse } from 'yaml'
+import {readFileSync} from 'fs'
+import {globSync} from 'glob'
+import {parse} from 'yaml'
 
 // setup the ajv instance
 const ajv = new Ajv() // options can be passed, e.g. {allErrors: true}
@@ -57,20 +57,16 @@ export async function jsonValidator(exclude) {
     violations: []
   }
 
-  const yamlGlob = `${yamlExtension.replace('.', '')}, ${yamlExtensionShort.replace(
+  const yamlGlob = `${yamlExtension.replace(
     '.',
     ''
-  )}`
+  )}, ${yamlExtensionShort.replace('.', '')}`
 
+  const glob = yamlAsJson
+    ? `**/*{${jsonExtension},${yamlGlob}}`
+    : `**/*${jsonExtension}`
 
-  const glob = yamlAsJson ?
-    `**/*{${jsonExtension},${yamlGlob}}` :
-    `**/*${jsonExtension}`
-
-  const files = globSync(
-    glob,
-    { cwd: baseDirSanitized }
-  )
+  const files = globSync(glob, {cwd: baseDirSanitized})
   for (const file of files) {
     // construct the full path to the file
     const fullPath = `${baseDirSanitized}/${file}`
