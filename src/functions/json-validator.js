@@ -1,7 +1,8 @@
 import * as core from '@actions/core'
 import Ajv from 'ajv'
-import {readFileSync} from 'fs'
-import {globSync} from 'glob'
+import { readFileSync } from 'fs'
+import { globSync } from 'glob'
+import { parse } from 'yaml'
 
 // setup the ajv instance
 const ajv = new Ajv() // options can be passed, e.g. {allErrors: true}
@@ -31,6 +32,9 @@ export async function jsonValidator(exclude) {
   const jsonExtension = core.getInput('json_extension').trim()
   const jsonExcludeRegex = core.getInput('json_exclude_regex').trim()
   const jsonSchema = core.getInput('json_schema').trim()
+  const yamlAsJson = core.getInput('yaml_as_json').trim() === 'true'
+  const yamlExtension = core.getInput('yaml_extension').trim()
+  const yamlExtensionShort = core.getInput('yaml_extension_short').trim()
 
   // remove trailing slash from baseDir
   const baseDirSanitized = baseDir.replace(/\/$/, '')
@@ -52,7 +56,21 @@ export async function jsonValidator(exclude) {
     skipped: 0,
     violations: []
   }
-  const files = globSync(`**/*${jsonExtension}`, {cwd: baseDirSanitized})
+
+  const yamlGlob = `${yamlExtension.replace('.', '')}, ${yamlExtensionShort.replace(
+    '.',
+    ''
+  )}`
+
+
+  const glob = yamlAsJson ?
+    `**/*{${jsonExtension},${yamlGlob}}` :
+    `**/*${jsonExtension}`
+
+  const files = globSync(
+    glob,
+    { cwd: baseDirSanitized }
+  )
   for (const file of files) {
     // construct the full path to the file
     const fullPath = `${baseDirSanitized}/${file}`
@@ -81,8 +99,12 @@ export async function jsonValidator(exclude) {
     var data
 
     try {
-      // try to parse the json file
-      data = JSON.parse(readFileSync(fullPath, 'utf8'))
+      // try to parse the file
+      if (fullPath.endsWith('.yaml')) {
+        data = parse(readFileSync(fullPath, 'utf8'))
+      } else {
+        data = JSON.parse(readFileSync(fullPath, 'utf8'))
+      }
     } catch {
       // if the json file is invalid, log an error and set success to false
       core.error(`❌ failed to parse JSON file: ${fullPath}`)
