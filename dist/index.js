@@ -42819,7 +42819,10 @@ const sync = Object.assign(globSync, {
     unescape: unescape_unescape,
 }));
 //# sourceMappingURL=index.js.map
+// EXTERNAL MODULE: ./node_modules/yaml/dist/index.js
+var dist = __nccwpck_require__(4083);
 ;// CONCATENATED MODULE: ./src/functions/json-validator.js
+
 
 
 
@@ -42853,6 +42856,9 @@ async function jsonValidator(exclude) {
   const jsonExtension = core.getInput('json_extension').trim()
   const jsonExcludeRegex = core.getInput('json_exclude_regex').trim()
   const jsonSchema = core.getInput('json_schema').trim()
+  const yamlAsJson = core.getInput('yaml_as_json').trim() === 'true'
+  const yamlExtension = core.getInput('yaml_extension').trim()
+  const yamlExtensionShort = core.getInput('yaml_extension_short').trim()
 
   // remove trailing slash from baseDir
   const baseDirSanitized = baseDir.replace(/\/$/, '')
@@ -42874,7 +42880,17 @@ async function jsonValidator(exclude) {
     skipped: 0,
     violations: []
   }
-  const files = globSync(`**/*${jsonExtension}`, {cwd: baseDirSanitized})
+
+  const yamlGlob = `${yamlExtension.replace(
+    '.',
+    ''
+  )}, ${yamlExtensionShort.replace('.', '')}`
+
+  const glob = yamlAsJson
+    ? `**/*{${jsonExtension},${yamlGlob}}`
+    : `**/*${jsonExtension}`
+
+  const files = globSync(glob, {cwd: baseDirSanitized})
   for (const file of files) {
     // construct the full path to the file
     const fullPath = `${baseDirSanitized}/${file}`
@@ -42903,8 +42919,12 @@ async function jsonValidator(exclude) {
     var data
 
     try {
-      // try to parse the json file
-      data = JSON.parse((0,external_fs_.readFileSync)(fullPath, 'utf8'))
+      // try to parse the file
+      if (fullPath.endsWith('.yaml')) {
+        data = (0,dist/* parse */.Qc)((0,external_fs_.readFileSync)(fullPath, 'utf8'))
+      } else {
+        data = JSON.parse((0,external_fs_.readFileSync)(fullPath, 'utf8'))
+      }
     } catch {
       // if the json file is invalid, log an error and set success to false
       core.error(`❌ failed to parse JSON file: ${fullPath}`)
@@ -42963,8 +42983,6 @@ async function jsonValidator(exclude) {
 // EXTERNAL MODULE: ./node_modules/yaml-schema-validator/index.js
 var yaml_schema_validator = __nccwpck_require__(3821);
 var yaml_schema_validator_default = /*#__PURE__*/__nccwpck_require__.n(yaml_schema_validator);
-// EXTERNAL MODULE: ./node_modules/yaml/dist/index.js
-var dist = __nccwpck_require__(4083);
 ;// CONCATENATED MODULE: ./src/functions/yaml-validator.js
 
 
@@ -42979,6 +42997,7 @@ async function yamlValidator(exclude) {
   const yamlExtensionShort = core.getInput('yaml_extension_short').trim()
   const yamlSchema = core.getInput('yaml_schema').trim()
   const yamlExcludeRegex = core.getInput('yaml_exclude_regex').trim()
+  const yamlAsJson = core.getInput('yaml_as_json').trim() === 'true'
 
   // remove trailing slash from baseDir
   const baseDirSanitized = baseDir.replace(/\/$/, '')
@@ -43010,6 +43029,14 @@ async function yamlValidator(exclude) {
 
     if (yamlSchema !== '' && fullPath.includes(yamlSchema)) {
       core.debug(`skipping yaml schema file: ${fullPath}`)
+      continue
+    }
+
+    if (yamlAsJson) {
+      core.debug(
+        `skipping yaml since it should be treated as json: ${fullPath}`
+      )
+      result.skipped++
       continue
     }
 

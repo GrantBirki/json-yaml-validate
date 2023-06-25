@@ -20,6 +20,7 @@ beforeEach(() => {
   process.env.INPUT_YAML_EXTENSION = '.yaml'
   process.env.INPUT_YAML_EXTENSION_SHORT = '.yml'
   process.env.INPUT_YAML_EXCLUDE_REGEX = '.*bad.*\\.yaml'
+  process.env.INPUT_YAML_AS_JSON = false
 })
 
 test('successfully validates a yaml file with a schema', async () => {
@@ -162,5 +163,39 @@ test('fails to validate one yaml file with an incorrect schema and succeeds on t
     expect.stringMatching(
       '❌ failed to parse YAML file: ./__tests__/fixtures/yaml/mixture/yaml1.yaml'
     )
+  )
+})
+
+test('skips all files when yaml_as_json is true', async () => {
+  process.env.INPUT_YAML_AS_JSON = true
+  expect(await yamlValidator(excludeMock)).toStrictEqual({
+    failed: 0,
+    passed: 0,
+    skipped: 1,
+    success: true,
+    violations: []
+  })
+
+  expect(debugMock).toHaveBeenCalledWith(
+    'skipping yaml since it should be treated as json: ./__tests__/fixtures/yaml/valid/yaml1.yaml'
+  )
+})
+
+test('skips all files when yaml_as_json is true, even invalid ones', async () => {
+  process.env.INPUT_YAML_AS_JSON = true
+  process.env.INPUT_BASE_DIR = './__tests__/fixtures/yaml/invalid'
+  expect(await yamlValidator(excludeMock)).toStrictEqual({
+    failed: 0,
+    passed: 0,
+    skipped: 2,
+    success: true,
+    violations: []
+  })
+
+  expect(debugMock).toHaveBeenCalledWith(
+    'skipping yaml since it should be treated as json: ./__tests__/fixtures/yaml/invalid/yaml1.yaml'
+  )
+  expect(debugMock).toHaveBeenCalledWith(
+    'skipping yaml since it should be treated as json: ./__tests__/fixtures/yaml/invalid/skip-bad.yaml'
   )
 })

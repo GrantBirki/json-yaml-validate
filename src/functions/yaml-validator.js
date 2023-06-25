@@ -11,6 +11,7 @@ export async function yamlValidator(exclude) {
   const yamlExtensionShort = core.getInput('yaml_extension_short').trim()
   const yamlSchema = core.getInput('yaml_schema').trim()
   const yamlExcludeRegex = core.getInput('yaml_exclude_regex').trim()
+  const yamlAsJson = core.getInput('yaml_as_json').trim() === 'true'
 
   // remove trailing slash from baseDir
   const baseDirSanitized = baseDir.replace(/\/$/, '')
@@ -42,6 +43,14 @@ export async function yamlValidator(exclude) {
 
     if (yamlSchema !== '' && fullPath.includes(yamlSchema)) {
       core.debug(`skipping yaml schema file: ${fullPath}`)
+      continue
+    }
+
+    if (yamlAsJson) {
+      core.debug(
+        `skipping yaml since it should be treated as json: ${fullPath}`
+      )
+      result.skipped++
       continue
     }
 

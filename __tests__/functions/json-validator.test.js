@@ -19,6 +19,7 @@ beforeEach(() => {
   process.env.INPUT_BASE_DIR = './__tests__/fixtures/json/valid'
   process.env.INPUT_JSON_EXTENSION = '.json'
   process.env.INPUT_JSON_EXCLUDE_REGEX = '.*bad.*\\.json'
+  process.env.INPUT_YAML_AS_JSON = false
 })
 
 test('successfully validates a json file with a schema', async () => {
@@ -155,6 +156,47 @@ test('fails to validate one json file with an incorrect schema and succeeds on t
   expect(errorMock).toHaveBeenCalledWith(
     expect.stringMatching(
       '❌ failed to parse JSON file: ./__tests__/fixtures/json/mixture/json1.json'
+    )
+  )
+})
+
+test('successfully validates a yaml file with a schema when yaml_as_json is true', async () => {
+  process.env.INPUT_YAML_AS_JSON = true
+  process.env.INPUT_BASE_DIR = './__tests__/fixtures/yaml_as_json/valid'
+
+  expect(await jsonValidator(excludeMock)).toStrictEqual({
+    failed: 0,
+    passed: 1,
+    skipped: 0,
+    success: true,
+    violations: []
+  })
+})
+
+test('fails to validate a yaml file with an incorrect schema when yaml_as_json is true', async () => {
+  process.env.INPUT_YAML_AS_JSON = true
+  process.env.INPUT_BASE_DIR = './__tests__/fixtures/yaml_as_json/invalid'
+
+  expect(await jsonValidator(excludeMock)).toStrictEqual({
+    failed: 1,
+    passed: 0,
+    skipped: 0,
+    success: false,
+    violations: [
+      {
+        file: './__tests__/fixtures/yaml_as_json/invalid/yaml1.yaml',
+        errors: [
+          {
+            path: null,
+            message: "must have required property 'foo'"
+          }
+        ]
+      }
+    ]
+  })
+  expect(errorMock).toHaveBeenCalledWith(
+    expect.stringMatching(
+      '❌ failed to parse JSON file: ./__tests__/fixtures/yaml_as_json/invalid/yaml1.yaml'
     )
   )
 })
