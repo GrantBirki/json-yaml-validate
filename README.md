@@ -42,8 +42,9 @@ Here is a quick example of how to install this action in any workflow:
 | `yaml_extension` | `false` | `".yaml"` | The file extension for YAML files (e.g. .yaml) |
 | `yaml_extension_short` | `false` | `".yml"` | The "short" file extension for YAML files (e.g. .yml) |
 | `yaml_exclude_regex` | `false` | `""` | A regex to exclude files from validation (e.g. `".*\.schema\.yaml$"` to exclude all files ending with `.schema.yaml`) - Default is `""` which doesn't exclude any files |
+| `yaml_as_json` | `false` | `"false"` | Whether or not to treat and validate YAML files as JSON files - `"true"` or `"false"` - Default is `"false"`. If this is true, the JSON schema will be used to validate YAML files. Any YAML schemas will be ignored. For this context, a YAML file is any file which matches the yaml_extension or yaml_extension_short inputs. See the [docs](docs/yaml_as_json.md) for more details |
 | `exclude_file` | `false` | `""` | The full path to a file in the repository where this Action is running that contains a list of '.gitignore'-style patterns to exclude files from validation (e.g. ./exclude.txt) |
-| `use_gitignore` | `true` | `true` | Whetheror not to use the .gitignore file in the root of the repository to exclude files from validation - `"true"` or `"false"` - Default is `"true"` |
+| `use_gitignore` | `true` | `"true"` | Whetheror not to use the .gitignore file in the root of the repository to exclude files from validation - `"true"` or `"false"` - Default is `"true"` |
 | `git_ignore_path` | `false` | `".gitignore"` | The full path to the .gitignore file to use if use_gitignore is set to "true" (e.g. ./src/.gitignore) - Default is ".gitignore" which uses the .gitignore file in the root of the repository |
 | `github_token` | `false` | `${{ github.token }}` | The GitHub token used to create an authenticated client - Provided for you by default! |
 
