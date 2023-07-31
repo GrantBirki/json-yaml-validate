@@ -21,6 +21,7 @@ beforeEach(() => {
   process.env.INPUT_YAML_EXTENSION_SHORT = '.yml'
   process.env.INPUT_YAML_EXCLUDE_REGEX = '.*bad.*\\.yaml'
   process.env.INPUT_YAML_AS_JSON = false
+  process.env.INPUT_USE_DOT_MATCH = 'true'
 })
 
 test('successfully validates a yaml file with a schema', async () => {
@@ -60,13 +61,31 @@ test('successfully validates a yaml file without using a schema', async () => {
   })
 })
 
-test('successfully validates a yaml file with a schema and skips the schema as well', async () => {
+test('successfully validates a yaml file with a schema and skips the schema as well with the dot mode disabled', async () => {
+  process.env.INPUT_USE_DOT_MATCH = 'false'
   process.env.INPUT_YAML_SCHEMA =
     './__tests__/fixtures/yaml/project_dir/schemas/schema.yml'
   process.env.INPUT_BASE_DIR = './__tests__/fixtures/yaml/project_dir'
   expect(await yamlValidator(excludeMock)).toStrictEqual({
     failed: 0,
     passed: 1,
+    skipped: 0,
+    success: true,
+    violations: []
+  })
+
+  expect(debugMock).toHaveBeenCalledWith(
+    `skipping yaml schema file: ${process.env.INPUT_YAML_SCHEMA}`
+  )
+})
+
+test('successfully validates a yaml file with a schema and skips the schema as well', async () => {
+  process.env.INPUT_YAML_SCHEMA =
+    './__tests__/fixtures/yaml/project_dir/schemas/schema.yml'
+  process.env.INPUT_BASE_DIR = './__tests__/fixtures/yaml/project_dir'
+  expect(await yamlValidator(excludeMock)).toStrictEqual({
+    failed: 0,
+    passed: 2,
     skipped: 0,
     success: true,
     violations: []

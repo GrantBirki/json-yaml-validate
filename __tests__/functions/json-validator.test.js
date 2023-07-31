@@ -20,6 +20,7 @@ beforeEach(() => {
   process.env.INPUT_JSON_EXTENSION = '.json'
   process.env.INPUT_JSON_EXCLUDE_REGEX = '.*bad.*\\.json'
   process.env.INPUT_YAML_AS_JSON = false
+  process.env.INPUT_USE_DOT_MATCH = 'true'
 })
 
 test('successfully validates a json file with a schema', async () => {
@@ -60,13 +61,30 @@ test('successfully skips a file found in the exclude txt file', async () => {
   })
 })
 
-test('successfully validates a json file with a schema and skips the schema as well', async () => {
+test('successfully validates a json file with a schema and skips the schema as well while using the dot match in a disabled mode', async () => {
+  process.env.INPUT_USE_DOT_MATCH = 'false'
   process.env.INPUT_JSON_SCHEMA =
     './__tests__/fixtures/json/project_dir/schemas/schema.json'
   process.env.INPUT_BASE_DIR = './__tests__/fixtures/json/project_dir'
   expect(await jsonValidator(excludeMock)).toStrictEqual({
     failed: 0,
     passed: 1,
+    skipped: 0,
+    success: true,
+    violations: []
+  })
+  expect(debugMock).toHaveBeenCalledWith(
+    `skipping json schema file: ${process.env.INPUT_JSON_SCHEMA}`
+  )
+})
+
+test('successfully validates a json file with a schema and skips the schema as well', async () => {
+  process.env.INPUT_JSON_SCHEMA =
+    './__tests__/fixtures/json/project_dir/schemas/schema.json'
+  process.env.INPUT_BASE_DIR = './__tests__/fixtures/json/project_dir'
+  expect(await jsonValidator(excludeMock)).toStrictEqual({
+    failed: 0,
+    passed: 2,
     skipped: 0,
     success: true,
     violations: []

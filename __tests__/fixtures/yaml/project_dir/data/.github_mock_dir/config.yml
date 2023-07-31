@@ -1,0 +1,7 @@
+person:
+  name:
+    first_name: lisamona
+  age: 2005
+  employeed: true
+  hobbies:
+    - running

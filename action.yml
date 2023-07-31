@@ -21,6 +21,10 @@ inputs:
     description: The base directory to search for JSON and YAML files (e.g. ./src) - Default is "." which searches the entire repository
     required: false
     default: "."
+  use_dot_match:
+    description: Whether or not to use dot-matching when searching for files - "true" or "false" - Default is "true" - If this is true, directories like .github, etc will be searched
+    required: false
+    default: "true"
   json_schema:
     description: The full path to the JSON schema file (e.g. ./schemas/schema.json) - Default is "" which doesn't enforce a strict schema
     required: false
