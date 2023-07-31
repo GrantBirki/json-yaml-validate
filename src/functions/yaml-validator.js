@@ -12,6 +12,7 @@ export async function yamlValidator(exclude) {
   const yamlSchema = core.getInput('yaml_schema').trim()
   const yamlExcludeRegex = core.getInput('yaml_exclude_regex').trim()
   const yamlAsJson = core.getInput('yaml_as_json').trim() === 'true'
+  const useDotMatch = core.getInput('use_dot_match').trim() === 'true'
 
   // remove trailing slash from baseDir
   const baseDirSanitized = baseDir.replace(/\/$/, '')
@@ -35,7 +36,7 @@ export async function yamlValidator(exclude) {
       '.',
       ''
     )}}`,
-    {cwd: baseDirSanitized}
+    {cwd: baseDirSanitized, dot: useDotMatch}
   )
   for (const file of files) {
     // construct the full path to the file
