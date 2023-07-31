@@ -15667,8 +15667,11 @@ function fixResponseChunkedTransferBadEnding(request, errorCallback) {
 
 		if (headers['transfer-encoding'] === 'chunked' && !headers['content-length']) {
 			response.once('close', function (hadError) {
+				// tests for socket presence, as in some situations the
+				// the 'socket' event is not triggered for the request
+				// (happens in deno), avoids `TypeError`
 				// if a data listener is still present we didn't end cleanly
-				const hasDataListener = socket.listenerCount('data') > 0;
+				const hasDataListener = socket && socket.listenerCount('data') > 0;
 
 				if (hasDataListener && !hadError) {
 					const err = new Error('Premature close');
@@ -26547,41 +26550,53 @@ module.exports = require("zlib");
 "use strict";
 
 
-var Node = __nccwpck_require__(1399);
+var identity = __nccwpck_require__(5589);
 var Scalar = __nccwpck_require__(9338);
+var YAMLMap = __nccwpck_require__(6011);
+var YAMLSeq = __nccwpck_require__(5161);
 var resolveBlockMap = __nccwpck_require__(2986);
 var resolveBlockSeq = __nccwpck_require__(2289);
 var resolveFlowCollection = __nccwpck_require__(45);
 
-function composeCollection(CN, ctx, token, tagToken, onError) {
-    let coll;
-    switch (token.type) {
-        case 'block-map': {
-            coll = resolveBlockMap.resolveBlockMap(CN, ctx, token, onError);
-            break;
-        }
-        case 'block-seq': {
-            coll = resolveBlockSeq.resolveBlockSeq(CN, ctx, token, onError);
-            break;
-        }
-        case 'flow-collection': {
-            coll = resolveFlowCollection.resolveFlowCollection(CN, ctx, token, onError);
-            break;
-        }
-    }
-    if (!tagToken)
-        return coll;
-    const tagName = ctx.directives.tagName(tagToken.source, msg => onError(tagToken, 'TAG_RESOLVE_FAILED', msg));
-    if (!tagName)
-        return coll;
-    // Cast needed due to: https://github.com/Microsoft/TypeScript/issues/3841
+function resolveCollection(CN, ctx, token, onError, tagName, tag) {
+    const coll = token.type === 'block-map'
+        ? resolveBlockMap.resolveBlockMap(CN, ctx, token, onError, tag)
+        : token.type === 'block-seq'
+            ? resolveBlockSeq.resolveBlockSeq(CN, ctx, token, onError, tag)
+            : resolveFlowCollection.resolveFlowCollection(CN, ctx, token, onError, tag);
     const Coll = coll.constructor;
+    // If we got a tagName matching the class, or the tag name is '!',
+    // then use the tagName from the node class used to create it.
     if (tagName === '!' || tagName === Coll.tagName) {
         coll.tag = Coll.tagName;
         return coll;
     }
-    const expType = Node.isMap(coll) ? 'map' : 'seq';
-    let tag = ctx.schema.tags.find(t => t.collection === expType && t.tag === tagName);
+    if (tagName)
+        coll.tag = tagName;
+    return coll;
+}
+function composeCollection(CN, ctx, token, tagToken, onError) {
+    const tagName = !tagToken
+        ? null
+        : ctx.directives.tagName(tagToken.source, msg => onError(tagToken, 'TAG_RESOLVE_FAILED', msg));
+    const expType = token.type === 'block-map'
+        ? 'map'
+        : token.type === 'block-seq'
+            ? 'seq'
+            : token.start.source === '{'
+                ? 'map'
+                : 'seq';
+    // shortcut: check if it's a generic YAMLMap or YAMLSeq
+    // before jumping into the custom tag logic.
+    if (!tagToken ||
+        !tagName ||
+        tagName === '!' ||
+        (tagName === YAMLMap.YAMLMap.tagName && expType === 'map') ||
+        (tagName === YAMLSeq.YAMLSeq.tagName && expType === 'seq') ||
+        !expType) {
+        return resolveCollection(CN, ctx, token, onError, tagName);
+    }
+    let tag = ctx.schema.tags.find(t => t.tag === tagName && t.collection === expType);
     if (!tag) {
         const kt = ctx.schema.knownTags[tagName];
         if (kt && kt.collection === expType) {
@@ -26589,13 +26604,18 @@ function composeCollection(CN, ctx, token, tagToken, onError) {
             tag = kt;
         }
         else {
-            onError(tagToken, 'TAG_RESOLVE_FAILED', `Unresolved tag: ${tagName}`, true);
-            coll.tag = tagName;
-            return coll;
+            if (kt?.collection) {
+                onError(tagToken, 'BAD_COLLECTION_TYPE', `${kt.tag} used for ${expType} collection, but expects ${kt.collection}`, true);
+            }
+            else {
+                onError(tagToken, 'TAG_RESOLVE_FAILED', `Unresolved tag: ${tagName}`, true);
+            }
+            return resolveCollection(CN, ctx, token, onError, tagName);
         }
     }
-    const res = tag.resolve(coll, msg => onError(tagToken, 'TAG_RESOLVE_FAILED', msg), ctx.options);
-    const node = Node.isNode(res)
+    const coll = resolveCollection(CN, ctx, token, onError, tagName, tag);
+    const res = tag.resolve?.(coll, msg => onError(tagToken, 'TAG_RESOLVE_FAILED', msg), ctx.options) ?? coll;
+    const node = identity.isNode(res)
         ? res
         : new Scalar.Scalar(res);
     node.range = coll.range;
@@ -26644,6 +26664,7 @@ function composeDoc(options, directives, { offset, start, value, end }, onError)
             !props.hasNewline)
             onError(props.end, 'MISSING_CHAR', 'Block collection cannot start on same line with directives-end marker');
     }
+    // @ts-expect-error If Contents is set, let's trust the user
     doc.contents = value
         ? composeNode.composeNode(ctx, value, props, onError)
         : composeNode.composeEmptyNode(ctx, props.end, start, null, props, onError);
@@ -26769,7 +26790,7 @@ exports.composeNode = composeNode;
 "use strict";
 
 
-var Node = __nccwpck_require__(1399);
+var identity = __nccwpck_require__(5589);
 var Scalar = __nccwpck_require__(9338);
 var resolveBlockScalar = __nccwpck_require__(9485);
 var resolveFlowScalar = __nccwpck_require__(7578);
@@ -26785,11 +26806,11 @@ function composeScalar(ctx, token, tagToken, onError) {
         ? findScalarTagByName(ctx.schema, value, tagName, tagToken, onError)
         : token.type === 'scalar'
             ? findScalarTagByTest(ctx, value, token, onError)
-            : ctx.schema[Node.SCALAR];
+            : ctx.schema[identity.SCALAR];
     let scalar;
     try {
         const res = tag.resolve(value, msg => onError(tagToken ?? token, 'TAG_RESOLVE_FAILED', msg), ctx.options);
-        scalar = Node.isScalar(res) ? res : new Scalar.Scalar(res);
+        scalar = identity.isScalar(res) ? res : new Scalar.Scalar(res);
     }
     catch (error) {
         const msg = error instanceof Error ? error.message : String(error);
@@ -26810,7 +26831,7 @@ function composeScalar(ctx, token, tagToken, onError) {
 }
 function findScalarTagByName(schema, value, tagName, tagToken, onError) {
     if (tagName === '!')
-        return schema[Node.SCALAR]; // non-specific tag
+        return schema[identity.SCALAR]; // non-specific tag
     const matchWithTest = [];
     for (const tag of schema.tags) {
         if (!tag.collection && tag.tag === tagName) {
@@ -26831,13 +26852,13 @@ function findScalarTagByName(schema, value, tagName, tagToken, onError) {
         return kt;
     }
     onError(tagToken, 'TAG_RESOLVE_FAILED', `Unresolved tag: ${tagName}`, tagName !== 'tag:yaml.org,2002:str');
-    return schema[Node.SCALAR];
+    return schema[identity.SCALAR];
 }
 function findScalarTagByTest({ directives, schema }, value, token, onError) {
-    const tag = schema.tags.find(tag => tag.default && tag.test?.test(value)) || schema[Node.SCALAR];
+    const tag = schema.tags.find(tag => tag.default && tag.test?.test(value)) || schema[identity.SCALAR];
     if (schema.compat) {
         const compat = schema.compat.find(tag => tag.default && tag.test?.test(value)) ??
-            schema[Node.SCALAR];
+            schema[identity.SCALAR];
         if (tag.tag !== compat.tag) {
             const ts = directives.tagString(tag.tag);
             const cs = directives.tagString(compat.tag);
@@ -26862,7 +26883,7 @@ exports.composeScalar = composeScalar;
 var directives = __nccwpck_require__(5400);
 var Document = __nccwpck_require__(42);
 var errors = __nccwpck_require__(4236);
-var Node = __nccwpck_require__(1399);
+var identity = __nccwpck_require__(5589);
 var composeDoc = __nccwpck_require__(5050);
 var resolveEnd = __nccwpck_require__(1250);
 
@@ -26942,9 +26963,9 @@ class Composer {
             else if (afterEmptyLine || doc.directives.docStart || !dc) {
                 doc.commentBefore = comment;
             }
-            else if (Node.isCollection(dc) && !dc.flow && dc.items.length > 0) {
+            else if (identity.isCollection(dc) && !dc.flow && dc.items.length > 0) {
                 let it = dc.items[0];
-                if (Node.isPair(it))
+                if (identity.isPair(it))
                     it = it.key;
                 const cb = it.commentBefore;
                 it.commentBefore = cb ? `${comment}\n${cb}` : comment;
@@ -27096,8 +27117,9 @@ var utilFlowIndentCheck = __nccwpck_require__(3669);
 var utilMapIncludes = __nccwpck_require__(6899);
 
 const startColMsg = 'All mapping items must start at the same column';
-function resolveBlockMap({ composeNode, composeEmptyNode }, ctx, bm, onError) {
-    const map = new YAMLMap.YAMLMap(ctx.schema);
+function resolveBlockMap({ composeNode, composeEmptyNode }, ctx, bm, onError, tag) {
+    const NodeClass = tag?.nodeClass ?? YAMLMap.YAMLMap;
+    const map = new NodeClass(ctx.schema);
     if (ctx.atRoot)
         ctx.atRoot = false;
     let offset = bm.offset;
@@ -27416,8 +27438,9 @@ var YAMLSeq = __nccwpck_require__(5161);
 var resolveProps = __nccwpck_require__(6985);
 var utilFlowIndentCheck = __nccwpck_require__(3669);
 
-function resolveBlockSeq({ composeNode, composeEmptyNode }, ctx, bs, onError) {
-    const seq = new YAMLSeq.YAMLSeq(ctx.schema);
+function resolveBlockSeq({ composeNode, composeEmptyNode }, ctx, bs, onError, tag) {
+    const NodeClass = tag?.nodeClass ?? YAMLSeq.YAMLSeq;
+    const seq = new NodeClass(ctx.schema);
     if (ctx.atRoot)
         ctx.atRoot = false;
     let offset = bs.offset;
@@ -27514,7 +27537,7 @@ exports.resolveEnd = resolveEnd;
 "use strict";
 
 
-var Node = __nccwpck_require__(1399);
+var identity = __nccwpck_require__(5589);
 var Pair = __nccwpck_require__(246);
 var YAMLMap = __nccwpck_require__(6011);
 var YAMLSeq = __nccwpck_require__(5161);
@@ -27525,12 +27548,11 @@ var utilMapIncludes = __nccwpck_require__(6899);
 
 const blockMsg = 'Block collections are not allowed within flow collections';
 const isBlock = (token) => token && (token.type === 'block-map' || token.type === 'block-seq');
-function resolveFlowCollection({ composeNode, composeEmptyNode }, ctx, fc, onError) {
+function resolveFlowCollection({ composeNode, composeEmptyNode }, ctx, fc, onError, tag) {
     const isMap = fc.start.source === '{';
     const fcName = isMap ? 'flow map' : 'flow sequence';
-    const coll = isMap
-        ? new YAMLMap.YAMLMap(ctx.schema)
-        : new YAMLSeq.YAMLSeq(ctx.schema);
+    const NodeClass = (tag?.nodeClass ?? (isMap ? YAMLMap.YAMLMap : YAMLSeq.YAMLSeq));
+    const coll = new NodeClass(ctx.schema);
     coll.flow = true;
     const atRoot = ctx.atRoot;
     if (atRoot)
@@ -27589,7 +27611,7 @@ function resolveFlowCollection({ composeNode, composeEmptyNode }, ctx, fc, onErr
                 }
                 if (prevItemComment) {
                     let prev = coll.items[coll.items.length - 1];
-                    if (Node.isPair(prev))
+                    if (identity.isPair(prev))
                         prev = prev.value ?? prev.key;
                     if (prev.comment)
                         prev.comment += '\n' + prevItemComment;
@@ -28207,7 +28229,7 @@ exports.flowIndentCheck = flowIndentCheck;
 "use strict";
 
 
-var Node = __nccwpck_require__(1399);
+var identity = __nccwpck_require__(5589);
 
 function mapIncludes(ctx, items, search) {
     const { uniqueKeys } = ctx.options;
@@ -28216,8 +28238,8 @@ function mapIncludes(ctx, items, search) {
     const isEqual = typeof uniqueKeys === 'function'
         ? uniqueKeys
         : (a, b) => a === b ||
-            (Node.isScalar(a) &&
-                Node.isScalar(b) &&
+            (identity.isScalar(a) &&
+                identity.isScalar(b) &&
                 a.value === b.value &&
                 !(a.value === '<<' && ctx.schema.merge));
     return items.some(pair => isEqual(pair.key, search));
@@ -28236,11 +28258,10 @@ exports.mapIncludes = mapIncludes;
 
 var Alias = __nccwpck_require__(5639);
 var Collection = __nccwpck_require__(3466);
-var Node = __nccwpck_require__(1399);
+var identity = __nccwpck_require__(5589);
 var Pair = __nccwpck_require__(246);
 var toJS = __nccwpck_require__(2463);
 var Schema = __nccwpck_require__(6831);
-var stringify = __nccwpck_require__(8409);
 var stringifyDocument = __nccwpck_require__(5225);
 var anchors = __nccwpck_require__(8459);
 var applyReviver = __nccwpck_require__(3412);
@@ -28257,7 +28278,7 @@ class Document {
         this.errors = [];
         /** Warnings encountered during parsing. */
         this.warnings = [];
-        Object.defineProperty(this, Node.NODE_TYPE, { value: Node.DOC });
+        Object.defineProperty(this, identity.NODE_TYPE, { value: identity.DOC });
         let _replacer = null;
         if (typeof replacer === 'function' || Array.isArray(replacer)) {
             _replacer = replacer;
@@ -28285,11 +28306,9 @@ class Document {
         else
             this.directives = new directives.Directives({ version });
         this.setSchema(version, options);
-        if (value === undefined)
-            this.contents = null;
-        else {
-            this.contents = this.createNode(value, _replacer, options);
-        }
+        // @ts-expect-error We can't really know that this matches Contents.
+        this.contents =
+            value === undefined ? null : this.createNode(value, _replacer, options);
     }
     /**
      * Create a deep copy of this Document and its contents.
@@ -28298,7 +28317,7 @@ class Document {
      */
     clone() {
         const copy = Object.create(Document.prototype, {
-            [Node.NODE_TYPE]: { value: Node.DOC }
+            [identity.NODE_TYPE]: { value: identity.DOC }
         });
         copy.commentBefore = this.commentBefore;
         copy.comment = this.comment;
@@ -28308,7 +28327,8 @@ class Document {
         if (this.directives)
             copy.directives = this.directives.clone();
         copy.schema = this.schema.clone();
-        copy.contents = Node.isNode(this.contents)
+        // @ts-expect-error We can't really know that this matches Contents.
+        copy.contents = identity.isNode(this.contents)
             ? this.contents.clone(copy.schema)
             : this.contents;
         if (this.range)
@@ -28374,7 +28394,7 @@ class Document {
             sourceObjects
         };
         const node = createNode.createNode(value, tag, ctx);
-        if (flow && Node.isCollection(node))
+        if (flow && identity.isCollection(node))
             node.flow = true;
         setAnchors();
         return node;
@@ -28403,6 +28423,7 @@ class Document {
         if (Collection.isEmptyPath(path)) {
             if (this.contents == null)
                 return false;
+            // @ts-expect-error Presumed impossible if Strict extends false
             this.contents = null;
             return true;
         }
@@ -28416,7 +28437,7 @@ class Document {
      * `true` (collections are always returned intact).
      */
     get(key, keepScalar) {
-        return Node.isCollection(this.contents)
+        return identity.isCollection(this.contents)
             ? this.contents.get(key, keepScalar)
             : undefined;
     }
@@ -28427,10 +28448,10 @@ class Document {
      */
     getIn(path, keepScalar) {
         if (Collection.isEmptyPath(path))
-            return !keepScalar && Node.isScalar(this.contents)
+            return !keepScalar && identity.isScalar(this.contents)
                 ? this.contents.value
                 : this.contents;
-        return Node.isCollection(this.contents)
+        return identity.isCollection(this.contents)
             ? this.contents.getIn(path, keepScalar)
             : undefined;
     }
@@ -28438,7 +28459,7 @@ class Document {
      * Checks if the document includes a value with the key `key`.
      */
     has(key) {
-        return Node.isCollection(this.contents) ? this.contents.has(key) : false;
+        return identity.isCollection(this.contents) ? this.contents.has(key) : false;
     }
     /**
      * Checks if the document includes a value at `path`.
@@ -28446,7 +28467,7 @@ class Document {
     hasIn(path) {
         if (Collection.isEmptyPath(path))
             return this.contents !== undefined;
-        return Node.isCollection(this.contents) ? this.contents.hasIn(path) : false;
+        return identity.isCollection(this.contents) ? this.contents.hasIn(path) : false;
     }
     /**
      * Sets a value in this document. For `!!set`, `value` needs to be a
@@ -28454,6 +28475,7 @@ class Document {
      */
     set(key, value) {
         if (this.contents == null) {
+            // @ts-expect-error We can't really know that this matches Contents.
             this.contents = Collection.collectionFromPath(this.schema, [key], value);
         }
         else if (assertCollection(this.contents)) {
@@ -28465,9 +28487,12 @@ class Document {
      * boolean to add/remove the item from the set.
      */
     setIn(path, value) {
-        if (Collection.isEmptyPath(path))
+        if (Collection.isEmptyPath(path)) {
+            // @ts-expect-error We can't really know that this matches Contents.
             this.contents = value;
+        }
         else if (this.contents == null) {
+            // @ts-expect-error We can't really know that this matches Contents.
             this.contents = Collection.collectionFromPath(this.schema, Array.from(path), value);
         }
         else if (assertCollection(this.contents)) {
@@ -28527,8 +28552,7 @@ class Document {
             keep: !json,
             mapAsMap: mapAsMap === true,
             mapKeyWarned: false,
-            maxAliasCount: typeof maxAliasCount === 'number' ? maxAliasCount : 100,
-            stringify: stringify.stringify
+            maxAliasCount: typeof maxAliasCount === 'number' ? maxAliasCount : 100
         };
         const res = toJS.toJS(this.contents, jsonArg ?? '', ctx);
         if (typeof onAnchor === 'function')
@@ -28560,7 +28584,7 @@ class Document {
     }
 }
 function assertCollection(contents) {
-    if (Node.isCollection(contents))
+    if (identity.isCollection(contents))
         return true;
     throw new Error('Expected a YAML collection as document contents');
 }
@@ -28576,7 +28600,7 @@ exports.Document = Document;
 "use strict";
 
 
-var Node = __nccwpck_require__(1399);
+var identity = __nccwpck_require__(5589);
 var visit = __nccwpck_require__(6796);
 
 /**
@@ -28633,7 +28657,7 @@ function createNodeAnchors(doc, prefix) {
                 const ref = sourceObjects.get(source);
                 if (typeof ref === 'object' &&
                     ref.anchor &&
-                    (Node.isScalar(ref.node) || Node.isCollection(ref.node))) {
+                    (identity.isScalar(ref.node) || identity.isCollection(ref.node))) {
                     ref.node.anchor = ref.anchor;
                 }
                 else {
@@ -28726,7 +28750,7 @@ exports.applyReviver = applyReviver;
 
 
 var Alias = __nccwpck_require__(5639);
-var Node = __nccwpck_require__(1399);
+var identity = __nccwpck_require__(5589);
 var Scalar = __nccwpck_require__(9338);
 
 const defaultTagPrefix = 'tag:yaml.org,2002:';
@@ -28741,12 +28765,12 @@ function findTagObject(value, tagName, tags) {
     return tags.find(t => t.identify?.(value) && !t.format);
 }
 function createNode(value, tagName, ctx) {
-    if (Node.isDocument(value))
+    if (identity.isDocument(value))
         value = value.contents;
-    if (Node.isNode(value))
+    if (identity.isNode(value))
         return value;
-    if (Node.isPair(value)) {
-        const map = ctx.schema[Node.MAP].createNode?.(ctx.schema, null, ctx);
+    if (identity.isPair(value)) {
+        const map = ctx.schema[identity.MAP].createNode?.(ctx.schema, null, ctx);
         map.items.push(value);
         return map;
     }
@@ -28790,10 +28814,10 @@ function createNode(value, tagName, ctx) {
         }
         tagObj =
             value instanceof Map
-                ? schema[Node.MAP]
+                ? schema[identity.MAP]
                 : Symbol.iterator in Object(value)
-                    ? schema[Node.SEQ]
-                    : schema[Node.MAP];
+                    ? schema[identity.SEQ]
+                    : schema[identity.MAP];
     }
     if (onTagObj) {
         onTagObj(tagObj);
@@ -28801,9 +28825,13 @@ function createNode(value, tagName, ctx) {
     }
     const node = tagObj?.createNode
         ? tagObj.createNode(ctx.schema, value, ctx)
-        : new Scalar.Scalar(value);
+        : typeof tagObj?.nodeClass?.from === 'function'
+            ? tagObj.nodeClass.from(ctx.schema, value, ctx)
+            : new Scalar.Scalar(value);
     if (tagName)
         node.tag = tagName;
+    else if (!tagObj.default)
+        node.tag = tagObj.tag;
     if (ref)
         ref.node = node;
     return node;
@@ -28820,7 +28848,7 @@ exports.createNode = createNode;
 "use strict";
 
 
-var Node = __nccwpck_require__(1399);
+var identity = __nccwpck_require__(5589);
 var visit = __nccwpck_require__(6796);
 
 const escapeChars = {
@@ -28966,10 +28994,10 @@ class Directives {
             : [];
         const tagEntries = Object.entries(this.tags);
         let tagNames;
-        if (doc && tagEntries.length > 0 && Node.isNode(doc.contents)) {
+        if (doc && tagEntries.length > 0 && identity.isNode(doc.contents)) {
             const tags = {};
             visit.visit(doc.contents, (_key, node) => {
-                if (Node.isNode(node) && node.tag)
+                if (identity.isNode(node) && node.tag)
                     tags[node.tag] = true;
             });
             tagNames = Object.keys(tags);
@@ -29075,7 +29103,7 @@ var Document = __nccwpck_require__(42);
 var Schema = __nccwpck_require__(6831);
 var errors = __nccwpck_require__(4236);
 var Alias = __nccwpck_require__(5639);
-var Node = __nccwpck_require__(1399);
+var identity = __nccwpck_require__(5589);
 var Pair = __nccwpck_require__(246);
 var Scalar = __nccwpck_require__(9338);
 var YAMLMap = __nccwpck_require__(6011);
@@ -29096,14 +29124,14 @@ __webpack_unused_export__ = errors.YAMLError;
 __webpack_unused_export__ = errors.YAMLParseError;
 __webpack_unused_export__ = errors.YAMLWarning;
 __webpack_unused_export__ = Alias.Alias;
-__webpack_unused_export__ = Node.isAlias;
-__webpack_unused_export__ = Node.isCollection;
-__webpack_unused_export__ = Node.isDocument;
-__webpack_unused_export__ = Node.isMap;
-__webpack_unused_export__ = Node.isNode;
-__webpack_unused_export__ = Node.isPair;
-__webpack_unused_export__ = Node.isScalar;
-__webpack_unused_export__ = Node.isSeq;
+__webpack_unused_export__ = identity.isAlias;
+__webpack_unused_export__ = identity.isCollection;
+__webpack_unused_export__ = identity.isDocument;
+__webpack_unused_export__ = identity.isMap;
+__webpack_unused_export__ = identity.isNode;
+__webpack_unused_export__ = identity.isPair;
+__webpack_unused_export__ = identity.isScalar;
+__webpack_unused_export__ = identity.isSeq;
 __webpack_unused_export__ = Pair.Pair;
 __webpack_unused_export__ = Scalar.Scalar;
 __webpack_unused_export__ = YAMLMap.YAMLMap;
@@ -29155,11 +29183,13 @@ exports.warn = warn;
 
 var anchors = __nccwpck_require__(8459);
 var visit = __nccwpck_require__(6796);
+var identity = __nccwpck_require__(5589);
 var Node = __nccwpck_require__(1399);
+var toJS = __nccwpck_require__(2463);
 
 class Alias extends Node.NodeBase {
     constructor(source) {
-        super(Node.ALIAS);
+        super(identity.ALIAS);
         this.source = source;
         Object.defineProperty(this, 'tag', {
             set() {
@@ -29192,7 +29222,12 @@ class Alias extends Node.NodeBase {
             const msg = `Unresolved alias (the anchor must be set before the alias): ${this.source}`;
             throw new ReferenceError(msg);
         }
-        const data = anchors.get(source);
+        let data = anchors.get(source);
+        if (!data) {
+            // Resolve anchors for Node.prototype.toJS()
+            toJS.toJS(source, null, ctx);
+            data = anchors.get(source);
+        }
         /* istanbul ignore if */
         if (!data || data.res === undefined) {
             const msg = 'This should not happen: Alias anchor was not resolved?';
@@ -29224,12 +29259,12 @@ class Alias extends Node.NodeBase {
     }
 }
 function getAliasCount(doc, node, anchors) {
-    if (Node.isAlias(node)) {
+    if (identity.isAlias(node)) {
         const source = node.resolve(doc);
         const anchor = anchors && source && anchors.get(source);
         return anchor ? anchor.count * anchor.aliasCount : 0;
     }
-    else if (Node.isCollection(node)) {
+    else if (identity.isCollection(node)) {
         let count = 0;
         for (const item of node.items) {
             const c = getAliasCount(doc, item, anchors);
@@ -29238,7 +29273,7 @@ function getAliasCount(doc, node, anchors) {
         }
         return count;
     }
-    else if (Node.isPair(node)) {
+    else if (identity.isPair(node)) {
         const kc = getAliasCount(doc, node.key, anchors);
         const vc = getAliasCount(doc, node.value, anchors);
         return Math.max(kc, vc);
@@ -29258,6 +29293,7 @@ exports.Alias = Alias;
 
 
 var createNode = __nccwpck_require__(9652);
+var identity = __nccwpck_require__(5589);
 var Node = __nccwpck_require__(1399);
 
 function collectionFromPath(schema, path, value) {
@@ -29306,7 +29342,7 @@ class Collection extends Node.NodeBase {
         const copy = Object.create(Object.getPrototypeOf(this), Object.getOwnPropertyDescriptors(this));
         if (schema)
             copy.schema = schema;
-        copy.items = copy.items.map(it => Node.isNode(it) || Node.isPair(it) ? it.clone(schema) : it);
+        copy.items = copy.items.map(it => identity.isNode(it) || identity.isPair(it) ? it.clone(schema) : it);
         if (this.range)
             copy.range = this.range.slice();
         return copy;
@@ -29322,7 +29358,7 @@ class Collection extends Node.NodeBase {
         else {
             const [key, ...rest] = path;
             const node = this.get(key, true);
-            if (Node.isCollection(node))
+            if (identity.isCollection(node))
                 node.addIn(rest, value);
             else if (node === undefined && this.schema)
                 this.set(key, collectionFromPath(this.schema, rest, value));
@@ -29339,7 +29375,7 @@ class Collection extends Node.NodeBase {
         if (rest.length === 0)
             return this.delete(key);
         const node = this.get(key, true);
-        if (Node.isCollection(node))
+        if (identity.isCollection(node))
             return node.deleteIn(rest);
         else
             throw new Error(`Expected YAML collection at ${key}. Remaining path: ${rest}`);
@@ -29353,18 +29389,18 @@ class Collection extends Node.NodeBase {
         const [key, ...rest] = path;
         const node = this.get(key, true);
         if (rest.length === 0)
-            return !keepScalar && Node.isScalar(node) ? node.value : node;
+            return !keepScalar && identity.isScalar(node) ? node.value : node;
         else
-            return Node.isCollection(node) ? node.getIn(rest, keepScalar) : undefined;
+            return identity.isCollection(node) ? node.getIn(rest, keepScalar) : undefined;
     }
     hasAllNullValues(allowScalar) {
         return this.items.every(node => {
-            if (!Node.isPair(node))
+            if (!identity.isPair(node))
                 return false;
             const n = node.value;
             return (n == null ||
                 (allowScalar &&
-                    Node.isScalar(n) &&
+                    identity.isScalar(n) &&
                     n.value == null &&
                     !n.commentBefore &&
                     !n.comment &&
@@ -29379,7 +29415,7 @@ class Collection extends Node.NodeBase {
         if (rest.length === 0)
             return this.has(key);
         const node = this.get(key, true);
-        return Node.isCollection(node) ? node.hasIn(rest) : false;
+        return identity.isCollection(node) ? node.hasIn(rest) : false;
     }
     /**
      * Sets a value in this collection. For `!!set`, `value` needs to be a
@@ -29392,7 +29428,7 @@ class Collection extends Node.NodeBase {
         }
         else {
             const node = this.get(key, true);
-            if (Node.isCollection(node))
+            if (identity.isCollection(node))
                 node.setIn(rest, value);
             else if (node === undefined && this.schema)
                 this.set(key, collectionFromPath(this.schema, rest, value));
@@ -29411,6 +29447,528 @@ exports.isEmptyPath = isEmptyPath;
 /***/ }),
 
 /***/ 1399:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+
+var applyReviver = __nccwpck_require__(3412);
+var identity = __nccwpck_require__(5589);
+var toJS = __nccwpck_require__(2463);
+
+class NodeBase {
+    constructor(type) {
+        Object.defineProperty(this, identity.NODE_TYPE, { value: type });
+    }
+    /** Create a copy of this node.  */
+    clone() {
+        const copy = Object.create(Object.getPrototypeOf(this), Object.getOwnPropertyDescriptors(this));
+        if (this.range)
+            copy.range = this.range.slice();
+        return copy;
+    }
+    /** A plain JavaScript representation of this node. */
+    toJS(doc, { mapAsMap, maxAliasCount, onAnchor, reviver } = {}) {
+        if (!identity.isDocument(doc))
+            throw new TypeError('A document argument is required');
+        const ctx = {
+            anchors: new Map(),
+            doc,
+            keep: true,
+            mapAsMap: mapAsMap === true,
+            mapKeyWarned: false,
+            maxAliasCount: typeof maxAliasCount === 'number' ? maxAliasCount : 100
+        };
+        const res = toJS.toJS(this, '', ctx);
+        if (typeof onAnchor === 'function')
+            for (const { count, res } of ctx.anchors.values())
+                onAnchor(res, count);
+        return typeof reviver === 'function'
+            ? applyReviver.applyReviver(reviver, { '': res }, '', res)
+            : res;
+    }
+}
+
+exports.NodeBase = NodeBase;
+
+
+/***/ }),
+
+/***/ 246:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+
+var createNode = __nccwpck_require__(9652);
+var stringifyPair = __nccwpck_require__(4875);
+var addPairToJSMap = __nccwpck_require__(4676);
+var identity = __nccwpck_require__(5589);
+
+function createPair(key, value, ctx) {
+    const k = createNode.createNode(key, undefined, ctx);
+    const v = createNode.createNode(value, undefined, ctx);
+    return new Pair(k, v);
+}
+class Pair {
+    constructor(key, value = null) {
+        Object.defineProperty(this, identity.NODE_TYPE, { value: identity.PAIR });
+        this.key = key;
+        this.value = value;
+    }
+    clone(schema) {
+        let { key, value } = this;
+        if (identity.isNode(key))
+            key = key.clone(schema);
+        if (identity.isNode(value))
+            value = value.clone(schema);
+        return new Pair(key, value);
+    }
+    toJSON(_, ctx) {
+        const pair = ctx?.mapAsMap ? new Map() : {};
+        return addPairToJSMap.addPairToJSMap(ctx, pair, this);
+    }
+    toString(ctx, onComment, onChompKeep) {
+        return ctx?.doc
+            ? stringifyPair.stringifyPair(this, ctx, onComment, onChompKeep)
+            : JSON.stringify(this);
+    }
+}
+
+exports.Pair = Pair;
+exports.createPair = createPair;
+
+
+/***/ }),
+
+/***/ 9338:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+
+var identity = __nccwpck_require__(5589);
+var Node = __nccwpck_require__(1399);
+var toJS = __nccwpck_require__(2463);
+
+const isScalarValue = (value) => !value || (typeof value !== 'function' && typeof value !== 'object');
+class Scalar extends Node.NodeBase {
+    constructor(value) {
+        super(identity.SCALAR);
+        this.value = value;
+    }
+    toJSON(arg, ctx) {
+        return ctx?.keep ? this.value : toJS.toJS(this.value, arg, ctx);
+    }
+    toString() {
+        return String(this.value);
+    }
+}
+Scalar.BLOCK_FOLDED = 'BLOCK_FOLDED';
+Scalar.BLOCK_LITERAL = 'BLOCK_LITERAL';
+Scalar.PLAIN = 'PLAIN';
+Scalar.QUOTE_DOUBLE = 'QUOTE_DOUBLE';
+Scalar.QUOTE_SINGLE = 'QUOTE_SINGLE';
+
+exports.Scalar = Scalar;
+exports.isScalarValue = isScalarValue;
+
+
+/***/ }),
+
+/***/ 6011:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+
+var stringifyCollection = __nccwpck_require__(2466);
+var addPairToJSMap = __nccwpck_require__(4676);
+var Collection = __nccwpck_require__(3466);
+var identity = __nccwpck_require__(5589);
+var Pair = __nccwpck_require__(246);
+var Scalar = __nccwpck_require__(9338);
+
+function findPair(items, key) {
+    const k = identity.isScalar(key) ? key.value : key;
+    for (const it of items) {
+        if (identity.isPair(it)) {
+            if (it.key === key || it.key === k)
+                return it;
+            if (identity.isScalar(it.key) && it.key.value === k)
+                return it;
+        }
+    }
+    return undefined;
+}
+class YAMLMap extends Collection.Collection {
+    static get tagName() {
+        return 'tag:yaml.org,2002:map';
+    }
+    constructor(schema) {
+        super(identity.MAP, schema);
+        this.items = [];
+    }
+    /**
+     * A generic collection parsing method that can be extended
+     * to other node classes that inherit from YAMLMap
+     */
+    static from(schema, obj, ctx) {
+        const { keepUndefined, replacer } = ctx;
+        const map = new this(schema);
+        const add = (key, value) => {
+            if (typeof replacer === 'function')
+                value = replacer.call(obj, key, value);
+            else if (Array.isArray(replacer) && !replacer.includes(key))
+                return;
+            if (value !== undefined || keepUndefined)
+                map.items.push(Pair.createPair(key, value, ctx));
+        };
+        if (obj instanceof Map) {
+            for (const [key, value] of obj)
+                add(key, value);
+        }
+        else if (obj && typeof obj === 'object') {
+            for (const key of Object.keys(obj))
+                add(key, obj[key]);
+        }
+        if (typeof schema.sortMapEntries === 'function') {
+            map.items.sort(schema.sortMapEntries);
+        }
+        return map;
+    }
+    /**
+     * Adds a value to the collection.
+     *
+     * @param overwrite - If not set `true`, using a key that is already in the
+     *   collection will throw. Otherwise, overwrites the previous value.
+     */
+    add(pair, overwrite) {
+        let _pair;
+        if (identity.isPair(pair))
+            _pair = pair;
+        else if (!pair || typeof pair !== 'object' || !('key' in pair)) {
+            // In TypeScript, this never happens.
+            _pair = new Pair.Pair(pair, pair?.value);
+        }
+        else
+            _pair = new Pair.Pair(pair.key, pair.value);
+        const prev = findPair(this.items, _pair.key);
+        const sortEntries = this.schema?.sortMapEntries;
+        if (prev) {
+            if (!overwrite)
+                throw new Error(`Key ${_pair.key} already set`);
+            // For scalars, keep the old node & its comments and anchors
+            if (identity.isScalar(prev.value) && Scalar.isScalarValue(_pair.value))
+                prev.value.value = _pair.value;
+            else
+                prev.value = _pair.value;
+        }
+        else if (sortEntries) {
+            const i = this.items.findIndex(item => sortEntries(_pair, item) < 0);
+            if (i === -1)
+                this.items.push(_pair);
+            else
+                this.items.splice(i, 0, _pair);
+        }
+        else {
+            this.items.push(_pair);
+        }
+    }
+    delete(key) {
+        const it = findPair(this.items, key);
+        if (!it)
+            return false;
+        const del = this.items.splice(this.items.indexOf(it), 1);
+        return del.length > 0;
+    }
+    get(key, keepScalar) {
+        const it = findPair(this.items, key);
+        const node = it?.value;
+        return (!keepScalar && identity.isScalar(node) ? node.value : node) ?? undefined;
+    }
+    has(key) {
+        return !!findPair(this.items, key);
+    }
+    set(key, value) {
+        this.add(new Pair.Pair(key, value), true);
+    }
+    /**
+     * @param ctx - Conversion context, originally set in Document#toJS()
+     * @param {Class} Type - If set, forces the returned collection type
+     * @returns Instance of Type, Map, or Object
+     */
+    toJSON(_, ctx, Type) {
+        const map = Type ? new Type() : ctx?.mapAsMap ? new Map() : {};
+        if (ctx?.onCreate)
+            ctx.onCreate(map);
+        for (const item of this.items)
+            addPairToJSMap.addPairToJSMap(ctx, map, item);
+        return map;
+    }
+    toString(ctx, onComment, onChompKeep) {
+        if (!ctx)
+            return JSON.stringify(this);
+        for (const item of this.items) {
+            if (!identity.isPair(item))
+                throw new Error(`Map items must all be pairs; found ${JSON.stringify(item)} instead`);
+        }
+        if (!ctx.allNullValues && this.hasAllNullValues(false))
+            ctx = Object.assign({}, ctx, { allNullValues: true });
+        return stringifyCollection.stringifyCollection(this, ctx, {
+            blockItemPrefix: '',
+            flowChars: { start: '{', end: '}' },
+            itemIndent: ctx.indent || '',
+            onChompKeep,
+            onComment
+        });
+    }
+}
+
+exports.YAMLMap = YAMLMap;
+exports.findPair = findPair;
+
+
+/***/ }),
+
+/***/ 5161:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+
+var createNode = __nccwpck_require__(9652);
+var stringifyCollection = __nccwpck_require__(2466);
+var Collection = __nccwpck_require__(3466);
+var identity = __nccwpck_require__(5589);
+var Scalar = __nccwpck_require__(9338);
+var toJS = __nccwpck_require__(2463);
+
+class YAMLSeq extends Collection.Collection {
+    static get tagName() {
+        return 'tag:yaml.org,2002:seq';
+    }
+    constructor(schema) {
+        super(identity.SEQ, schema);
+        this.items = [];
+    }
+    add(value) {
+        this.items.push(value);
+    }
+    /**
+     * Removes a value from the collection.
+     *
+     * `key` must contain a representation of an integer for this to succeed.
+     * It may be wrapped in a `Scalar`.
+     *
+     * @returns `true` if the item was found and removed.
+     */
+    delete(key) {
+        const idx = asItemIndex(key);
+        if (typeof idx !== 'number')
+            return false;
+        const del = this.items.splice(idx, 1);
+        return del.length > 0;
+    }
+    get(key, keepScalar) {
+        const idx = asItemIndex(key);
+        if (typeof idx !== 'number')
+            return undefined;
+        const it = this.items[idx];
+        return !keepScalar && identity.isScalar(it) ? it.value : it;
+    }
+    /**
+     * Checks if the collection includes a value with the key `key`.
+     *
+     * `key` must contain a representation of an integer for this to succeed.
+     * It may be wrapped in a `Scalar`.
+     */
+    has(key) {
+        const idx = asItemIndex(key);
+        return typeof idx === 'number' && idx < this.items.length;
+    }
+    /**
+     * Sets a value in this collection. For `!!set`, `value` needs to be a
+     * boolean to add/remove the item from the set.
+     *
+     * If `key` does not contain a representation of an integer, this will throw.
+     * It may be wrapped in a `Scalar`.
+     */
+    set(key, value) {
+        const idx = asItemIndex(key);
+        if (typeof idx !== 'number')
+            throw new Error(`Expected a valid index, not ${key}.`);
+        const prev = this.items[idx];
+        if (identity.isScalar(prev) && Scalar.isScalarValue(value))
+            prev.value = value;
+        else
+            this.items[idx] = value;
+    }
+    toJSON(_, ctx) {
+        const seq = [];
+        if (ctx?.onCreate)
+            ctx.onCreate(seq);
+        let i = 0;
+        for (const item of this.items)
+            seq.push(toJS.toJS(item, String(i++), ctx));
+        return seq;
+    }
+    toString(ctx, onComment, onChompKeep) {
+        if (!ctx)
+            return JSON.stringify(this);
+        return stringifyCollection.stringifyCollection(this, ctx, {
+            blockItemPrefix: '- ',
+            flowChars: { start: '[', end: ']' },
+            itemIndent: (ctx.indent || '') + '  ',
+            onChompKeep,
+            onComment
+        });
+    }
+    static from(schema, obj, ctx) {
+        const { replacer } = ctx;
+        const seq = new this(schema);
+        if (obj && Symbol.iterator in Object(obj)) {
+            let i = 0;
+            for (let it of obj) {
+                if (typeof replacer === 'function') {
+                    const key = obj instanceof Set ? it : String(i++);
+                    it = replacer.call(obj, key, it);
+                }
+                seq.items.push(createNode.createNode(it, undefined, ctx));
+            }
+        }
+        return seq;
+    }
+}
+function asItemIndex(key) {
+    let idx = identity.isScalar(key) ? key.value : key;
+    if (idx && typeof idx === 'string')
+        idx = Number(idx);
+    return typeof idx === 'number' && Number.isInteger(idx) && idx >= 0
+        ? idx
+        : null;
+}
+
+exports.YAMLSeq = YAMLSeq;
+
+
+/***/ }),
+
+/***/ 4676:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+
+var log = __nccwpck_require__(6909);
+var stringify = __nccwpck_require__(8409);
+var identity = __nccwpck_require__(5589);
+var Scalar = __nccwpck_require__(9338);
+var toJS = __nccwpck_require__(2463);
+
+const MERGE_KEY = '<<';
+function addPairToJSMap(ctx, map, { key, value }) {
+    if (ctx?.doc.schema.merge && isMergeKey(key)) {
+        value = identity.isAlias(value) ? value.resolve(ctx.doc) : value;
+        if (identity.isSeq(value))
+            for (const it of value.items)
+                mergeToJSMap(ctx, map, it);
+        else if (Array.isArray(value))
+            for (const it of value)
+                mergeToJSMap(ctx, map, it);
+        else
+            mergeToJSMap(ctx, map, value);
+    }
+    else {
+        const jsKey = toJS.toJS(key, '', ctx);
+        if (map instanceof Map) {
+            map.set(jsKey, toJS.toJS(value, jsKey, ctx));
+        }
+        else if (map instanceof Set) {
+            map.add(jsKey);
+        }
+        else {
+            const stringKey = stringifyKey(key, jsKey, ctx);
+            const jsValue = toJS.toJS(value, stringKey, ctx);
+            if (stringKey in map)
+                Object.defineProperty(map, stringKey, {
+                    value: jsValue,
+                    writable: true,
+                    enumerable: true,
+                    configurable: true
+                });
+            else
+                map[stringKey] = jsValue;
+        }
+    }
+    return map;
+}
+const isMergeKey = (key) => key === MERGE_KEY ||
+    (identity.isScalar(key) &&
+        key.value === MERGE_KEY &&
+        (!key.type || key.type === Scalar.Scalar.PLAIN));
+// If the value associated with a merge key is a single mapping node, each of
+// its key/value pairs is inserted into the current mapping, unless the key
+// already exists in it. If the value associated with the merge key is a
+// sequence, then this sequence is expected to contain mapping nodes and each
+// of these nodes is merged in turn according to its order in the sequence.
+// Keys in mapping nodes earlier in the sequence override keys specified in
+// later mapping nodes. -- http://yaml.org/type/merge.html
+function mergeToJSMap(ctx, map, value) {
+    const source = ctx && identity.isAlias(value) ? value.resolve(ctx.doc) : value;
+    if (!identity.isMap(source))
+        throw new Error('Merge sources must be maps or map aliases');
+    const srcMap = source.toJSON(null, ctx, Map);
+    for (const [key, value] of srcMap) {
+        if (map instanceof Map) {
+            if (!map.has(key))
+                map.set(key, value);
+        }
+        else if (map instanceof Set) {
+            map.add(key);
+        }
+        else if (!Object.prototype.hasOwnProperty.call(map, key)) {
+            Object.defineProperty(map, key, {
+                value,
+                writable: true,
+                enumerable: true,
+                configurable: true
+            });
+        }
+    }
+    return map;
+}
+function stringifyKey(key, jsKey, ctx) {
+    if (jsKey === null)
+        return '';
+    if (typeof jsKey !== 'object')
+        return String(jsKey);
+    if (identity.isNode(key) && ctx && ctx.doc) {
+        const strCtx = stringify.createStringifyContext(ctx.doc, {});
+        strCtx.anchors = new Set();
+        for (const node of ctx.anchors.keys())
+            strCtx.anchors.add(node.anchor);
+        strCtx.inFlow = true;
+        strCtx.inStringifyKey = true;
+        const strKey = key.toString(strCtx);
+        if (!ctx.mapKeyWarned) {
+            let jsonStr = JSON.stringify(strKey);
+            if (jsonStr.length > 40)
+                jsonStr = jsonStr.substring(0, 36) + '..."';
+            log.warn(ctx.doc.options.logLevel, `Keys with collection values will be stringified due to JS Object restrictions: ${jsonStr}. Set mapAsMap: true to use object keys.`);
+            ctx.mapKeyWarned = true;
+        }
+        return strKey;
+    }
+    return JSON.stringify(jsKey);
+}
+
+exports.addPairToJSMap = addPairToJSMap;
+
+
+/***/ }),
+
+/***/ 5589:
 /***/ ((__unused_webpack_module, exports) => {
 
 "use strict";
@@ -29450,24 +30008,11 @@ function isNode(node) {
     return false;
 }
 const hasAnchor = (node) => (isScalar(node) || isCollection(node)) && !!node.anchor;
-class NodeBase {
-    constructor(type) {
-        Object.defineProperty(this, NODE_TYPE, { value: type });
-    }
-    /** Create a copy of this node.  */
-    clone() {
-        const copy = Object.create(Object.getPrototypeOf(this), Object.getOwnPropertyDescriptors(this));
-        if (this.range)
-            copy.range = this.range.slice();
-        return copy;
-    }
-}
 
 exports.ALIAS = ALIAS;
 exports.DOC = DOC;
 exports.MAP = MAP;
 exports.NODE_TYPE = NODE_TYPE;
-exports.NodeBase = NodeBase;
 exports.PAIR = PAIR;
 exports.SCALAR = SCALAR;
 exports.SEQ = SEQ;
@@ -29484,442 +30029,13 @@ exports.isSeq = isSeq;
 
 /***/ }),
 
-/***/ 246:
-/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
-
-"use strict";
-
-
-var createNode = __nccwpck_require__(9652);
-var stringifyPair = __nccwpck_require__(4875);
-var addPairToJSMap = __nccwpck_require__(4676);
-var Node = __nccwpck_require__(1399);
-
-function createPair(key, value, ctx) {
-    const k = createNode.createNode(key, undefined, ctx);
-    const v = createNode.createNode(value, undefined, ctx);
-    return new Pair(k, v);
-}
-class Pair {
-    constructor(key, value = null) {
-        Object.defineProperty(this, Node.NODE_TYPE, { value: Node.PAIR });
-        this.key = key;
-        this.value = value;
-    }
-    clone(schema) {
-        let { key, value } = this;
-        if (Node.isNode(key))
-            key = key.clone(schema);
-        if (Node.isNode(value))
-            value = value.clone(schema);
-        return new Pair(key, value);
-    }
-    toJSON(_, ctx) {
-        const pair = ctx?.mapAsMap ? new Map() : {};
-        return addPairToJSMap.addPairToJSMap(ctx, pair, this);
-    }
-    toString(ctx, onComment, onChompKeep) {
-        return ctx?.doc
-            ? stringifyPair.stringifyPair(this, ctx, onComment, onChompKeep)
-            : JSON.stringify(this);
-    }
-}
-
-exports.Pair = Pair;
-exports.createPair = createPair;
-
-
-/***/ }),
-
-/***/ 9338:
-/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
-
-"use strict";
-
-
-var Node = __nccwpck_require__(1399);
-var toJS = __nccwpck_require__(2463);
-
-const isScalarValue = (value) => !value || (typeof value !== 'function' && typeof value !== 'object');
-class Scalar extends Node.NodeBase {
-    constructor(value) {
-        super(Node.SCALAR);
-        this.value = value;
-    }
-    toJSON(arg, ctx) {
-        return ctx?.keep ? this.value : toJS.toJS(this.value, arg, ctx);
-    }
-    toString() {
-        return String(this.value);
-    }
-}
-Scalar.BLOCK_FOLDED = 'BLOCK_FOLDED';
-Scalar.BLOCK_LITERAL = 'BLOCK_LITERAL';
-Scalar.PLAIN = 'PLAIN';
-Scalar.QUOTE_DOUBLE = 'QUOTE_DOUBLE';
-Scalar.QUOTE_SINGLE = 'QUOTE_SINGLE';
-
-exports.Scalar = Scalar;
-exports.isScalarValue = isScalarValue;
-
-
-/***/ }),
-
-/***/ 6011:
-/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
-
-"use strict";
-
-
-var stringifyCollection = __nccwpck_require__(2466);
-var addPairToJSMap = __nccwpck_require__(4676);
-var Collection = __nccwpck_require__(3466);
-var Node = __nccwpck_require__(1399);
-var Pair = __nccwpck_require__(246);
-var Scalar = __nccwpck_require__(9338);
-
-function findPair(items, key) {
-    const k = Node.isScalar(key) ? key.value : key;
-    for (const it of items) {
-        if (Node.isPair(it)) {
-            if (it.key === key || it.key === k)
-                return it;
-            if (Node.isScalar(it.key) && it.key.value === k)
-                return it;
-        }
-    }
-    return undefined;
-}
-class YAMLMap extends Collection.Collection {
-    static get tagName() {
-        return 'tag:yaml.org,2002:map';
-    }
-    constructor(schema) {
-        super(Node.MAP, schema);
-        this.items = [];
-    }
-    /**
-     * Adds a value to the collection.
-     *
-     * @param overwrite - If not set `true`, using a key that is already in the
-     *   collection will throw. Otherwise, overwrites the previous value.
-     */
-    add(pair, overwrite) {
-        let _pair;
-        if (Node.isPair(pair))
-            _pair = pair;
-        else if (!pair || typeof pair !== 'object' || !('key' in pair)) {
-            // In TypeScript, this never happens.
-            _pair = new Pair.Pair(pair, pair?.value);
-        }
-        else
-            _pair = new Pair.Pair(pair.key, pair.value);
-        const prev = findPair(this.items, _pair.key);
-        const sortEntries = this.schema?.sortMapEntries;
-        if (prev) {
-            if (!overwrite)
-                throw new Error(`Key ${_pair.key} already set`);
-            // For scalars, keep the old node & its comments and anchors
-            if (Node.isScalar(prev.value) && Scalar.isScalarValue(_pair.value))
-                prev.value.value = _pair.value;
-            else
-                prev.value = _pair.value;
-        }
-        else if (sortEntries) {
-            const i = this.items.findIndex(item => sortEntries(_pair, item) < 0);
-            if (i === -1)
-                this.items.push(_pair);
-            else
-                this.items.splice(i, 0, _pair);
-        }
-        else {
-            this.items.push(_pair);
-        }
-    }
-    delete(key) {
-        const it = findPair(this.items, key);
-        if (!it)
-            return false;
-        const del = this.items.splice(this.items.indexOf(it), 1);
-        return del.length > 0;
-    }
-    get(key, keepScalar) {
-        const it = findPair(this.items, key);
-        const node = it?.value;
-        return (!keepScalar && Node.isScalar(node) ? node.value : node) ?? undefined;
-    }
-    has(key) {
-        return !!findPair(this.items, key);
-    }
-    set(key, value) {
-        this.add(new Pair.Pair(key, value), true);
-    }
-    /**
-     * @param ctx - Conversion context, originally set in Document#toJS()
-     * @param {Class} Type - If set, forces the returned collection type
-     * @returns Instance of Type, Map, or Object
-     */
-    toJSON(_, ctx, Type) {
-        const map = Type ? new Type() : ctx?.mapAsMap ? new Map() : {};
-        if (ctx?.onCreate)
-            ctx.onCreate(map);
-        for (const item of this.items)
-            addPairToJSMap.addPairToJSMap(ctx, map, item);
-        return map;
-    }
-    toString(ctx, onComment, onChompKeep) {
-        if (!ctx)
-            return JSON.stringify(this);
-        for (const item of this.items) {
-            if (!Node.isPair(item))
-                throw new Error(`Map items must all be pairs; found ${JSON.stringify(item)} instead`);
-        }
-        if (!ctx.allNullValues && this.hasAllNullValues(false))
-            ctx = Object.assign({}, ctx, { allNullValues: true });
-        return stringifyCollection.stringifyCollection(this, ctx, {
-            blockItemPrefix: '',
-            flowChars: { start: '{', end: '}' },
-            itemIndent: ctx.indent || '',
-            onChompKeep,
-            onComment
-        });
-    }
-}
-
-exports.YAMLMap = YAMLMap;
-exports.findPair = findPair;
-
-
-/***/ }),
-
-/***/ 5161:
-/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
-
-"use strict";
-
-
-var stringifyCollection = __nccwpck_require__(2466);
-var Collection = __nccwpck_require__(3466);
-var Node = __nccwpck_require__(1399);
-var Scalar = __nccwpck_require__(9338);
-var toJS = __nccwpck_require__(2463);
-
-class YAMLSeq extends Collection.Collection {
-    static get tagName() {
-        return 'tag:yaml.org,2002:seq';
-    }
-    constructor(schema) {
-        super(Node.SEQ, schema);
-        this.items = [];
-    }
-    add(value) {
-        this.items.push(value);
-    }
-    /**
-     * Removes a value from the collection.
-     *
-     * `key` must contain a representation of an integer for this to succeed.
-     * It may be wrapped in a `Scalar`.
-     *
-     * @returns `true` if the item was found and removed.
-     */
-    delete(key) {
-        const idx = asItemIndex(key);
-        if (typeof idx !== 'number')
-            return false;
-        const del = this.items.splice(idx, 1);
-        return del.length > 0;
-    }
-    get(key, keepScalar) {
-        const idx = asItemIndex(key);
-        if (typeof idx !== 'number')
-            return undefined;
-        const it = this.items[idx];
-        return !keepScalar && Node.isScalar(it) ? it.value : it;
-    }
-    /**
-     * Checks if the collection includes a value with the key `key`.
-     *
-     * `key` must contain a representation of an integer for this to succeed.
-     * It may be wrapped in a `Scalar`.
-     */
-    has(key) {
-        const idx = asItemIndex(key);
-        return typeof idx === 'number' && idx < this.items.length;
-    }
-    /**
-     * Sets a value in this collection. For `!!set`, `value` needs to be a
-     * boolean to add/remove the item from the set.
-     *
-     * If `key` does not contain a representation of an integer, this will throw.
-     * It may be wrapped in a `Scalar`.
-     */
-    set(key, value) {
-        const idx = asItemIndex(key);
-        if (typeof idx !== 'number')
-            throw new Error(`Expected a valid index, not ${key}.`);
-        const prev = this.items[idx];
-        if (Node.isScalar(prev) && Scalar.isScalarValue(value))
-            prev.value = value;
-        else
-            this.items[idx] = value;
-    }
-    toJSON(_, ctx) {
-        const seq = [];
-        if (ctx?.onCreate)
-            ctx.onCreate(seq);
-        let i = 0;
-        for (const item of this.items)
-            seq.push(toJS.toJS(item, String(i++), ctx));
-        return seq;
-    }
-    toString(ctx, onComment, onChompKeep) {
-        if (!ctx)
-            return JSON.stringify(this);
-        return stringifyCollection.stringifyCollection(this, ctx, {
-            blockItemPrefix: '- ',
-            flowChars: { start: '[', end: ']' },
-            itemIndent: (ctx.indent || '') + '  ',
-            onChompKeep,
-            onComment
-        });
-    }
-}
-function asItemIndex(key) {
-    let idx = Node.isScalar(key) ? key.value : key;
-    if (idx && typeof idx === 'string')
-        idx = Number(idx);
-    return typeof idx === 'number' && Number.isInteger(idx) && idx >= 0
-        ? idx
-        : null;
-}
-
-exports.YAMLSeq = YAMLSeq;
-
-
-/***/ }),
-
-/***/ 4676:
-/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
-
-"use strict";
-
-
-var log = __nccwpck_require__(6909);
-var stringify = __nccwpck_require__(8409);
-var Node = __nccwpck_require__(1399);
-var Scalar = __nccwpck_require__(9338);
-var toJS = __nccwpck_require__(2463);
-
-const MERGE_KEY = '<<';
-function addPairToJSMap(ctx, map, { key, value }) {
-    if (ctx?.doc.schema.merge && isMergeKey(key)) {
-        value = Node.isAlias(value) ? value.resolve(ctx.doc) : value;
-        if (Node.isSeq(value))
-            for (const it of value.items)
-                mergeToJSMap(ctx, map, it);
-        else if (Array.isArray(value))
-            for (const it of value)
-                mergeToJSMap(ctx, map, it);
-        else
-            mergeToJSMap(ctx, map, value);
-    }
-    else {
-        const jsKey = toJS.toJS(key, '', ctx);
-        if (map instanceof Map) {
-            map.set(jsKey, toJS.toJS(value, jsKey, ctx));
-        }
-        else if (map instanceof Set) {
-            map.add(jsKey);
-        }
-        else {
-            const stringKey = stringifyKey(key, jsKey, ctx);
-            const jsValue = toJS.toJS(value, stringKey, ctx);
-            if (stringKey in map)
-                Object.defineProperty(map, stringKey, {
-                    value: jsValue,
-                    writable: true,
-                    enumerable: true,
-                    configurable: true
-                });
-            else
-                map[stringKey] = jsValue;
-        }
-    }
-    return map;
-}
-const isMergeKey = (key) => key === MERGE_KEY ||
-    (Node.isScalar(key) &&
-        key.value === MERGE_KEY &&
-        (!key.type || key.type === Scalar.Scalar.PLAIN));
-// If the value associated with a merge key is a single mapping node, each of
-// its key/value pairs is inserted into the current mapping, unless the key
-// already exists in it. If the value associated with the merge key is a
-// sequence, then this sequence is expected to contain mapping nodes and each
-// of these nodes is merged in turn according to its order in the sequence.
-// Keys in mapping nodes earlier in the sequence override keys specified in
-// later mapping nodes. -- http://yaml.org/type/merge.html
-function mergeToJSMap(ctx, map, value) {
-    const source = ctx && Node.isAlias(value) ? value.resolve(ctx.doc) : value;
-    if (!Node.isMap(source))
-        throw new Error('Merge sources must be maps or map aliases');
-    const srcMap = source.toJSON(null, ctx, Map);
-    for (const [key, value] of srcMap) {
-        if (map instanceof Map) {
-            if (!map.has(key))
-                map.set(key, value);
-        }
-        else if (map instanceof Set) {
-            map.add(key);
-        }
-        else if (!Object.prototype.hasOwnProperty.call(map, key)) {
-            Object.defineProperty(map, key, {
-                value,
-                writable: true,
-                enumerable: true,
-                configurable: true
-            });
-        }
-    }
-    return map;
-}
-function stringifyKey(key, jsKey, ctx) {
-    if (jsKey === null)
-        return '';
-    if (typeof jsKey !== 'object')
-        return String(jsKey);
-    if (Node.isNode(key) && ctx && ctx.doc) {
-        const strCtx = stringify.createStringifyContext(ctx.doc, {});
-        strCtx.anchors = new Set();
-        for (const node of ctx.anchors.keys())
-            strCtx.anchors.add(node.anchor);
-        strCtx.inFlow = true;
-        strCtx.inStringifyKey = true;
-        const strKey = key.toString(strCtx);
-        if (!ctx.mapKeyWarned) {
-            let jsonStr = JSON.stringify(strKey);
-            if (jsonStr.length > 40)
-                jsonStr = jsonStr.substring(0, 36) + '..."';
-            log.warn(ctx.doc.options.logLevel, `Keys with collection values will be stringified due to JS Object restrictions: ${jsonStr}. Set mapAsMap: true to use object keys.`);
-            ctx.mapKeyWarned = true;
-        }
-        return strKey;
-    }
-    return JSON.stringify(jsKey);
-}
-
-exports.addPairToJSMap = addPairToJSMap;
-
-
-/***/ }),
-
 /***/ 2463:
 /***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
 
 "use strict";
 
 
-var Node = __nccwpck_require__(1399);
+var identity = __nccwpck_require__(5589);
 
 /**
  * Recursively convert any node or its contents to native JavaScript
@@ -29937,7 +30053,7 @@ function toJS(value, arg, ctx) {
         return value.map((v, i) => toJS(v, String(i), ctx));
     if (value && typeof value.toJSON === 'function') {
         // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-        if (!ctx || !Node.hasAnchor(value))
+        if (!ctx || !identity.hasAnchor(value))
             return value.toJSON(arg, ctx);
         const data = { aliasCount: 0, count: 1, res: undefined };
         ctx.anchors.set(value, data);
@@ -32324,7 +32440,7 @@ exports.stringify = stringify;
 "use strict";
 
 
-var Node = __nccwpck_require__(1399);
+var identity = __nccwpck_require__(5589);
 var map = __nccwpck_require__(83);
 var seq = __nccwpck_require__(1693);
 var string = __nccwpck_require__(2201);
@@ -32343,9 +32459,9 @@ class Schema {
         this.knownTags = resolveKnownTags ? tags.coreKnownTags : {};
         this.tags = tags.getTags(customTags, this.name);
         this.toStringOptions = toStringDefaults ?? null;
-        Object.defineProperty(this, Node.MAP, { value: map.map });
-        Object.defineProperty(this, Node.SCALAR, { value: string.string });
-        Object.defineProperty(this, Node.SEQ, { value: seq.seq });
+        Object.defineProperty(this, identity.MAP, { value: map.map });
+        Object.defineProperty(this, identity.SCALAR, { value: string.string });
+        Object.defineProperty(this, identity.SEQ, { value: seq.seq });
         // Used by createMap()
         this.sortMapEntries =
             typeof sortMapEntries === 'function'
@@ -32372,45 +32488,20 @@ exports.Schema = Schema;
 "use strict";
 
 
-var Node = __nccwpck_require__(1399);
-var Pair = __nccwpck_require__(246);
+var identity = __nccwpck_require__(5589);
 var YAMLMap = __nccwpck_require__(6011);
 
-function createMap(schema, obj, ctx) {
-    const { keepUndefined, replacer } = ctx;
-    const map = new YAMLMap.YAMLMap(schema);
-    const add = (key, value) => {
-        if (typeof replacer === 'function')
-            value = replacer.call(obj, key, value);
-        else if (Array.isArray(replacer) && !replacer.includes(key))
-            return;
-        if (value !== undefined || keepUndefined)
-            map.items.push(Pair.createPair(key, value, ctx));
-    };
-    if (obj instanceof Map) {
-        for (const [key, value] of obj)
-            add(key, value);
-    }
-    else if (obj && typeof obj === 'object') {
-        for (const key of Object.keys(obj))
-            add(key, obj[key]);
-    }
-    if (typeof schema.sortMapEntries === 'function') {
-        map.items.sort(schema.sortMapEntries);
-    }
-    return map;
-}
 const map = {
     collection: 'map',
-    createNode: createMap,
     default: true,
     nodeClass: YAMLMap.YAMLMap,
     tag: 'tag:yaml.org,2002:map',
     resolve(map, onError) {
-        if (!Node.isMap(map))
+        if (!identity.isMap(map))
             onError('Expected a mapping for this tag');
         return map;
-    }
+    },
+    createNode: (schema, obj, ctx) => YAMLMap.YAMLMap.from(schema, obj, ctx)
 };
 
 exports.map = map;
@@ -32449,36 +32540,20 @@ exports.nullTag = nullTag;
 "use strict";
 
 
-var createNode = __nccwpck_require__(9652);
-var Node = __nccwpck_require__(1399);
+var identity = __nccwpck_require__(5589);
 var YAMLSeq = __nccwpck_require__(5161);
 
-function createSeq(schema, obj, ctx) {
-    const { replacer } = ctx;
-    const seq = new YAMLSeq.YAMLSeq(schema);
-    if (obj && Symbol.iterator in Object(obj)) {
-        let i = 0;
-        for (let it of obj) {
-            if (typeof replacer === 'function') {
-                const key = obj instanceof Set ? it : String(i++);
-                it = replacer.call(obj, key, it);
-            }
-            seq.items.push(createNode.createNode(it, undefined, ctx));
-        }
-    }
-    return seq;
-}
 const seq = {
     collection: 'seq',
-    createNode: createSeq,
     default: true,
     nodeClass: YAMLSeq.YAMLSeq,
     tag: 'tag:yaml.org,2002:seq',
     resolve(seq, onError) {
-        if (!Node.isSeq(seq))
+        if (!identity.isSeq(seq))
             onError('Expected a sequence for this tag');
         return seq;
-    }
+    },
+    createNode: (schema, obj, ctx) => YAMLSeq.YAMLSeq.from(schema, obj, ctx)
 };
 
 exports.seq = seq;
@@ -33104,10 +33179,10 @@ exports.intOct = intOct;
 "use strict";
 
 
-var YAMLSeq = __nccwpck_require__(5161);
+var identity = __nccwpck_require__(5589);
 var toJS = __nccwpck_require__(2463);
-var Node = __nccwpck_require__(1399);
 var YAMLMap = __nccwpck_require__(6011);
+var YAMLSeq = __nccwpck_require__(5161);
 var pairs = __nccwpck_require__(1866);
 
 class YAMLOMap extends YAMLSeq.YAMLSeq {
@@ -33132,7 +33207,7 @@ class YAMLOMap extends YAMLSeq.YAMLSeq {
             ctx.onCreate(map);
         for (const pair of this.items) {
             let key, value;
-            if (Node.isPair(pair)) {
+            if (identity.isPair(pair)) {
                 key = toJS.toJS(pair.key, '', ctx);
                 value = toJS.toJS(pair.value, key, ctx);
             }
@@ -33144,6 +33219,12 @@ class YAMLOMap extends YAMLSeq.YAMLSeq {
             map.set(key, value);
         }
         return map;
+    }
+    static from(schema, iterable, ctx) {
+        const pairs$1 = pairs.createPairs(schema, iterable, ctx);
+        const omap = new this();
+        omap.items = pairs$1.items;
+        return omap;
     }
 }
 YAMLOMap.tag = 'tag:yaml.org,2002:omap';
@@ -33157,7 +33238,7 @@ const omap = {
         const pairs$1 = pairs.resolvePairs(seq, onError);
         const seenKeys = [];
         for (const { key } of pairs$1.items) {
-            if (Node.isScalar(key)) {
+            if (identity.isScalar(key)) {
                 if (seenKeys.includes(key.value)) {
                     onError(`Ordered maps must not include duplicate keys: ${key.value}`);
                 }
@@ -33168,12 +33249,7 @@ const omap = {
         }
         return Object.assign(new YAMLOMap(), pairs$1);
     },
-    createNode(schema, iterable, ctx) {
-        const pairs$1 = pairs.createPairs(schema, iterable, ctx);
-        const omap = new YAMLOMap();
-        omap.items = pairs$1.items;
-        return omap;
-    }
+    createNode: (schema, iterable, ctx) => YAMLOMap.from(schema, iterable, ctx)
 };
 
 exports.YAMLOMap = YAMLOMap;
@@ -33188,18 +33264,18 @@ exports.omap = omap;
 "use strict";
 
 
-var Node = __nccwpck_require__(1399);
+var identity = __nccwpck_require__(5589);
 var Pair = __nccwpck_require__(246);
 var Scalar = __nccwpck_require__(9338);
 var YAMLSeq = __nccwpck_require__(5161);
 
 function resolvePairs(seq, onError) {
-    if (Node.isSeq(seq)) {
+    if (identity.isSeq(seq)) {
         for (let i = 0; i < seq.items.length; ++i) {
             let item = seq.items[i];
-            if (Node.isPair(item))
+            if (identity.isPair(item))
                 continue;
-            else if (Node.isMap(item)) {
+            else if (identity.isMap(item)) {
                 if (item.items.length > 1)
                     onError('Each pair must have its own sequence indicator');
                 const pair = item.items[0] || new Pair.Pair(new Scalar.Scalar(null));
@@ -33215,7 +33291,7 @@ function resolvePairs(seq, onError) {
                 }
                 item = pair;
             }
-            seq.items[i] = Node.isPair(item) ? item : new Pair.Pair(item);
+            seq.items[i] = identity.isPair(item) ? item : new Pair.Pair(item);
         }
     }
     else
@@ -33324,7 +33400,7 @@ exports.schema = schema;
 "use strict";
 
 
-var Node = __nccwpck_require__(1399);
+var identity = __nccwpck_require__(5589);
 var Pair = __nccwpck_require__(246);
 var YAMLMap = __nccwpck_require__(6011);
 
@@ -33335,7 +33411,7 @@ class YAMLSet extends YAMLMap.YAMLMap {
     }
     add(key) {
         let pair;
-        if (Node.isPair(key))
+        if (identity.isPair(key))
             pair = key;
         else if (key &&
             typeof key === 'object' &&
@@ -33355,8 +33431,8 @@ class YAMLSet extends YAMLMap.YAMLMap {
      */
     get(key, keepPair) {
         const pair = YAMLMap.findPair(this.items, key);
-        return !keepPair && Node.isPair(pair)
-            ? Node.isScalar(pair.key)
+        return !keepPair && identity.isPair(pair)
+            ? identity.isScalar(pair.key)
                 ? pair.key.value
                 : pair.key
             : pair;
@@ -33383,6 +33459,17 @@ class YAMLSet extends YAMLMap.YAMLMap {
         else
             throw new Error('Set items must all have null values');
     }
+    static from(schema, iterable, ctx) {
+        const { replacer } = ctx;
+        const set = new this(schema);
+        if (iterable && Symbol.iterator in Object(iterable))
+            for (let value of iterable) {
+                if (typeof replacer === 'function')
+                    value = replacer.call(iterable, value, value);
+                set.items.push(Pair.createPair(value, null, ctx));
+            }
+        return set;
+    }
 }
 YAMLSet.tag = 'tag:yaml.org,2002:set';
 const set = {
@@ -33391,8 +33478,9 @@ const set = {
     nodeClass: YAMLSet,
     default: false,
     tag: 'tag:yaml.org,2002:set',
+    createNode: (schema, iterable, ctx) => YAMLSet.from(schema, iterable, ctx),
     resolve(map, onError) {
-        if (Node.isMap(map)) {
+        if (identity.isMap(map)) {
             if (map.hasAllNullValues(true))
                 return Object.assign(new YAMLSet(), map);
             else
@@ -33401,17 +33489,6 @@ const set = {
         else
             onError('Expected a mapping for this tag');
         return map;
-    },
-    createNode(schema, iterable, ctx) {
-        const { replacer } = ctx;
-        const set = new YAMLSet(schema);
-        if (iterable && Symbol.iterator in Object(iterable))
-            for (let value of iterable) {
-                if (typeof replacer === 'function')
-                    value = replacer.call(iterable, value, value);
-                set.items.push(Pair.createPair(value, null, ctx));
-            }
-        return set;
     }
 };
 
@@ -33472,7 +33549,7 @@ function stringifySexagesimal(node) {
     }
     return (sign +
         parts
-            .map(n => (n < 10 ? '0' + String(n) : String(n)))
+            .map(n => String(n).padStart(2, '0'))
             .join(':')
             .replace(/000000\d*$/, '') // % 60 may introduce error
     );
@@ -33689,7 +33766,7 @@ exports.foldFlowLines = foldFlowLines;
 
 
 var anchors = __nccwpck_require__(8459);
-var Node = __nccwpck_require__(1399);
+var identity = __nccwpck_require__(5589);
 var stringifyComment = __nccwpck_require__(5182);
 var stringifyString = __nccwpck_require__(6226);
 
@@ -33742,7 +33819,7 @@ function getTagObject(tags, item) {
     }
     let tagObj = undefined;
     let obj;
-    if (Node.isScalar(item)) {
+    if (identity.isScalar(item)) {
         obj = item.value;
         const match = tags.filter(t => t.identify?.(obj));
         tagObj =
@@ -33763,7 +33840,7 @@ function stringifyProps(node, tagObj, { anchors: anchors$1, doc }) {
     if (!doc.directives)
         return '';
     const props = [];
-    const anchor = (Node.isScalar(node) || Node.isCollection(node)) && node.anchor;
+    const anchor = (identity.isScalar(node) || identity.isCollection(node)) && node.anchor;
     if (anchor && anchors.anchorIsValid(anchor)) {
         anchors$1.add(anchor);
         props.push(`&${anchor}`);
@@ -33774,9 +33851,9 @@ function stringifyProps(node, tagObj, { anchors: anchors$1, doc }) {
     return props.join(' ');
 }
 function stringify(item, ctx, onComment, onChompKeep) {
-    if (Node.isPair(item))
+    if (identity.isPair(item))
         return item.toString(ctx, onComment, onChompKeep);
-    if (Node.isAlias(item)) {
+    if (identity.isAlias(item)) {
         if (ctx.doc.directives)
             return item.toString(ctx);
         if (ctx.resolvedAliases?.has(item)) {
@@ -33791,7 +33868,7 @@ function stringify(item, ctx, onComment, onChompKeep) {
         }
     }
     let tagObj = undefined;
-    const node = Node.isNode(item)
+    const node = identity.isNode(item)
         ? item
         : ctx.doc.createNode(item, { onTagObj: o => (tagObj = o) });
     if (!tagObj)
@@ -33801,12 +33878,12 @@ function stringify(item, ctx, onComment, onChompKeep) {
         ctx.indentAtStart = (ctx.indentAtStart ?? 0) + props.length + 1;
     const str = typeof tagObj.stringify === 'function'
         ? tagObj.stringify(node, ctx, onComment, onChompKeep)
-        : Node.isScalar(node)
+        : identity.isScalar(node)
             ? stringifyString.stringifyString(node, ctx, onComment, onChompKeep)
             : node.toString(ctx, onComment, onChompKeep);
     if (!props)
         return str;
-    return Node.isScalar(node) || str[0] === '{' || str[0] === '['
+    return identity.isScalar(node) || str[0] === '{' || str[0] === '['
         ? `${props} ${str}`
         : `${props}\n${ctx.indent}${str}`;
 }
@@ -33824,7 +33901,7 @@ exports.stringify = stringify;
 
 
 var Collection = __nccwpck_require__(3466);
-var Node = __nccwpck_require__(1399);
+var identity = __nccwpck_require__(5589);
 var stringify = __nccwpck_require__(8409);
 var stringifyComment = __nccwpck_require__(5182);
 
@@ -33841,15 +33918,15 @@ function stringifyBlockCollection({ comment, items }, ctx, { blockItemPrefix, fl
     for (let i = 0; i < items.length; ++i) {
         const item = items[i];
         let comment = null;
-        if (Node.isNode(item)) {
+        if (identity.isNode(item)) {
             if (!chompKeep && item.spaceBefore)
                 lines.push('');
             addCommentBefore(ctx, lines, item.commentBefore, chompKeep);
             if (item.comment)
                 comment = item.comment;
         }
-        else if (Node.isPair(item)) {
-            const ik = Node.isNode(item.key) ? item.key : null;
+        else if (identity.isPair(item)) {
+            const ik = identity.isNode(item.key) ? item.key : null;
             if (ik) {
                 if (!chompKeep && ik.spaceBefore)
                     lines.push('');
@@ -33898,15 +33975,15 @@ function stringifyFlowCollection({ comment, items }, ctx, { flowChars, itemInden
     for (let i = 0; i < items.length; ++i) {
         const item = items[i];
         let comment = null;
-        if (Node.isNode(item)) {
+        if (identity.isNode(item)) {
             if (item.spaceBefore)
                 lines.push('');
             addCommentBefore(ctx, lines, item.commentBefore, false);
             if (item.comment)
                 comment = item.comment;
         }
-        else if (Node.isPair(item)) {
-            const ik = Node.isNode(item.key) ? item.key : null;
+        else if (identity.isPair(item)) {
+            const ik = identity.isNode(item.key) ? item.key : null;
             if (ik) {
                 if (ik.spaceBefore)
                     lines.push('');
@@ -33914,7 +33991,7 @@ function stringifyFlowCollection({ comment, items }, ctx, { flowChars, itemInden
                 if (ik.comment)
                     reqNewline = true;
             }
-            const iv = Node.isNode(item.value) ? item.value : null;
+            const iv = identity.isNode(item.value) ? item.value : null;
             if (iv) {
                 if (iv.comment)
                     comment = iv.comment;
@@ -34016,7 +34093,7 @@ exports.stringifyComment = stringifyComment;
 "use strict";
 
 
-var Node = __nccwpck_require__(1399);
+var identity = __nccwpck_require__(5589);
 var stringify = __nccwpck_require__(8409);
 var stringifyComment = __nccwpck_require__(5182);
 
@@ -34045,7 +34122,7 @@ function stringifyDocument(doc, options) {
     let chompKeep = false;
     let contentComment = null;
     if (doc.contents) {
-        if (Node.isNode(doc.contents)) {
+        if (identity.isNode(doc.contents)) {
             if (doc.contents.spaceBefore && hasDirectives)
                 lines.push('');
             if (doc.contents.commentBefore) {
@@ -34145,19 +34222,19 @@ exports.stringifyNumber = stringifyNumber;
 "use strict";
 
 
-var Node = __nccwpck_require__(1399);
+var identity = __nccwpck_require__(5589);
 var Scalar = __nccwpck_require__(9338);
 var stringify = __nccwpck_require__(8409);
 var stringifyComment = __nccwpck_require__(5182);
 
 function stringifyPair({ key, value }, ctx, onComment, onChompKeep) {
     const { allNullValues, doc, indent, indentStep, options: { commentString, indentSeq, simpleKeys } } = ctx;
-    let keyComment = (Node.isNode(key) && key.comment) || null;
+    let keyComment = (identity.isNode(key) && key.comment) || null;
     if (simpleKeys) {
         if (keyComment) {
             throw new Error('With simple keys, key nodes cannot have comments');
         }
-        if (Node.isCollection(key)) {
+        if (identity.isCollection(key)) {
             const msg = 'With simple keys, collection cannot be used as a key value';
             throw new Error(msg);
         }
@@ -34165,8 +34242,8 @@ function stringifyPair({ key, value }, ctx, onComment, onChompKeep) {
     let explicitKey = !simpleKeys &&
         (!key ||
             (keyComment && value == null && !ctx.inFlow) ||
-            Node.isCollection(key) ||
-            (Node.isScalar(key)
+            identity.isCollection(key) ||
+            (identity.isScalar(key)
                 ? key.type === Scalar.Scalar.BLOCK_FOLDED || key.type === Scalar.Scalar.BLOCK_LITERAL
                 : typeof key === 'object'));
     ctx = Object.assign({}, ctx, {
@@ -34211,7 +34288,7 @@ function stringifyPair({ key, value }, ctx, onComment, onChompKeep) {
             str += stringifyComment.lineComment(str, ctx.indent, commentString(keyComment));
     }
     let vsb, vcb, valueComment;
-    if (Node.isNode(value)) {
+    if (identity.isNode(value)) {
         vsb = !!value.spaceBefore;
         vcb = value.commentBefore;
         valueComment = value.comment;
@@ -34224,14 +34301,14 @@ function stringifyPair({ key, value }, ctx, onComment, onChompKeep) {
             value = doc.createNode(value);
     }
     ctx.implicitKey = false;
-    if (!explicitKey && !keyComment && Node.isScalar(value))
+    if (!explicitKey && !keyComment && identity.isScalar(value))
         ctx.indentAtStart = str.length + 1;
     chompKeep = false;
     if (!indentSeq &&
         indentStep.length >= 2 &&
         !ctx.inFlow &&
         !explicitKey &&
-        Node.isSeq(value) &&
+        identity.isSeq(value) &&
         !value.flow &&
         !value.tag &&
         !value.anchor) {
@@ -34255,7 +34332,7 @@ function stringifyPair({ key, value }, ctx, onComment, onChompKeep) {
             ws += `\n${ctx.indent}`;
         }
     }
-    else if (!explicitKey && Node.isCollection(value)) {
+    else if (!explicitKey && identity.isCollection(value)) {
         const vs0 = valueStr[0];
         const nl0 = valueStr.indexOf('\n');
         const hasNewline = nl0 !== -1;
@@ -34453,6 +34530,15 @@ function quotedString(value, ctx) {
     }
     return qs(value, ctx);
 }
+// The negative lookbehind avoids a polynomial search,
+// but isn't supported yet on Safari: https://caniuse.com/js-regexp-lookbehind
+let blockEndNewlines;
+try {
+    blockEndNewlines = new RegExp('(^|(?<!\n))\n+(?!\n|$)', 'g');
+}
+catch {
+    blockEndNewlines = /\n+(?!\n|$)/g;
+}
 function blockString({ comment, type, value }, ctx, onComment, onChompKeep) {
     const { blockQuote, commentString, lineWidth } = ctx.options;
     // 1. Block can't end in whitespace unless the last line is non-empty.
@@ -34496,7 +34582,7 @@ function blockString({ comment, type, value }, ctx, onComment, onChompKeep) {
         value = value.slice(0, -end.length);
         if (end[end.length - 1] === '\n')
             end = end.slice(0, -1);
-        end = end.replace(/\n+(?!\n|$)/g, `$&${indent}`);
+        end = end.replace(blockEndNewlines, `$&${indent}`);
     }
     // determine indent indicator from whitespace at value start
     let startWithSpace = false;
@@ -34634,7 +34720,7 @@ exports.stringifyString = stringifyString;
 "use strict";
 
 
-var Node = __nccwpck_require__(1399);
+var identity = __nccwpck_require__(5589);
 
 const BREAK = Symbol('break visit');
 const SKIP = Symbol('skip children');
@@ -34671,7 +34757,7 @@ const REMOVE = Symbol('remove node');
  */
 function visit(node, visitor) {
     const visitor_ = initVisitor(visitor);
-    if (Node.isDocument(node)) {
+    if (identity.isDocument(node)) {
         const cd = visit_(null, node.contents, visitor_, Object.freeze([node]));
         if (cd === REMOVE)
             node.contents = null;
@@ -34690,12 +34776,12 @@ visit.SKIP = SKIP;
 visit.REMOVE = REMOVE;
 function visit_(key, node, visitor, path) {
     const ctrl = callVisitor(key, node, visitor, path);
-    if (Node.isNode(ctrl) || Node.isPair(ctrl)) {
+    if (identity.isNode(ctrl) || identity.isPair(ctrl)) {
         replaceNode(key, path, ctrl);
         return visit_(key, ctrl, visitor, path);
     }
     if (typeof ctrl !== 'symbol') {
-        if (Node.isCollection(node)) {
+        if (identity.isCollection(node)) {
             path = Object.freeze(path.concat(node));
             for (let i = 0; i < node.items.length; ++i) {
                 const ci = visit_(i, node.items[i], visitor, path);
@@ -34709,7 +34795,7 @@ function visit_(key, node, visitor, path) {
                 }
             }
         }
-        else if (Node.isPair(node)) {
+        else if (identity.isPair(node)) {
             path = Object.freeze(path.concat(node));
             const ck = visit_('key', node.key, visitor, path);
             if (ck === BREAK)
@@ -34758,7 +34844,7 @@ function visit_(key, node, visitor, path) {
  */
 async function visitAsync(node, visitor) {
     const visitor_ = initVisitor(visitor);
-    if (Node.isDocument(node)) {
+    if (identity.isDocument(node)) {
         const cd = await visitAsync_(null, node.contents, visitor_, Object.freeze([node]));
         if (cd === REMOVE)
             node.contents = null;
@@ -34777,12 +34863,12 @@ visitAsync.SKIP = SKIP;
 visitAsync.REMOVE = REMOVE;
 async function visitAsync_(key, node, visitor, path) {
     const ctrl = await callVisitor(key, node, visitor, path);
-    if (Node.isNode(ctrl) || Node.isPair(ctrl)) {
+    if (identity.isNode(ctrl) || identity.isPair(ctrl)) {
         replaceNode(key, path, ctrl);
         return visitAsync_(key, ctrl, visitor, path);
     }
     if (typeof ctrl !== 'symbol') {
-        if (Node.isCollection(node)) {
+        if (identity.isCollection(node)) {
             path = Object.freeze(path.concat(node));
             for (let i = 0; i < node.items.length; ++i) {
                 const ci = await visitAsync_(i, node.items[i], visitor, path);
@@ -34796,7 +34882,7 @@ async function visitAsync_(key, node, visitor, path) {
                 }
             }
         }
-        else if (Node.isPair(node)) {
+        else if (identity.isPair(node)) {
             path = Object.freeze(path.concat(node));
             const ck = await visitAsync_('key', node.key, visitor, path);
             if (ck === BREAK)
@@ -34834,34 +34920,34 @@ function initVisitor(visitor) {
 function callVisitor(key, node, visitor, path) {
     if (typeof visitor === 'function')
         return visitor(key, node, path);
-    if (Node.isMap(node))
+    if (identity.isMap(node))
         return visitor.Map?.(key, node, path);
-    if (Node.isSeq(node))
+    if (identity.isSeq(node))
         return visitor.Seq?.(key, node, path);
-    if (Node.isPair(node))
+    if (identity.isPair(node))
         return visitor.Pair?.(key, node, path);
-    if (Node.isScalar(node))
+    if (identity.isScalar(node))
         return visitor.Scalar?.(key, node, path);
-    if (Node.isAlias(node))
+    if (identity.isAlias(node))
         return visitor.Alias?.(key, node, path);
     return undefined;
 }
 function replaceNode(key, path, node) {
     const parent = path[path.length - 1];
-    if (Node.isCollection(parent)) {
+    if (identity.isCollection(parent)) {
         parent.items[key] = node;
     }
-    else if (Node.isPair(parent)) {
+    else if (identity.isPair(parent)) {
         if (key === 'key')
             parent.key = node;
         else
             parent.value = node;
     }
-    else if (Node.isDocument(parent)) {
+    else if (identity.isDocument(parent)) {
         parent.contents = node;
     }
     else {
-        const pt = Node.isAlias(parent) ? 'alias' : 'scalar';
+        const pt = identity.isAlias(parent) ? 'alias' : 'scalar';
         throw new Error(`Cannot replace node with ${pt} parent`);
     }
 }
@@ -37900,7 +37986,7 @@ class LRUCache {
         const pcall = (res, rej) => {
             const fmp = this.#fetchMethod?.(k, v, fetchOpts);
             if (fmp && fmp instanceof Promise) {
-                fmp.then(v => res(v), rej);
+                fmp.then(v => res(v === undefined ? undefined : v), rej);
             }
             // ignored, we go until we finish, regardless.
             // defer check until we are actually aborting,
@@ -37908,7 +37994,7 @@ class LRUCache {
             ac.signal.addEventListener('abort', () => {
                 if (!options.ignoreFetchAbort ||
                     options.allowStaleOnFetchAbort) {
-                    res();
+                    res(undefined);
                     // when it eventually resolves, update the cache.
                     if (options.allowStaleOnFetchAbort) {
                         res = v => cb(v, true);
@@ -38208,716 +38294,1031 @@ var external_path_ = __nccwpck_require__(1017);
 var external_url_ = __nccwpck_require__(7310);
 ;// CONCATENATED MODULE: external "fs/promises"
 const promises_namespaceObject = require("fs/promises");
-// EXTERNAL MODULE: external "events"
-var external_events_ = __nccwpck_require__(2361);
-// EXTERNAL MODULE: external "stream"
-var external_stream_ = __nccwpck_require__(2781);
-;// CONCATENATED MODULE: external "string_decoder"
-const external_string_decoder_namespaceObject = require("string_decoder");
-;// CONCATENATED MODULE: ./node_modules/path-scurry/node_modules/minipass/index.mjs
-
-const proc =
-  typeof process === 'object' && process
+;// CONCATENATED MODULE: external "node:events"
+const external_node_events_namespaceObject = require("node:events");
+;// CONCATENATED MODULE: external "node:stream"
+const external_node_stream_namespaceObject = require("node:stream");
+;// CONCATENATED MODULE: external "node:string_decoder"
+const external_node_string_decoder_namespaceObject = require("node:string_decoder");
+;// CONCATENATED MODULE: ./node_modules/path-scurry/node_modules/minipass/dist/mjs/index.js
+const proc = typeof process === 'object' && process
     ? process
     : {
         stdout: null,
         stderr: null,
-      }
-;
+    };
 
 
-const SD = external_string_decoder_namespaceObject.StringDecoder
 
-const EOF = Symbol('EOF')
-const MAYBE_EMIT_END = Symbol('maybeEmitEnd')
-const EMITTED_END = Symbol('emittedEnd')
-const EMITTING_END = Symbol('emittingEnd')
-const EMITTED_ERROR = Symbol('emittedError')
-const CLOSED = Symbol('closed')
-const READ = Symbol('read')
-const FLUSH = Symbol('flush')
-const FLUSHCHUNK = Symbol('flushChunk')
-const ENCODING = Symbol('encoding')
-const DECODER = Symbol('decoder')
-const FLOWING = Symbol('flowing')
-const PAUSED = Symbol('paused')
-const RESUME = Symbol('resume')
-const BUFFER = Symbol('buffer')
-const PIPES = Symbol('pipes')
-const BUFFERLENGTH = Symbol('bufferLength')
-const BUFFERPUSH = Symbol('bufferPush')
-const BUFFERSHIFT = Symbol('bufferShift')
-const OBJECTMODE = Symbol('objectMode')
+/**
+ * Return true if the argument is a Minipass stream, Node stream, or something
+ * else that Minipass can interact with.
+ */
+const isStream = (s) => !!s &&
+    typeof s === 'object' &&
+    (s instanceof Minipass ||
+        s instanceof external_node_stream_namespaceObject ||
+        isReadable(s) ||
+        isWritable(s));
+/**
+ * Return true if the argument is a valid {@link Minipass.Readable}
+ */
+const isReadable = (s) => !!s &&
+    typeof s === 'object' &&
+    s instanceof external_node_events_namespaceObject.EventEmitter &&
+    typeof s.pipe === 'function' &&
+    // node core Writable streams have a pipe() method, but it throws
+    s.pipe !== external_node_stream_namespaceObject.Writable.prototype.pipe;
+/**
+ * Return true if the argument is a valid {@link Minipass.Writable}
+ */
+const isWritable = (s) => !!s &&
+    typeof s === 'object' &&
+    s instanceof external_node_events_namespaceObject.EventEmitter &&
+    typeof s.write === 'function' &&
+    typeof s.end === 'function';
+const EOF = Symbol('EOF');
+const MAYBE_EMIT_END = Symbol('maybeEmitEnd');
+const EMITTED_END = Symbol('emittedEnd');
+const EMITTING_END = Symbol('emittingEnd');
+const EMITTED_ERROR = Symbol('emittedError');
+const CLOSED = Symbol('closed');
+const READ = Symbol('read');
+const FLUSH = Symbol('flush');
+const FLUSHCHUNK = Symbol('flushChunk');
+const ENCODING = Symbol('encoding');
+const DECODER = Symbol('decoder');
+const FLOWING = Symbol('flowing');
+const PAUSED = Symbol('paused');
+const RESUME = Symbol('resume');
+const BUFFER = Symbol('buffer');
+const PIPES = Symbol('pipes');
+const BUFFERLENGTH = Symbol('bufferLength');
+const BUFFERPUSH = Symbol('bufferPush');
+const BUFFERSHIFT = Symbol('bufferShift');
+const OBJECTMODE = Symbol('objectMode');
 // internal event when stream is destroyed
-const DESTROYED = Symbol('destroyed')
+const DESTROYED = Symbol('destroyed');
 // internal event when stream has an error
-const ERROR = Symbol('error')
-const EMITDATA = Symbol('emitData')
-const EMITEND = Symbol('emitEnd')
-const EMITEND2 = Symbol('emitEnd2')
-const ASYNC = Symbol('async')
-const ABORT = Symbol('abort')
-const ABORTED = Symbol('aborted')
-const SIGNAL = Symbol('signal')
-
-const defer = fn => Promise.resolve().then(fn)
-
-// TODO remove when Node v8 support drops
-const doIter = global._MP_NO_ITERATOR_SYMBOLS_ !== '1'
-const ASYNCITERATOR =
-  (doIter && Symbol.asyncIterator) || Symbol('asyncIterator not implemented')
-const ITERATOR =
-  (doIter && Symbol.iterator) || Symbol('iterator not implemented')
-
-// events that mean 'the stream is over'
-// these are treated specially, and re-emitted
-// if they are listened for after emitting.
-const isEndish = ev => ev === 'end' || ev === 'finish' || ev === 'prefinish'
-
-const isArrayBuffer = b =>
-  b instanceof ArrayBuffer ||
-  (typeof b === 'object' &&
-    b.constructor &&
-    b.constructor.name === 'ArrayBuffer' &&
-    b.byteLength >= 0)
-
-const isArrayBufferView = b => !Buffer.isBuffer(b) && ArrayBuffer.isView(b)
-
+const ERROR = Symbol('error');
+const EMITDATA = Symbol('emitData');
+const EMITEND = Symbol('emitEnd');
+const EMITEND2 = Symbol('emitEnd2');
+const ASYNC = Symbol('async');
+const ABORT = Symbol('abort');
+const ABORTED = Symbol('aborted');
+const SIGNAL = Symbol('signal');
+const DATALISTENERS = Symbol('dataListeners');
+const DISCARDED = Symbol('discarded');
+const defer = (fn) => Promise.resolve().then(fn);
+const nodefer = (fn) => fn();
+const isEndish = (ev) => ev === 'end' || ev === 'finish' || ev === 'prefinish';
+const isArrayBufferLike = (b) => b instanceof ArrayBuffer ||
+    (!!b &&
+        typeof b === 'object' &&
+        b.constructor &&
+        b.constructor.name === 'ArrayBuffer' &&
+        b.byteLength >= 0);
+const isArrayBufferView = (b) => !Buffer.isBuffer(b) && ArrayBuffer.isView(b);
+/**
+ * Internal class representing a pipe to a destination stream.
+ *
+ * @internal
+ */
 class Pipe {
-  constructor(src, dest, opts) {
-    this.src = src
-    this.dest = dest
-    this.opts = opts
-    this.ondrain = () => src[RESUME]()
-    dest.on('drain', this.ondrain)
-  }
-  unpipe() {
-    this.dest.removeListener('drain', this.ondrain)
-  }
-  // istanbul ignore next - only here for the prototype
-  proxyErrors() {}
-  end() {
-    this.unpipe()
-    if (this.opts.end) this.dest.end()
-  }
+    src;
+    dest;
+    opts;
+    ondrain;
+    constructor(src, dest, opts) {
+        this.src = src;
+        this.dest = dest;
+        this.opts = opts;
+        this.ondrain = () => src[RESUME]();
+        this.dest.on('drain', this.ondrain);
+    }
+    unpipe() {
+        this.dest.removeListener('drain', this.ondrain);
+    }
+    // only here for the prototype
+    /* c8 ignore start */
+    proxyErrors(_er) { }
+    /* c8 ignore stop */
+    end() {
+        this.unpipe();
+        if (this.opts.end)
+            this.dest.end();
+    }
 }
-
+/**
+ * Internal class representing a pipe to a destination stream where
+ * errors are proxied.
+ *
+ * @internal
+ */
 class PipeProxyErrors extends Pipe {
-  unpipe() {
-    this.src.removeListener('error', this.proxyErrors)
-    super.unpipe()
-  }
-  constructor(src, dest, opts) {
-    super(src, dest, opts)
-    this.proxyErrors = er => dest.emit('error', er)
-    src.on('error', this.proxyErrors)
-  }
+    unpipe() {
+        this.src.removeListener('error', this.proxyErrors);
+        super.unpipe();
+    }
+    constructor(src, dest, opts) {
+        super(src, dest, opts);
+        this.proxyErrors = er => dest.emit('error', er);
+        src.on('error', this.proxyErrors);
+    }
 }
-
-class Minipass extends external_stream_ {
-  constructor(options) {
-    super()
-    this[FLOWING] = false
-    // whether we're explicitly paused
-    this[PAUSED] = false
-    this[PIPES] = []
-    this[BUFFER] = []
-    this[OBJECTMODE] = (options && options.objectMode) || false
-    if (this[OBJECTMODE]) this[ENCODING] = null
-    else this[ENCODING] = (options && options.encoding) || null
-    if (this[ENCODING] === 'buffer') this[ENCODING] = null
-    this[ASYNC] = (options && !!options.async) || false
-    this[DECODER] = this[ENCODING] ? new SD(this[ENCODING]) : null
-    this[EOF] = false
-    this[EMITTED_END] = false
-    this[EMITTING_END] = false
-    this[CLOSED] = false
-    this[EMITTED_ERROR] = null
-    this.writable = true
-    this.readable = true
-    this[BUFFERLENGTH] = 0
-    this[DESTROYED] = false
-    if (options && options.debugExposeBuffer === true) {
-      Object.defineProperty(this, 'buffer', { get: () => this[BUFFER] })
-    }
-    if (options && options.debugExposePipes === true) {
-      Object.defineProperty(this, 'pipes', { get: () => this[PIPES] })
-    }
-    this[SIGNAL] = options && options.signal
-    this[ABORTED] = false
-    if (this[SIGNAL]) {
-      this[SIGNAL].addEventListener('abort', () => this[ABORT]())
-      if (this[SIGNAL].aborted) {
-        this[ABORT]()
-      }
-    }
-  }
-
-  get bufferLength() {
-    return this[BUFFERLENGTH]
-  }
-
-  get encoding() {
-    return this[ENCODING]
-  }
-  set encoding(enc) {
-    if (this[OBJECTMODE]) throw new Error('cannot set encoding in objectMode')
-
-    if (
-      this[ENCODING] &&
-      enc !== this[ENCODING] &&
-      ((this[DECODER] && this[DECODER].lastNeed) || this[BUFFERLENGTH])
-    )
-      throw new Error('cannot change encoding')
-
-    if (this[ENCODING] !== enc) {
-      this[DECODER] = enc ? new SD(enc) : null
-      if (this[BUFFER].length)
-        this[BUFFER] = this[BUFFER].map(chunk => this[DECODER].write(chunk))
-    }
-
-    this[ENCODING] = enc
-  }
-
-  setEncoding(enc) {
-    this.encoding = enc
-  }
-
-  get objectMode() {
-    return this[OBJECTMODE]
-  }
-  set objectMode(om) {
-    this[OBJECTMODE] = this[OBJECTMODE] || !!om
-  }
-
-  get ['async']() {
-    return this[ASYNC]
-  }
-  set ['async'](a) {
-    this[ASYNC] = this[ASYNC] || !!a
-  }
-
-  // drop everything and get out of the flow completely
-  [ABORT]() {
-    this[ABORTED] = true
-    this.emit('abort', this[SIGNAL].reason)
-    this.destroy(this[SIGNAL].reason)
-  }
-
-  get aborted() {
-    return this[ABORTED]
-  }
-  set aborted(_) {}
-
-  write(chunk, encoding, cb) {
-    if (this[ABORTED]) return false
-    if (this[EOF]) throw new Error('write after end')
-
-    if (this[DESTROYED]) {
-      this.emit(
-        'error',
-        Object.assign(
-          new Error('Cannot call write after a stream was destroyed'),
-          { code: 'ERR_STREAM_DESTROYED' }
-        )
-      )
-      return true
-    }
-
-    if (typeof encoding === 'function') (cb = encoding), (encoding = 'utf8')
-
-    if (!encoding) encoding = 'utf8'
-
-    const fn = this[ASYNC] ? defer : f => f()
-
-    // convert array buffers and typed array views into buffers
-    // at some point in the future, we may want to do the opposite!
-    // leave strings and buffers as-is
-    // anything else switches us into object mode
-    if (!this[OBJECTMODE] && !Buffer.isBuffer(chunk)) {
-      if (isArrayBufferView(chunk))
-        chunk = Buffer.from(chunk.buffer, chunk.byteOffset, chunk.byteLength)
-      else if (isArrayBuffer(chunk)) chunk = Buffer.from(chunk)
-      else if (typeof chunk !== 'string')
-        // use the setter so we throw if we have encoding set
-        this.objectMode = true
-    }
-
-    // handle object mode up front, since it's simpler
-    // this yields better performance, fewer checks later.
-    if (this[OBJECTMODE]) {
-      /* istanbul ignore if - maybe impossible? */
-      if (this.flowing && this[BUFFERLENGTH] !== 0) this[FLUSH](true)
-
-      if (this.flowing) this.emit('data', chunk)
-      else this[BUFFERPUSH](chunk)
-
-      if (this[BUFFERLENGTH] !== 0) this.emit('readable')
-
-      if (cb) fn(cb)
-
-      return this.flowing
-    }
-
-    // at this point the chunk is a buffer or string
-    // don't buffer it up or send it to the decoder
-    if (!chunk.length) {
-      if (this[BUFFERLENGTH] !== 0) this.emit('readable')
-      if (cb) fn(cb)
-      return this.flowing
-    }
-
-    // fast-path writing strings of same encoding to a stream with
-    // an empty buffer, skipping the buffer/decoder dance
-    if (
-      typeof chunk === 'string' &&
-      // unless it is a string already ready for us to use
-      !(encoding === this[ENCODING] && !this[DECODER].lastNeed)
-    ) {
-      chunk = Buffer.from(chunk, encoding)
-    }
-
-    if (Buffer.isBuffer(chunk) && this[ENCODING])
-      chunk = this[DECODER].write(chunk)
-
-    // Note: flushing CAN potentially switch us into not-flowing mode
-    if (this.flowing && this[BUFFERLENGTH] !== 0) this[FLUSH](true)
-
-    if (this.flowing) this.emit('data', chunk)
-    else this[BUFFERPUSH](chunk)
-
-    if (this[BUFFERLENGTH] !== 0) this.emit('readable')
-
-    if (cb) fn(cb)
-
-    return this.flowing
-  }
-
-  read(n) {
-    if (this[DESTROYED]) return null
-
-    if (this[BUFFERLENGTH] === 0 || n === 0 || n > this[BUFFERLENGTH]) {
-      this[MAYBE_EMIT_END]()
-      return null
-    }
-
-    if (this[OBJECTMODE]) n = null
-
-    if (this[BUFFER].length > 1 && !this[OBJECTMODE]) {
-      if (this.encoding) this[BUFFER] = [this[BUFFER].join('')]
-      else this[BUFFER] = [Buffer.concat(this[BUFFER], this[BUFFERLENGTH])]
-    }
-
-    const ret = this[READ](n || null, this[BUFFER][0])
-    this[MAYBE_EMIT_END]()
-    return ret
-  }
-
-  [READ](n, chunk) {
-    if (n === chunk.length || n === null) this[BUFFERSHIFT]()
-    else {
-      this[BUFFER][0] = chunk.slice(n)
-      chunk = chunk.slice(0, n)
-      this[BUFFERLENGTH] -= n
-    }
-
-    this.emit('data', chunk)
-
-    if (!this[BUFFER].length && !this[EOF]) this.emit('drain')
-
-    return chunk
-  }
-
-  end(chunk, encoding, cb) {
-    if (typeof chunk === 'function') (cb = chunk), (chunk = null)
-    if (typeof encoding === 'function') (cb = encoding), (encoding = 'utf8')
-    if (chunk) this.write(chunk, encoding)
-    if (cb) this.once('end', cb)
-    this[EOF] = true
-    this.writable = false
-
-    // if we haven't written anything, then go ahead and emit,
-    // even if we're not reading.
-    // we'll re-emit if a new 'end' listener is added anyway.
-    // This makes MP more suitable to write-only use cases.
-    if (this.flowing || !this[PAUSED]) this[MAYBE_EMIT_END]()
-    return this
-  }
-
-  // don't let the internal resume be overwritten
-  [RESUME]() {
-    if (this[DESTROYED]) return
-
-    this[PAUSED] = false
-    this[FLOWING] = true
-    this.emit('resume')
-    if (this[BUFFER].length) this[FLUSH]()
-    else if (this[EOF]) this[MAYBE_EMIT_END]()
-    else this.emit('drain')
-  }
-
-  resume() {
-    return this[RESUME]()
-  }
-
-  pause() {
-    this[FLOWING] = false
-    this[PAUSED] = true
-  }
-
-  get destroyed() {
-    return this[DESTROYED]
-  }
-
-  get flowing() {
-    return this[FLOWING]
-  }
-
-  get paused() {
-    return this[PAUSED]
-  }
-
-  [BUFFERPUSH](chunk) {
-    if (this[OBJECTMODE]) this[BUFFERLENGTH] += 1
-    else this[BUFFERLENGTH] += chunk.length
-    this[BUFFER].push(chunk)
-  }
-
-  [BUFFERSHIFT]() {
-    if (this[OBJECTMODE]) this[BUFFERLENGTH] -= 1
-    else this[BUFFERLENGTH] -= this[BUFFER][0].length
-    return this[BUFFER].shift()
-  }
-
-  [FLUSH](noDrain) {
-    do {} while (this[FLUSHCHUNK](this[BUFFERSHIFT]()) && this[BUFFER].length)
-
-    if (!noDrain && !this[BUFFER].length && !this[EOF]) this.emit('drain')
-  }
-
-  [FLUSHCHUNK](chunk) {
-    this.emit('data', chunk)
-    return this.flowing
-  }
-
-  pipe(dest, opts) {
-    if (this[DESTROYED]) return
-
-    const ended = this[EMITTED_END]
-    opts = opts || {}
-    if (dest === proc.stdout || dest === proc.stderr) opts.end = false
-    else opts.end = opts.end !== false
-    opts.proxyErrors = !!opts.proxyErrors
-
-    // piping an ended stream ends immediately
-    if (ended) {
-      if (opts.end) dest.end()
-    } else {
-      this[PIPES].push(
-        !opts.proxyErrors
-          ? new Pipe(this, dest, opts)
-          : new PipeProxyErrors(this, dest, opts)
-      )
-      if (this[ASYNC]) defer(() => this[RESUME]())
-      else this[RESUME]()
-    }
-
-    return dest
-  }
-
-  unpipe(dest) {
-    const p = this[PIPES].find(p => p.dest === dest)
-    if (p) {
-      this[PIPES].splice(this[PIPES].indexOf(p), 1)
-      p.unpipe()
-    }
-  }
-
-  addListener(ev, fn) {
-    return this.on(ev, fn)
-  }
-
-  on(ev, fn) {
-    const ret = super.on(ev, fn)
-    if (ev === 'data' && !this[PIPES].length && !this.flowing) this[RESUME]()
-    else if (ev === 'readable' && this[BUFFERLENGTH] !== 0)
-      super.emit('readable')
-    else if (isEndish(ev) && this[EMITTED_END]) {
-      super.emit(ev)
-      this.removeAllListeners(ev)
-    } else if (ev === 'error' && this[EMITTED_ERROR]) {
-      if (this[ASYNC]) defer(() => fn.call(this, this[EMITTED_ERROR]))
-      else fn.call(this, this[EMITTED_ERROR])
-    }
-    return ret
-  }
-
-  get emittedEnd() {
-    return this[EMITTED_END]
-  }
-
-  [MAYBE_EMIT_END]() {
-    if (
-      !this[EMITTING_END] &&
-      !this[EMITTED_END] &&
-      !this[DESTROYED] &&
-      this[BUFFER].length === 0 &&
-      this[EOF]
-    ) {
-      this[EMITTING_END] = true
-      this.emit('end')
-      this.emit('prefinish')
-      this.emit('finish')
-      if (this[CLOSED]) this.emit('close')
-      this[EMITTING_END] = false
-    }
-  }
-
-  emit(ev, data, ...extra) {
-    // error and close are only events allowed after calling destroy()
-    if (ev !== 'error' && ev !== 'close' && ev !== DESTROYED && this[DESTROYED])
-      return
-    else if (ev === 'data') {
-      return !this[OBJECTMODE] && !data
-        ? false
-        : this[ASYNC]
-        ? defer(() => this[EMITDATA](data))
-        : this[EMITDATA](data)
-    } else if (ev === 'end') {
-      return this[EMITEND]()
-    } else if (ev === 'close') {
-      this[CLOSED] = true
-      // don't emit close before 'end' and 'finish'
-      if (!this[EMITTED_END] && !this[DESTROYED]) return
-      const ret = super.emit('close')
-      this.removeAllListeners('close')
-      return ret
-    } else if (ev === 'error') {
-      this[EMITTED_ERROR] = data
-      super.emit(ERROR, data)
-      const ret =
-        !this[SIGNAL] || this.listeners('error').length
-          ? super.emit('error', data)
-          : false
-      this[MAYBE_EMIT_END]()
-      return ret
-    } else if (ev === 'resume') {
-      const ret = super.emit('resume')
-      this[MAYBE_EMIT_END]()
-      return ret
-    } else if (ev === 'finish' || ev === 'prefinish') {
-      const ret = super.emit(ev)
-      this.removeAllListeners(ev)
-      return ret
-    }
-
-    // Some other unknown event
-    const ret = super.emit(ev, data, ...extra)
-    this[MAYBE_EMIT_END]()
-    return ret
-  }
-
-  [EMITDATA](data) {
-    for (const p of this[PIPES]) {
-      if (p.dest.write(data) === false) this.pause()
-    }
-    const ret = super.emit('data', data)
-    this[MAYBE_EMIT_END]()
-    return ret
-  }
-
-  [EMITEND]() {
-    if (this[EMITTED_END]) return
-
-    this[EMITTED_END] = true
-    this.readable = false
-    if (this[ASYNC]) defer(() => this[EMITEND2]())
-    else this[EMITEND2]()
-  }
-
-  [EMITEND2]() {
-    if (this[DECODER]) {
-      const data = this[DECODER].end()
-      if (data) {
-        for (const p of this[PIPES]) {
-          p.dest.write(data)
+const isObjectModeOptions = (o) => !!o.objectMode;
+const isEncodingOptions = (o) => !o.objectMode && !!o.encoding && o.encoding !== 'buffer';
+/**
+ * Main export, the Minipass class
+ *
+ * `RType` is the type of data emitted, defaults to Buffer
+ *
+ * `WType` is the type of data to be written, if RType is buffer or string,
+ * then any {@link Minipass.ContiguousData} is allowed.
+ *
+ * `Events` is the set of event handler signatures that this object
+ * will emit, see {@link Minipass.Events}
+ */
+class Minipass extends external_node_events_namespaceObject.EventEmitter {
+    [FLOWING] = false;
+    [PAUSED] = false;
+    [PIPES] = [];
+    [BUFFER] = [];
+    [OBJECTMODE];
+    [ENCODING];
+    [ASYNC];
+    [DECODER];
+    [EOF] = false;
+    [EMITTED_END] = false;
+    [EMITTING_END] = false;
+    [CLOSED] = false;
+    [EMITTED_ERROR] = null;
+    [BUFFERLENGTH] = 0;
+    [DESTROYED] = false;
+    [SIGNAL];
+    [ABORTED] = false;
+    [DATALISTENERS] = 0;
+    [DISCARDED] = false;
+    /**
+     * true if the stream can be written
+     */
+    writable = true;
+    /**
+     * true if the stream can be read
+     */
+    readable = true;
+    /**
+     * If `RType` is Buffer, then options do not need to be provided.
+     * Otherwise, an options object must be provided to specify either
+     * {@link Minipass.SharedOptions.objectMode} or
+     * {@link Minipass.SharedOptions.encoding}, as appropriate.
+     */
+    constructor(...args) {
+        const options = (args[0] ||
+            {});
+        super();
+        if (options.objectMode && typeof options.encoding === 'string') {
+            throw new TypeError('Encoding and objectMode may not be used together');
         }
-        super.emit('data', data)
-      }
+        if (isObjectModeOptions(options)) {
+            this[OBJECTMODE] = true;
+            this[ENCODING] = null;
+        }
+        else if (isEncodingOptions(options)) {
+            this[ENCODING] = options.encoding;
+            this[OBJECTMODE] = false;
+        }
+        else {
+            this[OBJECTMODE] = false;
+            this[ENCODING] = null;
+        }
+        this[ASYNC] = !!options.async;
+        this[DECODER] = this[ENCODING]
+            ? new external_node_string_decoder_namespaceObject.StringDecoder(this[ENCODING])
+            : null;
+        //@ts-ignore - private option for debugging and testing
+        if (options && options.debugExposeBuffer === true) {
+            Object.defineProperty(this, 'buffer', { get: () => this[BUFFER] });
+        }
+        //@ts-ignore - private option for debugging and testing
+        if (options && options.debugExposePipes === true) {
+            Object.defineProperty(this, 'pipes', { get: () => this[PIPES] });
+        }
+        const { signal } = options;
+        if (signal) {
+            this[SIGNAL] = signal;
+            if (signal.aborted) {
+                this[ABORT]();
+            }
+            else {
+                signal.addEventListener('abort', () => this[ABORT]());
+            }
+        }
     }
-
-    for (const p of this[PIPES]) {
-      p.end()
+    /**
+     * The amount of data stored in the buffer waiting to be read.
+     *
+     * For Buffer strings, this will be the total byte length.
+     * For string encoding streams, this will be the string character length,
+     * according to JavaScript's `string.length` logic.
+     * For objectMode streams, this is a count of the items waiting to be
+     * emitted.
+     */
+    get bufferLength() {
+        return this[BUFFERLENGTH];
     }
-    const ret = super.emit('end')
-    this.removeAllListeners('end')
-    return ret
-  }
-
-  // const all = await stream.collect()
-  collect() {
-    const buf = []
-    if (!this[OBJECTMODE]) buf.dataLength = 0
-    // set the promise first, in case an error is raised
-    // by triggering the flow here.
-    const p = this.promise()
-    this.on('data', c => {
-      buf.push(c)
-      if (!this[OBJECTMODE]) buf.dataLength += c.length
-    })
-    return p.then(() => buf)
-  }
-
-  // const data = await stream.concat()
-  concat() {
-    return this[OBJECTMODE]
-      ? Promise.reject(new Error('cannot concat in objectMode'))
-      : this.collect().then(buf =>
-          this[OBJECTMODE]
-            ? Promise.reject(new Error('cannot concat in objectMode'))
-            : this[ENCODING]
+    /**
+     * The `BufferEncoding` currently in use, or `null`
+     */
+    get encoding() {
+        return this[ENCODING];
+    }
+    /**
+     * @deprecated - This is a read only property
+     */
+    set encoding(_enc) {
+        throw new Error('Encoding must be set at instantiation time');
+    }
+    /**
+     * @deprecated - Encoding may only be set at instantiation time
+     */
+    setEncoding(_enc) {
+        throw new Error('Encoding must be set at instantiation time');
+    }
+    /**
+     * True if this is an objectMode stream
+     */
+    get objectMode() {
+        return this[OBJECTMODE];
+    }
+    /**
+     * @deprecated - This is a read-only property
+     */
+    set objectMode(_om) {
+        throw new Error('objectMode must be set at instantiation time');
+    }
+    /**
+     * true if this is an async stream
+     */
+    get ['async']() {
+        return this[ASYNC];
+    }
+    /**
+     * Set to true to make this stream async.
+     *
+     * Once set, it cannot be unset, as this would potentially cause incorrect
+     * behavior.  Ie, a sync stream can be made async, but an async stream
+     * cannot be safely made sync.
+     */
+    set ['async'](a) {
+        this[ASYNC] = this[ASYNC] || !!a;
+    }
+    // drop everything and get out of the flow completely
+    [ABORT]() {
+        this[ABORTED] = true;
+        this.emit('abort', this[SIGNAL]?.reason);
+        this.destroy(this[SIGNAL]?.reason);
+    }
+    /**
+     * True if the stream has been aborted.
+     */
+    get aborted() {
+        return this[ABORTED];
+    }
+    /**
+     * No-op setter. Stream aborted status is set via the AbortSignal provided
+     * in the constructor options.
+     */
+    set aborted(_) { }
+    write(chunk, encoding, cb) {
+        if (this[ABORTED])
+            return false;
+        if (this[EOF])
+            throw new Error('write after end');
+        if (this[DESTROYED]) {
+            this.emit('error', Object.assign(new Error('Cannot call write after a stream was destroyed'), { code: 'ERR_STREAM_DESTROYED' }));
+            return true;
+        }
+        if (typeof encoding === 'function') {
+            cb = encoding;
+            encoding = 'utf8';
+        }
+        if (!encoding)
+            encoding = 'utf8';
+        const fn = this[ASYNC] ? defer : nodefer;
+        // convert array buffers and typed array views into buffers
+        // at some point in the future, we may want to do the opposite!
+        // leave strings and buffers as-is
+        // anything is only allowed if in object mode, so throw
+        if (!this[OBJECTMODE] && !Buffer.isBuffer(chunk)) {
+            if (isArrayBufferView(chunk)) {
+                //@ts-ignore - sinful unsafe type changing
+                chunk = Buffer.from(chunk.buffer, chunk.byteOffset, chunk.byteLength);
+            }
+            else if (isArrayBufferLike(chunk)) {
+                //@ts-ignore - sinful unsafe type changing
+                chunk = Buffer.from(chunk);
+            }
+            else if (typeof chunk !== 'string') {
+                throw new Error('Non-contiguous data written to non-objectMode stream');
+            }
+        }
+        // handle object mode up front, since it's simpler
+        // this yields better performance, fewer checks later.
+        if (this[OBJECTMODE]) {
+            // maybe impossible?
+            /* c8 ignore start */
+            if (this[FLOWING] && this[BUFFERLENGTH] !== 0)
+                this[FLUSH](true);
+            /* c8 ignore stop */
+            if (this[FLOWING])
+                this.emit('data', chunk);
+            else
+                this[BUFFERPUSH](chunk);
+            if (this[BUFFERLENGTH] !== 0)
+                this.emit('readable');
+            if (cb)
+                fn(cb);
+            return this[FLOWING];
+        }
+        // at this point the chunk is a buffer or string
+        // don't buffer it up or send it to the decoder
+        if (!chunk.length) {
+            if (this[BUFFERLENGTH] !== 0)
+                this.emit('readable');
+            if (cb)
+                fn(cb);
+            return this[FLOWING];
+        }
+        // fast-path writing strings of same encoding to a stream with
+        // an empty buffer, skipping the buffer/decoder dance
+        if (typeof chunk === 'string' &&
+            // unless it is a string already ready for us to use
+            !(encoding === this[ENCODING] && !this[DECODER]?.lastNeed)) {
+            //@ts-ignore - sinful unsafe type change
+            chunk = Buffer.from(chunk, encoding);
+        }
+        if (Buffer.isBuffer(chunk) && this[ENCODING]) {
+            //@ts-ignore - sinful unsafe type change
+            chunk = this[DECODER].write(chunk);
+        }
+        // Note: flushing CAN potentially switch us into not-flowing mode
+        if (this[FLOWING] && this[BUFFERLENGTH] !== 0)
+            this[FLUSH](true);
+        if (this[FLOWING])
+            this.emit('data', chunk);
+        else
+            this[BUFFERPUSH](chunk);
+        if (this[BUFFERLENGTH] !== 0)
+            this.emit('readable');
+        if (cb)
+            fn(cb);
+        return this[FLOWING];
+    }
+    /**
+     * Low-level explicit read method.
+     *
+     * In objectMode, the argument is ignored, and one item is returned if
+     * available.
+     *
+     * `n` is the number of bytes (or in the case of encoding streams,
+     * characters) to consume. If `n` is not provided, then the entire buffer
+     * is returned, or `null` is returned if no data is available.
+     *
+     * If `n` is greater that the amount of data in the internal buffer,
+     * then `null` is returned.
+     */
+    read(n) {
+        if (this[DESTROYED])
+            return null;
+        this[DISCARDED] = false;
+        if (this[BUFFERLENGTH] === 0 ||
+            n === 0 ||
+            (n && n > this[BUFFERLENGTH])) {
+            this[MAYBE_EMIT_END]();
+            return null;
+        }
+        if (this[OBJECTMODE])
+            n = null;
+        if (this[BUFFER].length > 1 && !this[OBJECTMODE]) {
+            // not object mode, so if we have an encoding, then RType is string
+            // otherwise, must be Buffer
+            this[BUFFER] = [
+                (this[ENCODING]
+                    ? this[BUFFER].join('')
+                    : Buffer.concat(this[BUFFER], this[BUFFERLENGTH])),
+            ];
+        }
+        const ret = this[READ](n || null, this[BUFFER][0]);
+        this[MAYBE_EMIT_END]();
+        return ret;
+    }
+    [READ](n, chunk) {
+        if (this[OBJECTMODE])
+            this[BUFFERSHIFT]();
+        else {
+            const c = chunk;
+            if (n === c.length || n === null)
+                this[BUFFERSHIFT]();
+            else if (typeof c === 'string') {
+                this[BUFFER][0] = c.slice(n);
+                chunk = c.slice(0, n);
+                this[BUFFERLENGTH] -= n;
+            }
+            else {
+                this[BUFFER][0] = c.subarray(n);
+                chunk = c.subarray(0, n);
+                this[BUFFERLENGTH] -= n;
+            }
+        }
+        this.emit('data', chunk);
+        if (!this[BUFFER].length && !this[EOF])
+            this.emit('drain');
+        return chunk;
+    }
+    end(chunk, encoding, cb) {
+        if (typeof chunk === 'function') {
+            cb = chunk;
+            chunk = undefined;
+        }
+        if (typeof encoding === 'function') {
+            cb = encoding;
+            encoding = 'utf8';
+        }
+        if (chunk !== undefined)
+            this.write(chunk, encoding);
+        if (cb)
+            this.once('end', cb);
+        this[EOF] = true;
+        this.writable = false;
+        // if we haven't written anything, then go ahead and emit,
+        // even if we're not reading.
+        // we'll re-emit if a new 'end' listener is added anyway.
+        // This makes MP more suitable to write-only use cases.
+        if (this[FLOWING] || !this[PAUSED])
+            this[MAYBE_EMIT_END]();
+        return this;
+    }
+    // don't let the internal resume be overwritten
+    [RESUME]() {
+        if (this[DESTROYED])
+            return;
+        if (!this[DATALISTENERS] && !this[PIPES].length) {
+            this[DISCARDED] = true;
+        }
+        this[PAUSED] = false;
+        this[FLOWING] = true;
+        this.emit('resume');
+        if (this[BUFFER].length)
+            this[FLUSH]();
+        else if (this[EOF])
+            this[MAYBE_EMIT_END]();
+        else
+            this.emit('drain');
+    }
+    /**
+     * Resume the stream if it is currently in a paused state
+     *
+     * If called when there are no pipe destinations or `data` event listeners,
+     * this will place the stream in a "discarded" state, where all data will
+     * be thrown away. The discarded state is removed if a pipe destination or
+     * data handler is added, if pause() is called, or if any synchronous or
+     * asynchronous iteration is started.
+     */
+    resume() {
+        return this[RESUME]();
+    }
+    /**
+     * Pause the stream
+     */
+    pause() {
+        this[FLOWING] = false;
+        this[PAUSED] = true;
+        this[DISCARDED] = false;
+    }
+    /**
+     * true if the stream has been forcibly destroyed
+     */
+    get destroyed() {
+        return this[DESTROYED];
+    }
+    /**
+     * true if the stream is currently in a flowing state, meaning that
+     * any writes will be immediately emitted.
+     */
+    get flowing() {
+        return this[FLOWING];
+    }
+    /**
+     * true if the stream is currently in a paused state
+     */
+    get paused() {
+        return this[PAUSED];
+    }
+    [BUFFERPUSH](chunk) {
+        if (this[OBJECTMODE])
+            this[BUFFERLENGTH] += 1;
+        else
+            this[BUFFERLENGTH] += chunk.length;
+        this[BUFFER].push(chunk);
+    }
+    [BUFFERSHIFT]() {
+        if (this[OBJECTMODE])
+            this[BUFFERLENGTH] -= 1;
+        else
+            this[BUFFERLENGTH] -= this[BUFFER][0].length;
+        return this[BUFFER].shift();
+    }
+    [FLUSH](noDrain = false) {
+        do { } while (this[FLUSHCHUNK](this[BUFFERSHIFT]()) &&
+            this[BUFFER].length);
+        if (!noDrain && !this[BUFFER].length && !this[EOF])
+            this.emit('drain');
+    }
+    [FLUSHCHUNK](chunk) {
+        this.emit('data', chunk);
+        return this[FLOWING];
+    }
+    /**
+     * Pipe all data emitted by this stream into the destination provided.
+     *
+     * Triggers the flow of data.
+     */
+    pipe(dest, opts) {
+        if (this[DESTROYED])
+            return dest;
+        this[DISCARDED] = false;
+        const ended = this[EMITTED_END];
+        opts = opts || {};
+        if (dest === proc.stdout || dest === proc.stderr)
+            opts.end = false;
+        else
+            opts.end = opts.end !== false;
+        opts.proxyErrors = !!opts.proxyErrors;
+        // piping an ended stream ends immediately
+        if (ended) {
+            if (opts.end)
+                dest.end();
+        }
+        else {
+            // "as" here just ignores the WType, which pipes don't care about,
+            // since they're only consuming from us, and writing to the dest
+            this[PIPES].push(!opts.proxyErrors
+                ? new Pipe(this, dest, opts)
+                : new PipeProxyErrors(this, dest, opts));
+            if (this[ASYNC])
+                defer(() => this[RESUME]());
+            else
+                this[RESUME]();
+        }
+        return dest;
+    }
+    /**
+     * Fully unhook a piped destination stream.
+     *
+     * If the destination stream was the only consumer of this stream (ie,
+     * there are no other piped destinations or `'data'` event listeners)
+     * then the flow of data will stop until there is another consumer or
+     * {@link Minipass#resume} is explicitly called.
+     */
+    unpipe(dest) {
+        const p = this[PIPES].find(p => p.dest === dest);
+        if (p) {
+            if (this[PIPES].length === 1) {
+                if (this[FLOWING] && this[DATALISTENERS] === 0) {
+                    this[FLOWING] = false;
+                }
+                this[PIPES] = [];
+            }
+            else
+                this[PIPES].splice(this[PIPES].indexOf(p), 1);
+            p.unpipe();
+        }
+    }
+    /**
+     * Alias for {@link Minipass#on}
+     */
+    addListener(ev, handler) {
+        return this.on(ev, handler);
+    }
+    /**
+     * Mostly identical to `EventEmitter.on`, with the following
+     * behavior differences to prevent data loss and unnecessary hangs:
+     *
+     * - Adding a 'data' event handler will trigger the flow of data
+     *
+     * - Adding a 'readable' event handler when there is data waiting to be read
+     *   will cause 'readable' to be emitted immediately.
+     *
+     * - Adding an 'endish' event handler ('end', 'finish', etc.) which has
+     *   already passed will cause the event to be emitted immediately and all
+     *   handlers removed.
+     *
+     * - Adding an 'error' event handler after an error has been emitted will
+     *   cause the event to be re-emitted immediately with the error previously
+     *   raised.
+     */
+    on(ev, handler) {
+        const ret = super.on(ev, handler);
+        if (ev === 'data') {
+            this[DISCARDED] = false;
+            this[DATALISTENERS]++;
+            if (!this[PIPES].length && !this[FLOWING]) {
+                this[RESUME]();
+            }
+        }
+        else if (ev === 'readable' && this[BUFFERLENGTH] !== 0) {
+            super.emit('readable');
+        }
+        else if (isEndish(ev) && this[EMITTED_END]) {
+            super.emit(ev);
+            this.removeAllListeners(ev);
+        }
+        else if (ev === 'error' && this[EMITTED_ERROR]) {
+            const h = handler;
+            if (this[ASYNC])
+                defer(() => h.call(this, this[EMITTED_ERROR]));
+            else
+                h.call(this, this[EMITTED_ERROR]);
+        }
+        return ret;
+    }
+    /**
+     * Alias for {@link Minipass#off}
+     */
+    removeListener(ev, handler) {
+        return this.off(ev, handler);
+    }
+    /**
+     * Mostly identical to `EventEmitter.off`
+     *
+     * If a 'data' event handler is removed, and it was the last consumer
+     * (ie, there are no pipe destinations or other 'data' event listeners),
+     * then the flow of data will stop until there is another consumer or
+     * {@link Minipass#resume} is explicitly called.
+     */
+    off(ev, handler) {
+        const ret = super.off(ev, handler);
+        // if we previously had listeners, and now we don't, and we don't
+        // have any pipes, then stop the flow, unless it's been explicitly
+        // put in a discarded flowing state via stream.resume().
+        if (ev === 'data') {
+            this[DATALISTENERS] = this.listeners('data').length;
+            if (this[DATALISTENERS] === 0 &&
+                !this[DISCARDED] &&
+                !this[PIPES].length) {
+                this[FLOWING] = false;
+            }
+        }
+        return ret;
+    }
+    /**
+     * Mostly identical to `EventEmitter.removeAllListeners`
+     *
+     * If all 'data' event handlers are removed, and they were the last consumer
+     * (ie, there are no pipe destinations), then the flow of data will stop
+     * until there is another consumer or {@link Minipass#resume} is explicitly
+     * called.
+     */
+    removeAllListeners(ev) {
+        const ret = super.removeAllListeners(ev);
+        if (ev === 'data' || ev === undefined) {
+            this[DATALISTENERS] = 0;
+            if (!this[DISCARDED] && !this[PIPES].length) {
+                this[FLOWING] = false;
+            }
+        }
+        return ret;
+    }
+    /**
+     * true if the 'end' event has been emitted
+     */
+    get emittedEnd() {
+        return this[EMITTED_END];
+    }
+    [MAYBE_EMIT_END]() {
+        if (!this[EMITTING_END] &&
+            !this[EMITTED_END] &&
+            !this[DESTROYED] &&
+            this[BUFFER].length === 0 &&
+            this[EOF]) {
+            this[EMITTING_END] = true;
+            this.emit('end');
+            this.emit('prefinish');
+            this.emit('finish');
+            if (this[CLOSED])
+                this.emit('close');
+            this[EMITTING_END] = false;
+        }
+    }
+    /**
+     * Mostly identical to `EventEmitter.emit`, with the following
+     * behavior differences to prevent data loss and unnecessary hangs:
+     *
+     * If the stream has been destroyed, and the event is something other
+     * than 'close' or 'error', then `false` is returned and no handlers
+     * are called.
+     *
+     * If the event is 'end', and has already been emitted, then the event
+     * is ignored. If the stream is in a paused or non-flowing state, then
+     * the event will be deferred until data flow resumes. If the stream is
+     * async, then handlers will be called on the next tick rather than
+     * immediately.
+     *
+     * If the event is 'close', and 'end' has not yet been emitted, then
+     * the event will be deferred until after 'end' is emitted.
+     *
+     * If the event is 'error', and an AbortSignal was provided for the stream,
+     * and there are no listeners, then the event is ignored, matching the
+     * behavior of node core streams in the presense of an AbortSignal.
+     *
+     * If the event is 'finish' or 'prefinish', then all listeners will be
+     * removed after emitting the event, to prevent double-firing.
+     */
+    emit(ev, ...args) {
+        const data = args[0];
+        // error and close are only events allowed after calling destroy()
+        if (ev !== 'error' &&
+            ev !== 'close' &&
+            ev !== DESTROYED &&
+            this[DESTROYED]) {
+            return false;
+        }
+        else if (ev === 'data') {
+            return !this[OBJECTMODE] && !data
+                ? false
+                : this[ASYNC]
+                    ? (defer(() => this[EMITDATA](data)), true)
+                    : this[EMITDATA](data);
+        }
+        else if (ev === 'end') {
+            return this[EMITEND]();
+        }
+        else if (ev === 'close') {
+            this[CLOSED] = true;
+            // don't emit close before 'end' and 'finish'
+            if (!this[EMITTED_END] && !this[DESTROYED])
+                return false;
+            const ret = super.emit('close');
+            this.removeAllListeners('close');
+            return ret;
+        }
+        else if (ev === 'error') {
+            this[EMITTED_ERROR] = data;
+            super.emit(ERROR, data);
+            const ret = !this[SIGNAL] || this.listeners('error').length
+                ? super.emit('error', data)
+                : false;
+            this[MAYBE_EMIT_END]();
+            return ret;
+        }
+        else if (ev === 'resume') {
+            const ret = super.emit('resume');
+            this[MAYBE_EMIT_END]();
+            return ret;
+        }
+        else if (ev === 'finish' || ev === 'prefinish') {
+            const ret = super.emit(ev);
+            this.removeAllListeners(ev);
+            return ret;
+        }
+        // Some other unknown event
+        const ret = super.emit(ev, ...args);
+        this[MAYBE_EMIT_END]();
+        return ret;
+    }
+    [EMITDATA](data) {
+        for (const p of this[PIPES]) {
+            if (p.dest.write(data) === false)
+                this.pause();
+        }
+        const ret = this[DISCARDED] ? false : super.emit('data', data);
+        this[MAYBE_EMIT_END]();
+        return ret;
+    }
+    [EMITEND]() {
+        if (this[EMITTED_END])
+            return false;
+        this[EMITTED_END] = true;
+        this.readable = false;
+        return this[ASYNC]
+            ? (defer(() => this[EMITEND2]()), true)
+            : this[EMITEND2]();
+    }
+    [EMITEND2]() {
+        if (this[DECODER]) {
+            const data = this[DECODER].end();
+            if (data) {
+                for (const p of this[PIPES]) {
+                    p.dest.write(data);
+                }
+                if (!this[DISCARDED])
+                    super.emit('data', data);
+            }
+        }
+        for (const p of this[PIPES]) {
+            p.end();
+        }
+        const ret = super.emit('end');
+        this.removeAllListeners('end');
+        return ret;
+    }
+    /**
+     * Return a Promise that resolves to an array of all emitted data once
+     * the stream ends.
+     */
+    async collect() {
+        const buf = Object.assign([], {
+            dataLength: 0,
+        });
+        if (!this[OBJECTMODE])
+            buf.dataLength = 0;
+        // set the promise first, in case an error is raised
+        // by triggering the flow here.
+        const p = this.promise();
+        this.on('data', c => {
+            buf.push(c);
+            if (!this[OBJECTMODE])
+                buf.dataLength += c.length;
+        });
+        await p;
+        return buf;
+    }
+    /**
+     * Return a Promise that resolves to the concatenation of all emitted data
+     * once the stream ends.
+     *
+     * Not allowed on objectMode streams.
+     */
+    async concat() {
+        if (this[OBJECTMODE]) {
+            throw new Error('cannot concat in objectMode');
+        }
+        const buf = await this.collect();
+        return (this[ENCODING]
             ? buf.join('')
-            : Buffer.concat(buf, buf.dataLength)
-        )
-  }
-
-  // stream.promise().then(() => done, er => emitted error)
-  promise() {
-    return new Promise((resolve, reject) => {
-      this.on(DESTROYED, () => reject(new Error('stream destroyed')))
-      this.on('error', er => reject(er))
-      this.on('end', () => resolve())
-    })
-  }
-
-  // for await (let chunk of stream)
-  [ASYNCITERATOR]() {
-    let stopped = false
-    const stop = () => {
-      this.pause()
-      stopped = true
-      return Promise.resolve({ done: true })
+            : Buffer.concat(buf, buf.dataLength));
     }
-    const next = () => {
-      if (stopped) return stop()
-      const res = this.read()
-      if (res !== null) return Promise.resolve({ done: false, value: res })
-
-      if (this[EOF]) return stop()
-
-      let resolve = null
-      let reject = null
-      const onerr = er => {
-        this.removeListener('data', ondata)
-        this.removeListener('end', onend)
-        this.removeListener(DESTROYED, ondestroy)
-        stop()
-        reject(er)
-      }
-      const ondata = value => {
-        this.removeListener('error', onerr)
-        this.removeListener('end', onend)
-        this.removeListener(DESTROYED, ondestroy)
-        this.pause()
-        resolve({ value: value, done: !!this[EOF] })
-      }
-      const onend = () => {
-        this.removeListener('error', onerr)
-        this.removeListener('data', ondata)
-        this.removeListener(DESTROYED, ondestroy)
-        stop()
-        resolve({ done: true })
-      }
-      const ondestroy = () => onerr(new Error('stream destroyed'))
-      return new Promise((res, rej) => {
-        reject = rej
-        resolve = res
-        this.once(DESTROYED, ondestroy)
-        this.once('error', onerr)
-        this.once('end', onend)
-        this.once('data', ondata)
-      })
+    /**
+     * Return a void Promise that resolves once the stream ends.
+     */
+    async promise() {
+        return new Promise((resolve, reject) => {
+            this.on(DESTROYED, () => reject(new Error('stream destroyed')));
+            this.on('error', er => reject(er));
+            this.on('end', () => resolve());
+        });
     }
-
-    return {
-      next,
-      throw: stop,
-      return: stop,
-      [ASYNCITERATOR]() {
-        return this
-      },
+    /**
+     * Asynchronous `for await of` iteration.
+     *
+     * This will continue emitting all chunks until the stream terminates.
+     */
+    [Symbol.asyncIterator]() {
+        // set this up front, in case the consumer doesn't call next()
+        // right away.
+        this[DISCARDED] = false;
+        let stopped = false;
+        const stop = async () => {
+            this.pause();
+            stopped = true;
+            return { value: undefined, done: true };
+        };
+        const next = () => {
+            if (stopped)
+                return stop();
+            const res = this.read();
+            if (res !== null)
+                return Promise.resolve({ done: false, value: res });
+            if (this[EOF])
+                return stop();
+            let resolve;
+            let reject;
+            const onerr = (er) => {
+                this.off('data', ondata);
+                this.off('end', onend);
+                this.off(DESTROYED, ondestroy);
+                stop();
+                reject(er);
+            };
+            const ondata = (value) => {
+                this.off('error', onerr);
+                this.off('end', onend);
+                this.off(DESTROYED, ondestroy);
+                this.pause();
+                resolve({ value, done: !!this[EOF] });
+            };
+            const onend = () => {
+                this.off('error', onerr);
+                this.off('data', ondata);
+                this.off(DESTROYED, ondestroy);
+                stop();
+                resolve({ done: true, value: undefined });
+            };
+            const ondestroy = () => onerr(new Error('stream destroyed'));
+            return new Promise((res, rej) => {
+                reject = rej;
+                resolve = res;
+                this.once(DESTROYED, ondestroy);
+                this.once('error', onerr);
+                this.once('end', onend);
+                this.once('data', ondata);
+            });
+        };
+        return {
+            next,
+            throw: stop,
+            return: stop,
+            [Symbol.asyncIterator]() {
+                return this;
+            },
+        };
     }
-  }
-
-  // for (let chunk of stream)
-  [ITERATOR]() {
-    let stopped = false
-    const stop = () => {
-      this.pause()
-      this.removeListener(ERROR, stop)
-      this.removeListener(DESTROYED, stop)
-      this.removeListener('end', stop)
-      stopped = true
-      return { done: true }
+    /**
+     * Synchronous `for of` iteration.
+     *
+     * The iteration will terminate when the internal buffer runs out, even
+     * if the stream has not yet terminated.
+     */
+    [Symbol.iterator]() {
+        // set this up front, in case the consumer doesn't call next()
+        // right away.
+        this[DISCARDED] = false;
+        let stopped = false;
+        const stop = () => {
+            this.pause();
+            this.off(ERROR, stop);
+            this.off(DESTROYED, stop);
+            this.off('end', stop);
+            stopped = true;
+            return { done: true, value: undefined };
+        };
+        const next = () => {
+            if (stopped)
+                return stop();
+            const value = this.read();
+            return value === null ? stop() : { done: false, value };
+        };
+        this.once('end', stop);
+        this.once(ERROR, stop);
+        this.once(DESTROYED, stop);
+        return {
+            next,
+            throw: stop,
+            return: stop,
+            [Symbol.iterator]() {
+                return this;
+            },
+        };
     }
-
-    const next = () => {
-      if (stopped) return stop()
-      const value = this.read()
-      return value === null ? stop() : { value }
+    /**
+     * Destroy a stream, preventing it from being used for any further purpose.
+     *
+     * If the stream has a `close()` method, then it will be called on
+     * destruction.
+     *
+     * After destruction, any attempt to write data, read data, or emit most
+     * events will be ignored.
+     *
+     * If an error argument is provided, then it will be emitted in an
+     * 'error' event.
+     */
+    destroy(er) {
+        if (this[DESTROYED]) {
+            if (er)
+                this.emit('error', er);
+            else
+                this.emit(DESTROYED);
+            return this;
+        }
+        this[DESTROYED] = true;
+        this[DISCARDED] = true;
+        // throw away all buffered data, it's never coming out
+        this[BUFFER].length = 0;
+        this[BUFFERLENGTH] = 0;
+        const wc = this;
+        if (typeof wc.close === 'function' && !this[CLOSED])
+            wc.close();
+        if (er)
+            this.emit('error', er);
+        // if no error to emit, still reject pending promises
+        else
+            this.emit(DESTROYED);
+        return this;
     }
-    this.once('end', stop)
-    this.once(ERROR, stop)
-    this.once(DESTROYED, stop)
-
-    return {
-      next,
-      throw: stop,
-      return: stop,
-      [ITERATOR]() {
-        return this
-      },
+    /**
+     * Alias for {@link isStream}
+     *
+     * Former export location, maintained for backwards compatibility.
+     *
+     * @deprecated
+     */
+    static get isStream() {
+        return isStream;
     }
-  }
-
-  destroy(er) {
-    if (this[DESTROYED]) {
-      if (er) this.emit('error', er)
-      else this.emit(DESTROYED)
-      return this
-    }
-
-    this[DESTROYED] = true
-
-    // throw away all buffered data, it's never coming out
-    this[BUFFER].length = 0
-    this[BUFFERLENGTH] = 0
-
-    if (typeof this.close === 'function' && !this[CLOSED]) this.close()
-
-    if (er) this.emit('error', er)
-    // if no error to emit, still reject pending promises
-    else this.emit(DESTROYED)
-
-    return this
-  }
-
-  static isStream(s) {
-    return (
-      !!s &&
-      (s instanceof Minipass ||
-        s instanceof external_stream_ ||
-        (s instanceof external_events_ &&
-          // readable
-          (typeof s.pipe === 'function' ||
-            // writable
-            (typeof s.write === 'function' && typeof s.end === 'function'))))
-    )
-  }
 }
-
-
-
+//# sourceMappingURL=index.js.map
 ;// CONCATENATED MODULE: ./node_modules/path-scurry/dist/mjs/index.js
 
 
@@ -39052,6 +39453,7 @@ class ChildrenCache extends LRUCache {
         });
     }
 }
+const setAsCwd = Symbol('PathScurry setAsCwd');
 /**
  * Path objects are sort of like a super-powered
  * {@link https://nodejs.org/docs/latest/api/fs.html#class-fsdirent fs.Dirent}
@@ -39184,6 +39586,16 @@ class PathBase {
     #children;
     #linkTarget;
     #realpath;
+    /**
+     * This property is for compatibility with the Dirent class as of
+     * Node v20, where Dirent['path'] refers to the path of the directory
+     * that was passed to readdir.  So, somewhat counterintuitively, this
+     * property refers to the *parent* path, not the path object itself.
+     * For root entries, it's the path to the entry itself.
+     */
+    get path() {
+        return (this.parent || this).fullpath();
+    }
     /**
      * Do not create new Path objects directly.  They should always be accessed
      * via the PathScurry class or other methods on the Path class.
@@ -39331,8 +39743,7 @@ class PathBase {
             return (this.#relative = this.name);
         }
         const pv = p.relative();
-        const rp = pv + (!pv || !p.parent ? '' : this.sep) + name;
-        return (this.#relative = rp);
+        return pv + (!pv || !p.parent ? '' : this.sep) + name;
     }
     /**
      * The relative path from the cwd, using / as the path separator.
@@ -39351,8 +39762,7 @@ class PathBase {
             return (this.#relativePosix = this.fullpathPosix());
         }
         const pv = p.relativePosix();
-        const rp = pv + (!pv || !p.parent ? '' : '/') + name;
-        return (this.#relativePosix = rp);
+        return pv + (!pv || !p.parent ? '' : '/') + name;
     }
     /**
      * The fully resolved path string for this Path entry
@@ -39404,6 +39814,29 @@ class PathBase {
      */
     isUnknown() {
         return (this.#type & IFMT) === UNKNOWN;
+    }
+    isType(type) {
+        return this[`is${type}`]();
+    }
+    getType() {
+        return this.isUnknown()
+            ? 'Unknown'
+            : this.isDirectory()
+                ? 'Directory'
+                : this.isFile()
+                    ? 'File'
+                    : this.isSymbolicLink()
+                        ? 'SymbolicLink'
+                        : this.isFIFO()
+                            ? 'FIFO'
+                            : this.isCharacterDevice()
+                                ? 'CharacterDevice'
+                                : this.isBlockDevice()
+                                    ? 'BlockDevice'
+                                    : /* c8 ignore start */ this.isSocket()
+                                        ? 'Socket'
+                                        : 'Unknown';
+        /* c8 ignore stop */
     }
     /**
      * Is the Path a regular file?
@@ -40002,6 +40435,33 @@ class PathBase {
         }
         catch (_) {
             this.#markENOREALPATH();
+        }
+    }
+    /**
+     * Internal method to mark this Path object as the scurry cwd,
+     * called by {@link PathScurry#chdir}
+     *
+     * @internal
+     */
+    [setAsCwd](oldCwd) {
+        if (oldCwd === this)
+            return;
+        const changed = new Set([]);
+        let rp = [];
+        let p = this;
+        while (p && p.parent) {
+            changed.add(p);
+            p.#relative = rp.join(this.sep);
+            p.#relativePosix = rp.join('/');
+            p = p.parent;
+            rp.push('..');
+        }
+        // now un-memoize parents of old cwd
+        p = oldCwd;
+        while (p && p.parent && !changed.has(p)) {
+            p.#relative = undefined;
+            p.#relativePosix = undefined;
+            p = p.parent;
         }
     }
 }
@@ -40728,6 +41188,11 @@ class PathScurryBase {
         process();
         return results;
     }
+    chdir(path = this.cwd) {
+        const oldCwd = this.cwd;
+        this.cwd = typeof path === 'string' ? this.cwd.resolve(path) : path;
+        this.cwd[setAsCwd](oldCwd);
+    }
 }
 /**
  * Windows implementation of {@link PathScurryBase}
@@ -41054,6 +41519,12 @@ class Pattern {
     }
 }
 //# sourceMappingURL=pattern.js.map
+// EXTERNAL MODULE: external "events"
+var external_events_ = __nccwpck_require__(2361);
+// EXTERNAL MODULE: external "stream"
+var external_stream_ = __nccwpck_require__(2781);
+;// CONCATENATED MODULE: external "string_decoder"
+const external_string_decoder_namespaceObject = require("string_decoder");
 ;// CONCATENATED MODULE: ./node_modules/minipass/index.mjs
 
 const minipass_proc =
@@ -41066,7 +41537,7 @@ const minipass_proc =
 ;
 
 
-const minipass_SD = external_string_decoder_namespaceObject.StringDecoder
+const SD = external_string_decoder_namespaceObject.StringDecoder
 
 const minipass_EOF = Symbol('EOF')
 const minipass_MAYBE_EMIT_END = Symbol('maybeEmitEnd')
@@ -41103,18 +41574,18 @@ const minipass_SIGNAL = Symbol('signal')
 const minipass_defer = fn => Promise.resolve().then(fn)
 
 // TODO remove when Node v8 support drops
-const minipass_doIter = global._MP_NO_ITERATOR_SYMBOLS_ !== '1'
-const minipass_ASYNCITERATOR =
-  (minipass_doIter && Symbol.asyncIterator) || Symbol('asyncIterator not implemented')
-const minipass_ITERATOR =
-  (minipass_doIter && Symbol.iterator) || Symbol('iterator not implemented')
+const doIter = global._MP_NO_ITERATOR_SYMBOLS_ !== '1'
+const ASYNCITERATOR =
+  (doIter && Symbol.asyncIterator) || Symbol('asyncIterator not implemented')
+const ITERATOR =
+  (doIter && Symbol.iterator) || Symbol('iterator not implemented')
 
 // events that mean 'the stream is over'
 // these are treated specially, and re-emitted
 // if they are listened for after emitting.
 const minipass_isEndish = ev => ev === 'end' || ev === 'finish' || ev === 'prefinish'
 
-const minipass_isArrayBuffer = b =>
+const isArrayBuffer = b =>
   b instanceof ArrayBuffer ||
   (typeof b === 'object' &&
     b.constructor &&
@@ -41167,7 +41638,7 @@ class minipass_Minipass extends external_stream_ {
     else this[minipass_ENCODING] = (options && options.encoding) || null
     if (this[minipass_ENCODING] === 'buffer') this[minipass_ENCODING] = null
     this[minipass_ASYNC] = (options && !!options.async) || false
-    this[minipass_DECODER] = this[minipass_ENCODING] ? new minipass_SD(this[minipass_ENCODING]) : null
+    this[minipass_DECODER] = this[minipass_ENCODING] ? new SD(this[minipass_ENCODING]) : null
     this[minipass_EOF] = false
     this[minipass_EMITTED_END] = false
     this[minipass_EMITTING_END] = false
@@ -41211,7 +41682,7 @@ class minipass_Minipass extends external_stream_ {
       throw new Error('cannot change encoding')
 
     if (this[minipass_ENCODING] !== enc) {
-      this[minipass_DECODER] = enc ? new minipass_SD(enc) : null
+      this[minipass_DECODER] = enc ? new SD(enc) : null
       if (this[minipass_BUFFER].length)
         this[minipass_BUFFER] = this[minipass_BUFFER].map(chunk => this[minipass_DECODER].write(chunk))
     }
@@ -41277,7 +41748,7 @@ class minipass_Minipass extends external_stream_ {
     if (!this[minipass_OBJECTMODE] && !Buffer.isBuffer(chunk)) {
       if (minipass_isArrayBufferView(chunk))
         chunk = Buffer.from(chunk.buffer, chunk.byteOffset, chunk.byteLength)
-      else if (minipass_isArrayBuffer(chunk)) chunk = Buffer.from(chunk)
+      else if (isArrayBuffer(chunk)) chunk = Buffer.from(chunk)
       else if (typeof chunk !== 'string')
         // use the setter so we throw if we have encoding set
         this.objectMode = true
@@ -41631,7 +42102,7 @@ class minipass_Minipass extends external_stream_ {
   }
 
   // for await (let chunk of stream)
-  [minipass_ASYNCITERATOR]() {
+  [ASYNCITERATOR]() {
     let stopped = false
     const stop = () => {
       this.pause()
@@ -41683,14 +42154,14 @@ class minipass_Minipass extends external_stream_ {
       next,
       throw: stop,
       return: stop,
-      [minipass_ASYNCITERATOR]() {
+      [ASYNCITERATOR]() {
         return this
       },
     }
   }
 
   // for (let chunk of stream)
-  [minipass_ITERATOR]() {
+  [ITERATOR]() {
     let stopped = false
     const stop = () => {
       this.pause()
@@ -41714,7 +42185,7 @@ class minipass_Minipass extends external_stream_ {
       next,
       throw: stop,
       return: stop,
-      [minipass_ITERATOR]() {
+      [ITERATOR]() {
         return this
       },
     }
