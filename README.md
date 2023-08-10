@@ -15,6 +15,8 @@ If you have a repository containing JSON or YAML files and want to validate them
 
 You can provide schemas to check against, or just validate the syntax of the files. This comes very handy when you want to ensure that your JSON and YAML files are valid before committing them to your repository, especially from pull requests.
 
+This Action is also extremely **fast** ⚡. It uses [`fdir`](https://github.com/thecodrr/fdir) under the hood for directory crawling and file globbing when looking for JSON and YAML files. This Action can crawl through a million files in under a second and validate those files in just a few more.
+
 ## Installation 📦
 
 Here is a quick example of how to install this action in any workflow:
@@ -46,7 +48,7 @@ Here is a quick example of how to install this action in any workflow:
 | `yaml_exclude_regex` | `false` | `""` | A regex to exclude files from validation (e.g. `".*\.schema\.yaml$"` to exclude all files ending with `.schema.yaml`) - Default is `""` which doesn't exclude any files |
 | `yaml_as_json` | `false` | `"false"` | Whether or not to treat and validate YAML files as JSON files - `"true"` or `"false"` - Default is `"false"`. If this is true, the JSON schema will be used to validate YAML files. Any YAML schemas will be ignored. For this context, a YAML file is any file which matches the yaml_extension or yaml_extension_short inputs. See the [docs](docs/yaml_as_json.md) for more details |
 | `exclude_file` | `false` | `""` | The full path to a file in the repository where this Action is running that contains a list of '.gitignore'-style patterns to exclude files from validation (e.g. ./exclude.txt) |
-| `use_gitignore` | `true` | `"true"` | Whetheror not to use the .gitignore file in the root of the repository to exclude files from validation - `"true"` or `"false"` - Default is `"true"` |
+| `use_gitignore` | `true` | `"true"` | Whether or not to use the .gitignore file in the root of the repository to exclude files from validation - `"true"` or `"false"` - Default is `"true"` |
 | `git_ignore_path` | `false` | `".gitignore"` | The full path to the .gitignore file to use if use_gitignore is set to "true" (e.g. ./src/.gitignore) - Default is ".gitignore" which uses the .gitignore file in the root of the repository |
 | `github_token` | `false` | `${{ github.token }}` | The GitHub token used to create an authenticated client - Provided for you by default! |
 
@@ -128,7 +130,7 @@ References docs for both JSON and YAML schema validation can be found at the lin
 - [JSON Schema Validation Docs](https://ajv.js.org/json-schema.html#json-schema)
 - [YAML Schema Validation Docs](https://github.com/ketanSaxena/schema-validator#yaml-schema) - Additional docs [here](https://www.npmjs.com/package/validate)
 
-> Note: JSON files and YAML files use two seperate libraries for schema validation
+> Note: JSON files and YAML files use two separate libraries for schema validation
 
 Assuming the following repository structure:
 
@@ -216,7 +218,7 @@ person:
   name:
     first_name: monalisa
   age: 2000
-  employeed: true
+  employed: true
   hobbies:
     - tennis
     - football
@@ -239,7 +241,7 @@ person:
   age:
     type: number
     required: true # make this field required (optional)
-  employeed:
+  employed:
     type: boolean
   hobbies:
     - type: string
