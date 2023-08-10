@@ -65,7 +65,7 @@ test('successfully validates a yaml file with a schema and skips the schema as w
   process.env.INPUT_USE_DOT_MATCH = 'false'
   process.env.INPUT_YAML_SCHEMA =
     './__tests__/fixtures/yaml/project_dir/schemas/schema.yml'
-  process.env.INPUT_BASE_DIR = './__tests__/fixtures/yaml/project_dir'
+  process.env.INPUT_BASE_DIR = '__tests__/fixtures/yaml/project_dir'
   expect(await yamlValidator(excludeMock)).toStrictEqual({
     failed: 0,
     passed: 1,
@@ -82,7 +82,7 @@ test('successfully validates a yaml file with a schema and skips the schema as w
 test('successfully validates a yaml file with a schema and skips the schema as well', async () => {
   process.env.INPUT_YAML_SCHEMA =
     './__tests__/fixtures/yaml/project_dir/schemas/schema.yml'
-  process.env.INPUT_BASE_DIR = './__tests__/fixtures/yaml/project_dir'
+  process.env.INPUT_BASE_DIR = '__tests__/fixtures/yaml/project_dir'
   expect(await yamlValidator(excludeMock)).toStrictEqual({
     failed: 0,
     passed: 2,
@@ -106,7 +106,7 @@ test('fails to validate a yaml file without using a schema', async () => {
     success: false,
     violations: [
       {
-        file: './__tests__/fixtures/yaml/invalid/yaml1.yaml',
+        file: '__tests__/fixtures/yaml/invalid/yaml1.yaml',
         errors: [
           {
             path: null,
@@ -117,10 +117,10 @@ test('fails to validate a yaml file without using a schema', async () => {
     ]
   })
   expect(errorMock).toHaveBeenCalledWith(
-    '❌ failed to parse YAML file: ./__tests__/fixtures/yaml/invalid/yaml1.yaml'
+    '❌ failed to parse YAML file: __tests__/fixtures/yaml/invalid/yaml1.yaml'
   )
   expect(infoMock).toHaveBeenCalledWith(
-    'skipping due to exclude match: ./__tests__/fixtures/yaml/invalid/skip-bad.yaml'
+    'skipping due to exclude match: __tests__/fixtures/yaml/invalid/skip-bad.yaml'
   )
 })
 
@@ -133,7 +133,7 @@ test('fails to validate a yaml file with an incorrect schema', async () => {
     success: false,
     violations: [
       {
-        file: './__tests__/fixtures/yaml/valid/yaml1.yaml',
+        file: '__tests__/fixtures/yaml/valid/yaml1.yaml',
         errors: [
           {
             path: 'person.age',
@@ -145,7 +145,7 @@ test('fails to validate a yaml file with an incorrect schema', async () => {
   })
   expect(errorMock).toHaveBeenCalledWith(
     expect.stringMatching(
-      '❌ failed to parse YAML file: ./__tests__/fixtures/yaml/valid/yaml1.yaml'
+      '❌ failed to parse YAML file: __tests__/fixtures/yaml/valid/yaml1.yaml'
     )
   )
 })
@@ -160,7 +160,7 @@ test('fails to validate one yaml file with an incorrect schema and succeeds on t
     success: false,
     violations: [
       {
-        file: './__tests__/fixtures/yaml/mixture/yaml1.yaml',
+        file: '__tests__/fixtures/yaml/mixture/yaml1.yaml',
         errors: [
           {
             path: 'person.age',
@@ -176,11 +176,11 @@ test('fails to validate one yaml file with an incorrect schema and succeeds on t
     ]
   })
   expect(infoMock).toHaveBeenCalledWith(
-    './__tests__/fixtures/yaml/mixture/yaml2.yml is valid'
+    '__tests__/fixtures/yaml/mixture/yaml2.yml is valid'
   )
   expect(errorMock).toHaveBeenCalledWith(
     expect.stringMatching(
-      '❌ failed to parse YAML file: ./__tests__/fixtures/yaml/mixture/yaml1.yaml'
+      '❌ failed to parse YAML file: __tests__/fixtures/yaml/mixture/yaml1.yaml'
     )
   )
 })
@@ -196,7 +196,7 @@ test('skips all files when yaml_as_json is true', async () => {
   })
 
   expect(debugMock).toHaveBeenCalledWith(
-    'skipping yaml since it should be treated as json: ./__tests__/fixtures/yaml/valid/yaml1.yaml'
+    'skipping yaml since it should be treated as json: __tests__/fixtures/yaml/valid/yaml1.yaml'
   )
 })
 
@@ -212,9 +212,9 @@ test('skips all files when yaml_as_json is true, even invalid ones', async () =>
   })
 
   expect(debugMock).toHaveBeenCalledWith(
-    'skipping yaml since it should be treated as json: ./__tests__/fixtures/yaml/invalid/yaml1.yaml'
+    'skipping yaml since it should be treated as json: __tests__/fixtures/yaml/invalid/yaml1.yaml'
   )
   expect(debugMock).toHaveBeenCalledWith(
-    'skipping yaml since it should be treated as json: ./__tests__/fixtures/yaml/invalid/skip-bad.yaml'
+    'skipping yaml since it should be treated as json: __tests__/fixtures/yaml/invalid/skip-bad.yaml'
   )
 })

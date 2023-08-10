@@ -85,7 +85,7 @@ test('successfully validates a json file with a schema and skips the schema as w
   process.env.INPUT_USE_DOT_MATCH = 'false'
   process.env.INPUT_JSON_SCHEMA =
     './__tests__/fixtures/json/project_dir/schemas/schema.json'
-  process.env.INPUT_BASE_DIR = './__tests__/fixtures/json/project_dir'
+  process.env.INPUT_BASE_DIR = '__tests__/fixtures/json/project_dir'
   expect(await jsonValidator(excludeMock)).toStrictEqual({
     failed: 0,
     passed: 1,
@@ -101,7 +101,7 @@ test('successfully validates a json file with a schema and skips the schema as w
 test('successfully validates a json file with a schema and skips the schema as well', async () => {
   process.env.INPUT_JSON_SCHEMA =
     './__tests__/fixtures/json/project_dir/schemas/schema.json'
-  process.env.INPUT_BASE_DIR = './__tests__/fixtures/json/project_dir'
+  process.env.INPUT_BASE_DIR = '__tests__/fixtures/json/project_dir'
   expect(await jsonValidator(excludeMock)).toStrictEqual({
     failed: 0,
     passed: 2,
@@ -124,7 +124,7 @@ test('fails to validate a json file without using a schema', async () => {
     success: false,
     violations: [
       {
-        file: './__tests__/fixtures/json/invalid/json1.json',
+        file: '__tests__/fixtures/json/invalid/json1.json',
         errors: [
           {
             path: null,
@@ -135,10 +135,10 @@ test('fails to validate a json file without using a schema', async () => {
     ]
   })
   expect(errorMock).toHaveBeenCalledWith(
-    '❌ failed to parse JSON file: ./__tests__/fixtures/json/invalid/json1.json'
+    '❌ failed to parse JSON file: __tests__/fixtures/json/invalid/json1.json'
   )
   expect(infoMock).toHaveBeenCalledWith(
-    'skipping due to exclude match: ./__tests__/fixtures/json/invalid/skip-bad.json'
+    'skipping due to exclude match: __tests__/fixtures/json/invalid/skip-bad.json'
   )
 })
 
@@ -151,7 +151,7 @@ test('fails to validate a json file with an incorrect schema', async () => {
     success: false,
     violations: [
       {
-        file: './__tests__/fixtures/json/valid/json1.json',
+        file: '__tests__/fixtures/json/valid/json1.json',
         errors: [
           {
             path: '/foo',
@@ -163,7 +163,7 @@ test('fails to validate a json file with an incorrect schema', async () => {
   })
   expect(errorMock).toHaveBeenCalledWith(
     expect.stringMatching(
-      '❌ failed to parse JSON file: ./__tests__/fixtures/json/valid/json1.json'
+      '❌ failed to parse JSON file: __tests__/fixtures/json/valid/json1.json'
     )
   )
 })
@@ -178,7 +178,7 @@ test('fails to validate one json file with an incorrect schema and succeeds on t
     success: false,
     violations: [
       {
-        file: './__tests__/fixtures/json/mixture/json1.json',
+        file: '__tests__/fixtures/json/mixture/json1.json',
         errors: [
           {
             path: '/foo',
@@ -189,11 +189,11 @@ test('fails to validate one json file with an incorrect schema and succeeds on t
     ]
   })
   expect(infoMock).toHaveBeenCalledWith(
-    './__tests__/fixtures/json/mixture/json2.json is valid'
+    '__tests__/fixtures/json/mixture/json2.json is valid'
   )
   expect(errorMock).toHaveBeenCalledWith(
     expect.stringMatching(
-      '❌ failed to parse JSON file: ./__tests__/fixtures/json/mixture/json1.json'
+      '❌ failed to parse JSON file: __tests__/fixtures/json/mixture/json1.json'
     )
   )
 })
@@ -222,7 +222,7 @@ test('fails to validate a yaml file with an incorrect schema when yaml_as_json i
     success: false,
     violations: [
       {
-        file: './__tests__/fixtures/yaml_as_json/invalid/yaml1.yaml',
+        file: '__tests__/fixtures/yaml_as_json/invalid/yaml1.yaml',
         errors: [
           {
             path: null,
@@ -234,7 +234,7 @@ test('fails to validate a yaml file with an incorrect schema when yaml_as_json i
   })
   expect(errorMock).toHaveBeenCalledWith(
     expect.stringMatching(
-      '❌ failed to parse JSON file: ./__tests__/fixtures/yaml_as_json/invalid/yaml1.yaml'
+      '❌ failed to parse JSON file: __tests__/fixtures/yaml_as_json/invalid/yaml1.yaml'
     )
   )
 })
