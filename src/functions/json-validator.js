@@ -76,8 +76,8 @@ export async function jsonValidator(exclude) {
     ? `**/*{${jsonExtension},${yamlGlob}}`
     : `**/*${jsonExtension}`
 
-  core.debug(`using baseDir: ${baseDirSanitized}`)
-  core.debug(`using glob: ${glob}`)
+  core.debug(`json - using baseDir: ${baseDirSanitized}`)
+  core.debug(`json - using glob: ${glob}`)
 
   const files = globSync(glob, {cwd: baseDirSanitized, dot: useDotMatch})
   for (const file of files) {
