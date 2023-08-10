@@ -108,9 +108,14 @@ export async function jsonValidator(exclude) {
 
     var data
     try {
-      // try to parse the file
-      if (fullPath.endsWith('.yaml')) {
+      // if the file is a yaml file but being treated as json and yamlAsJson is true
+      if (
+        yamlAsJson &&
+        (fullPath.endsWith(yamlExtension) ||
+          fullPath.endsWith(yamlExtensionShort))
+      ) {
         data = parse(readFileSync(fullPath, 'utf8'))
+        // if the file is a json file
       } else {
         data = JSON.parse(readFileSync(fullPath, 'utf8'))
       }

@@ -22,6 +22,8 @@ beforeEach(() => {
   process.env.INPUT_YAML_AS_JSON = 'false'
   process.env.INPUT_USE_DOT_MATCH = 'true'
   process.env.INPUT_USE_AJV_FORMATS = true
+  process.env.INPUT_YAML_EXTENSION = '.yaml'
+  process.env.INPUT_YAML_EXTENSION_SHORT = '.yml'
 })
 
 test('successfully validates a json file with a schema', async () => {
