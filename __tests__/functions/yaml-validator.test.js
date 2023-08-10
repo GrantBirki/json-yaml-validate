@@ -135,6 +135,10 @@ test('successfully validates yaml files with a schema when files is defined', as
     success: true,
     violations: []
   })
+
+  expect(debugMock).toHaveBeenCalledWith(
+    'using files: __tests__/fixtures/yaml/valid/yaml1.json, __tests__/fixtures/yaml/project_dir/data/config/config.yml'
+  )
 })
 
 test('fails to validate a yaml file with an incorrect schema', async () => {
