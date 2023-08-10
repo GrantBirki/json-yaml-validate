@@ -35425,8 +35425,8 @@ __nccwpck_require__.d(__webpack_exports__, {
 // EXTERNAL MODULE: ./node_modules/@actions/core/lib/core.js
 var core = __nccwpck_require__(2186);
 // EXTERNAL MODULE: ./node_modules/ajv/dist/ajv.js
-var ajv = __nccwpck_require__(2426);
-var ajv_default = /*#__PURE__*/__nccwpck_require__.n(ajv);
+var dist_ajv = __nccwpck_require__(2426);
+var ajv_default = /*#__PURE__*/__nccwpck_require__.n(dist_ajv);
 // EXTERNAL MODULE: ./node_modules/ajv-formats/dist/index.js
 var dist = __nccwpck_require__(567);
 var dist_default = /*#__PURE__*/__nccwpck_require__.n(dist);
@@ -43603,14 +43603,21 @@ var yaml_dist = __nccwpck_require__(4083);
 
 
 
-// setup the ajv instance
-const json_validator_ajv = new (ajv_default())() // options can be passed, e.g. {allErrors: true}
-dist_default()(json_validator_ajv)
-
 // Helper function to setup the schema
 // :param jsonSchema: path to the jsonSchema file
 // :returns: the compiled schema
 async function schema(jsonSchema) {
+  // setup the ajv instance
+  const ajv = new (ajv_default())() // options can be passed, e.g. {allErrors: true}
+
+  // use ajv-formats if enabled
+  if (core.getBooleanInput('use_ajv_formats')) {
+    core.debug('using ajv-formats with json-validator')
+    dist_default()(ajv)
+  } else {
+    core.debug('ajv-formats will not be used with the json-validator')
+  }
+
   // if a jsonSchema is provided, validate the json against it
   var schema
   if (jsonSchema && jsonSchema !== '') {
@@ -43622,7 +43629,7 @@ async function schema(jsonSchema) {
   }
 
   // compile the schema
-  const validate = json_validator_ajv.compile(schema)
+  const validate = ajv.compile(schema)
   return validate
 }
 

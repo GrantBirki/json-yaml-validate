@@ -19,8 +19,9 @@ beforeEach(() => {
   process.env.INPUT_BASE_DIR = './__tests__/fixtures/json/valid'
   process.env.INPUT_JSON_EXTENSION = '.json'
   process.env.INPUT_JSON_EXCLUDE_REGEX = '.*bad.*\\.json'
-  process.env.INPUT_YAML_AS_JSON = false
+  process.env.INPUT_YAML_AS_JSON = 'false'
   process.env.INPUT_USE_DOT_MATCH = 'true'
+  process.env.INPUT_USE_AJV_FORMATS = true
 })
 
 test('successfully validates a json file with a schema', async () => {
@@ -31,6 +32,10 @@ test('successfully validates a json file with a schema', async () => {
     success: true,
     violations: []
   })
+
+  expect(debugMock).toHaveBeenCalledWith(
+    'using ajv-formats with json-validator'
+  )
 })
 
 test('successfully validates a json file without using a schema', async () => {
@@ -42,6 +47,21 @@ test('successfully validates a json file without using a schema', async () => {
     success: true,
     violations: []
   })
+})
+
+test('successfully validates a json file without using a schema or ajv-formats', async () => {
+  process.env.INPUT_JSON_SCHEMA = ''
+  process.env.INPUT_USE_AJV_FORMATS = false
+  expect(await jsonValidator(excludeMock)).toStrictEqual({
+    failed: 0,
+    passed: 1,
+    skipped: 0,
+    success: true,
+    violations: []
+  })
+  expect(debugMock).toHaveBeenCalledWith(
+    'ajv-formats will not be used with the json-validator'
+  )
 })
 
 test('successfully skips a file found in the exclude txt file', async () => {
