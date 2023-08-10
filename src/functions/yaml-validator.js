@@ -1,7 +1,7 @@
 import * as core from '@actions/core'
 import validateSchema from 'yaml-schema-validator'
 import {readFileSync} from 'fs'
-import {globSync} from 'glob'
+import {fdir} from 'fdir'
 import {parse} from 'yaml'
 
 // Helper function to validate all yaml files in the baseDir
@@ -40,10 +40,12 @@ export async function yamlValidator(exclude) {
   core.debug(`using baseDir: ${baseDirSanitized}`)
   core.debug(`using glob: ${glob}`)
 
-  const files = globSync(glob, {cwd: baseDirSanitized, dot: useDotMatch})
-  for (const file of files) {
-    // construct the full path to the file
-    const fullPath = `${baseDirSanitized}/${file}`
+  const files = await new fdir()
+    .withBasePath()
+    .globWithOptions([glob], {cwd: baseDirSanitized, dot: useDotMatch})
+    .crawl(baseDirSanitized)
+    .withPromise()
+  for (const fullPath of files) {
     core.debug(`found file: ${fullPath}`)
 
     if (yamlSchema !== '' && fullPath.includes(yamlSchema)) {
