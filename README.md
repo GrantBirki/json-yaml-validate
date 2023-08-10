@@ -39,6 +39,7 @@ Here is a quick example of how to install this action in any workflow:
 | `json_schema` | `false` | `""` | The full path to the JSON schema file (e.g. ./schemas/schema.json) - Default is `""` which doesn't enforce a strict schema |
 | `json_extension` | `false` | `".json"` | The file extension for JSON files (e.g. .json) |
 | `json_exclude_regex` | `false` | `""` | A regex to exclude files from validation (e.g. `".*\.schema\.json$"` to exclude all files ending with `.schema.json`) - Default is `""` which doesn't exclude any files |
+| `use_ajv_formats` | `false` | `"true"` | Whether or not to use the [AJV formats](https://github.com/ajv-validator/ajv-formats) with the JSON processor |
 | `yaml_schema` | `false` | `""` | The full path to the YAML schema file (e.g. ./schemas/schema.yaml) - Default is `""` which doesn't enforce a strict schema |
 | `yaml_extension` | `false` | `".yaml"` | The file extension for YAML files (e.g. .yaml) |
 | `yaml_extension_short` | `false` | `".yml"` | The "short" file extension for YAML files (e.g. .yml) |

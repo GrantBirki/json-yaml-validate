@@ -37,6 +37,10 @@ inputs:
     description: A regex to exclude JSON files from validation (e.g. .*\.schema\.json$) - Default is "" which doesn't exclude any files
     required: false
     default: ""
+  use_ajv_formats:
+    description: Whether or not to use the AJV formats - "true" or "false"
+    required: false
+    default: "true"
   yaml_schema:
     description: The full path to the YAML schema file (e.g. ./schemas/schema.yml) - Default is "" which doesn't enforce a strict schema
     required: false

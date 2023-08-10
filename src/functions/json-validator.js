@@ -1,16 +1,25 @@
 import * as core from '@actions/core'
 import Ajv from 'ajv'
+import addFormats from 'ajv-formats'
 import {readFileSync} from 'fs'
 import {globSync} from 'glob'
 import {parse} from 'yaml'
-
-// setup the ajv instance
-const ajv = new Ajv() // options can be passed, e.g. {allErrors: true}
 
 // Helper function to setup the schema
 // :param jsonSchema: path to the jsonSchema file
 // :returns: the compiled schema
 async function schema(jsonSchema) {
+  // setup the ajv instance
+  const ajv = new Ajv() // options can be passed, e.g. {allErrors: true}
+
+  // use ajv-formats if enabled
+  if (core.getBooleanInput('use_ajv_formats')) {
+    core.debug('using ajv-formats with json-validator')
+    addFormats(ajv)
+  } else {
+    core.debug('ajv-formats will not be used with the json-validator')
+  }
+
   // if a jsonSchema is provided, validate the json against it
   var schema
   if (jsonSchema && jsonSchema !== '') {
