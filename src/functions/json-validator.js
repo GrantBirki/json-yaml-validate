@@ -37,14 +37,14 @@ async function schema(jsonSchema) {
 
 // Helper function to validate all json files in the baseDir
 export async function jsonValidator(exclude) {
-  const baseDir = core.getInput('base_dir').trim()
-  const jsonExtension = core.getInput('json_extension').trim()
-  const jsonExcludeRegex = core.getInput('json_exclude_regex').trim()
-  const jsonSchema = core.getInput('json_schema').trim()
-  const yamlAsJson = core.getInput('yaml_as_json').trim() === 'true'
-  const yamlExtension = core.getInput('yaml_extension').trim()
-  const yamlExtensionShort = core.getInput('yaml_extension_short').trim()
-  const useDotMatch = core.getInput('use_dot_match').trim() === 'true'
+  const baseDir = core.getInput('base_dir')
+  const jsonExtension = core.getInput('json_extension')
+  const jsonExcludeRegex = core.getInput('json_exclude_regex')
+  const jsonSchema = core.getInput('json_schema')
+  const yamlAsJson = core.getBooleanInput('yaml_as_json')
+  const yamlExtension = core.getInput('yaml_extension')
+  const yamlExtensionShort = core.getInput('yaml_extension_short')
+  const useDotMatch = core.getBooleanInput('use_dot_match')
 
   // remove trailing slash from baseDir
   const baseDirSanitized = baseDir.replace(/\/$/, '')

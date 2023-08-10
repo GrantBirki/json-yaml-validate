@@ -43654,14 +43654,14 @@ async function schema(jsonSchema) {
 
 // Helper function to validate all json files in the baseDir
 async function jsonValidator(exclude) {
-  const baseDir = core.getInput('base_dir').trim()
-  const jsonExtension = core.getInput('json_extension').trim()
-  const jsonExcludeRegex = core.getInput('json_exclude_regex').trim()
-  const jsonSchema = core.getInput('json_schema').trim()
-  const yamlAsJson = core.getInput('yaml_as_json').trim() === 'true'
-  const yamlExtension = core.getInput('yaml_extension').trim()
-  const yamlExtensionShort = core.getInput('yaml_extension_short').trim()
-  const useDotMatch = core.getInput('use_dot_match').trim() === 'true'
+  const baseDir = core.getInput('base_dir')
+  const jsonExtension = core.getInput('json_extension')
+  const jsonExcludeRegex = core.getInput('json_exclude_regex')
+  const jsonSchema = core.getInput('json_schema')
+  const yamlAsJson = core.getBooleanInput('yaml_as_json')
+  const yamlExtension = core.getInput('yaml_extension')
+  const yamlExtensionShort = core.getInput('yaml_extension_short')
+  const useDotMatch = core.getBooleanInput('use_dot_match')
 
   // remove trailing slash from baseDir
   const baseDirSanitized = baseDir.replace(/\/$/, '')
@@ -43795,13 +43795,13 @@ var yaml_schema_validator_default = /*#__PURE__*/__nccwpck_require__.n(yaml_sche
 
 // Helper function to validate all yaml files in the baseDir
 async function yamlValidator(exclude) {
-  const baseDir = core.getInput('base_dir').trim()
-  const yamlExtension = core.getInput('yaml_extension').trim()
-  const yamlExtensionShort = core.getInput('yaml_extension_short').trim()
-  const yamlSchema = core.getInput('yaml_schema').trim()
-  const yamlExcludeRegex = core.getInput('yaml_exclude_regex').trim()
-  const yamlAsJson = core.getInput('yaml_as_json').trim() === 'true'
-  const useDotMatch = core.getInput('use_dot_match').trim() === 'true'
+  const baseDir = core.getInput('base_dir')
+  const yamlExtension = core.getInput('yaml_extension')
+  const yamlExtensionShort = core.getInput('yaml_extension_short')
+  const yamlSchema = core.getInput('yaml_schema')
+  const yamlExcludeRegex = core.getInput('yaml_exclude_regex')
+  const yamlAsJson = core.getBooleanInput('yaml_as_json')
+  const useDotMatch = core.getBooleanInput('use_dot_match')
 
   // remove trailing slash from baseDir
   const baseDirSanitized = baseDir.replace(/\/$/, '')
@@ -44045,7 +44045,7 @@ async function processResults(jsonResults, yamlResults) {
   if (
     github.context?.payload?.pull_request !== undefined &&
     github.context?.payload?.pull_request !== null &&
-    core.getInput('comment') === 'true'
+    core.getBooleanInput('comment')
   ) {
     const octokit = github.getOctokit(
       core.getInput('github_token', {required: true})
@@ -44083,8 +44083,8 @@ async function processResults(jsonResults, yamlResults) {
 
 class Exclude {
   constructor() {
-    this.path = core.getInput('exclude_file').trim()
-    this.gitTrackedOnly = core.getInput('use_gitignore').trim() === 'true'
+    this.path = core.getInput('exclude_file')
+    this.gitTrackedOnly = core.getBooleanInput('use_gitignore')
 
     // initialize the exclude array
     this.exclude = []
@@ -44102,7 +44102,7 @@ class Exclude {
 
     // if gitTrackOnly is true, add the git exclude patterns from the .gitignore file if it exists
     if (this.gitTrackedOnly) {
-      const gitIgnorePath = core.getInput('git_ignore_path').trim()
+      const gitIgnorePath = core.getInput('git_ignore_path')
       var gitIgnoreExclude = []
       try {
         const gitIgnore = (0,external_fs_.readFileSync)(gitIgnorePath, 'utf8')

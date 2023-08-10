@@ -14,6 +14,8 @@ beforeEach(() => {
   jest.spyOn(processResults, 'processResults').mockImplementation(() => {
     return true
   })
+
+  process.env.INPUT_USE_GITIGNORE = 'false'
 })
 
 test('successfully runs the action', async () => {

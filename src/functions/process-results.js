@@ -105,7 +105,7 @@ export async function processResults(jsonResults, yamlResults) {
   if (
     context?.payload?.pull_request !== undefined &&
     context?.payload?.pull_request !== null &&
-    core.getInput('comment') === 'true'
+    core.getBooleanInput('comment')
   ) {
     const octokit = github.getOctokit(
       core.getInput('github_token', {required: true})
