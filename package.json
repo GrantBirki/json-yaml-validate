@@ -9,8 +9,8 @@
     "format-check": "prettier --check '**/*.js'",
     "lint": "eslint src/**/*.js",
     "package": "ncc build src/main.js -o dist --source-map --license licenses.txt",
-    "test": "(LOCAL_ACTIONS_CI_TEST=true jest && make-coverage-badge --output-path ./badges/coverage.svg) || make-coverage-badge --output-path ./badges/coverage.svg",
-    "ci-test": "LOCAL_ACTIONS_CI_TEST=true jest",
+    "test": "(cross-env LOCAL_ACTIONS_CI_TEST=true jest && make-coverage-badge --output-path ./badges/coverage.svg) || make-coverage-badge --output-path ./badges/coverage.svg",
+    "ci-test": "cross-env LOCAL_ACTIONS_CI_TEST=true jest",
     "all": "npm run format && npm run lint && npm run package",
     "bundle": "npm run format && npm run package"
   },
@@ -33,6 +33,7 @@
     "ajv": "^8.12.0",
     "ajv-formats": "^2.1.1",
     "dedent-js": "^1.0.1",
+    "fdir": "^6.0.2",
     "glob": "^9.3.2",
     "yaml": "^2.2.2",
     "yaml-schema-validator": "^1.2.3"
@@ -61,6 +62,7 @@
     "@vercel/ncc": "^0.36.1",
     "babel-core": "^6.26.3",
     "babel-jest": "^28.1.0",
+    "cross-env": "^7.0.3",
     "eslint": "^7.32.0",
     "eslint-plugin-jest": "^25.3.2",
     "jest": "^27.2.5",
