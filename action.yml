@@ -38,7 +38,7 @@ inputs:
     required: false
     default: ""
   use_ajv_formats:
-    description: Whether or not to use the AJV formats - true or false
+    description: Whether or not to use the AJV formats - "true" or "false"
     required: false
     default: "true"
   yaml_schema:
