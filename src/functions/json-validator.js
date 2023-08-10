@@ -76,10 +76,14 @@ export async function jsonValidator(exclude) {
     ? `**/*{${jsonExtension},${yamlGlob}}`
     : `**/*${jsonExtension}`
 
+  core.debug(`using baseDir: ${baseDirSanitized}`)
+  core.debug(`using glob: ${glob}`)
+
   const files = globSync(glob, {cwd: baseDirSanitized, dot: useDotMatch})
   for (const file of files) {
     // construct the full path to the file
     const fullPath = `${baseDirSanitized}/${file}`
+    core.debug(`found file: ${fullPath}`)
 
     if (jsonSchema !== '' && fullPath.includes(jsonSchema)) {
       // skip the jsonSchema file and don't count it as a skipped file
@@ -103,7 +107,6 @@ export async function jsonValidator(exclude) {
     }
 
     var data
-
     try {
       // try to parse the file
       if (fullPath.endsWith('.yaml')) {
