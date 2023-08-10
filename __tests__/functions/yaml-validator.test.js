@@ -22,6 +22,7 @@ beforeEach(() => {
   process.env.INPUT_YAML_EXCLUDE_REGEX = '.*bad.*\\.yaml'
   process.env.INPUT_YAML_AS_JSON = false
   process.env.INPUT_USE_DOT_MATCH = 'true'
+  process.env.INPUT_FILES = ''
 })
 
 test('successfully validates a yaml file with a schema', async () => {

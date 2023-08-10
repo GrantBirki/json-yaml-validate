@@ -78,17 +78,17 @@ export async function jsonValidator(exclude) {
     : `**/*${jsonExtension}`
 
   if (files.length > 0) core.debug(`using files: ${files.join(', ')}`)
-  else core.debug(`using baseDir: ${baseDirSanitized}`)
-  core.debug(`using glob: ${glob}`)
+  else {
+    core.debug(`using baseDir: ${baseDirSanitized}`)
+    core.debug(`using glob: ${glob}`)
 
-  files =
-    files.length > 0
-      ? files
-      : await new fdir()
-          .withBasePath()
-          .globWithOptions([glob], {cwd: baseDirSanitized, dot: useDotMatch})
-          .crawl(baseDirSanitized)
-          .withPromise()
+    files = await new fdir()
+      .withBasePath()
+      .globWithOptions([glob], {cwd: baseDirSanitized, dot: useDotMatch})
+      .crawl(baseDirSanitized)
+      .withPromise()
+  }
+
   for (const fullPath of files) {
     core.debug(`found file: ${fullPath}`)
 
