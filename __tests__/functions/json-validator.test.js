@@ -211,6 +211,19 @@ test('successfully validates a yaml file with a schema when yaml_as_json is true
   })
 })
 
+test('successfully validates json files with a schema when files is defined', async () => {
+  process.env.INPUT_FILES =
+    '__tests__/fixtures/json/valid/json1.json\n__tests__/fixtures/json/project_dir/data/config/json1.json'
+
+  expect(await jsonValidator(excludeMock)).toStrictEqual({
+    failed: 0,
+    passed: 2,
+    skipped: 0,
+    success: true,
+    violations: []
+  })
+})
+
 test('fails to validate a yaml file with an incorrect schema when yaml_as_json is true', async () => {
   process.env.INPUT_YAML_AS_JSON = true
   process.env.INPUT_BASE_DIR = '__tests__/fixtures/yaml_as_json/invalid'
