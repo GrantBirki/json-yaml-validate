@@ -3,8 +3,8 @@ import {readFileSync} from 'fs'
 
 export class Exclude {
   constructor() {
-    this.path = core.getInput('exclude_file').trim()
-    this.gitTrackedOnly = core.getInput('use_gitignore').trim() === 'true'
+    this.path = core.getInput('exclude_file')
+    this.gitTrackedOnly = core.getBooleanInput('use_gitignore')
 
     // initialize the exclude array
     this.exclude = []
@@ -22,7 +22,7 @@ export class Exclude {
 
     // if gitTrackOnly is true, add the git exclude patterns from the .gitignore file if it exists
     if (this.gitTrackedOnly) {
-      const gitIgnorePath = core.getInput('git_ignore_path').trim()
+      const gitIgnorePath = core.getInput('git_ignore_path')
       var gitIgnoreExclude = []
       try {
         const gitIgnore = readFileSync(gitIgnorePath, 'utf8')
