@@ -15,8 +15,8 @@ const excludeMock = new Exclude()
 
 beforeEach(() => {
   jest.clearAllMocks()
-  process.env.INPUT_YAML_SCHEMA = './__tests__/fixtures/schemas/schema1.yaml'
-  process.env.INPUT_BASE_DIR = './__tests__/fixtures/yaml/valid'
+  process.env.INPUT_YAML_SCHEMA = '__tests__/fixtures/schemas/schema1.yaml'
+  process.env.INPUT_BASE_DIR = '__tests__/fixtures/yaml/valid'
   process.env.INPUT_YAML_EXTENSION = '.yaml'
   process.env.INPUT_YAML_EXTENSION_SHORT = '.yml'
   process.env.INPUT_YAML_EXCLUDE_REGEX = '.*bad.*\\.yaml'
@@ -61,10 +61,10 @@ test('successfully validates a yaml file without using a schema', async () => {
   })
 })
 
-test('successfully validates a yaml file with a schema and skips the schema as well with the dot mode disabled', async () => {
+test.only('successfully validates a yaml file with a schema and skips the schema as well with the dot mode disabled', async () => {
   process.env.INPUT_USE_DOT_MATCH = 'false'
   process.env.INPUT_YAML_SCHEMA =
-    './__tests__/fixtures/yaml/project_dir/schemas/schema.yml'
+    '__tests__/fixtures/yaml/project_dir/schemas/schema.yml'
   process.env.INPUT_BASE_DIR = '__tests__/fixtures/yaml/project_dir'
   expect(await yamlValidator(excludeMock)).toStrictEqual({
     failed: 0,
@@ -81,7 +81,7 @@ test('successfully validates a yaml file with a schema and skips the schema as w
 
 test('successfully validates a yaml file with a schema and skips the schema as well', async () => {
   process.env.INPUT_YAML_SCHEMA =
-    './__tests__/fixtures/yaml/project_dir/schemas/schema.yml'
+    '__tests__/fixtures/yaml/project_dir/schemas/schema.yml'
   process.env.INPUT_BASE_DIR = '__tests__/fixtures/yaml/project_dir'
   expect(await yamlValidator(excludeMock)).toStrictEqual({
     failed: 0,
@@ -98,7 +98,7 @@ test('successfully validates a yaml file with a schema and skips the schema as w
 
 test('fails to validate a yaml file without using a schema', async () => {
   process.env.INPUT_YAML_SCHEMA = ''
-  process.env.INPUT_BASE_DIR = './__tests__/fixtures/yaml/invalid'
+  process.env.INPUT_BASE_DIR = '__tests__/fixtures/yaml/invalid'
   expect(await yamlValidator(excludeMock)).toStrictEqual({
     failed: 1,
     passed: 0,
@@ -125,7 +125,7 @@ test('fails to validate a yaml file without using a schema', async () => {
 })
 
 test('fails to validate a yaml file with an incorrect schema', async () => {
-  process.env.INPUT_YAML_SCHEMA = './__tests__/fixtures/schemas/schema2.yml'
+  process.env.INPUT_YAML_SCHEMA = '__tests__/fixtures/schemas/schema2.yml'
   expect(await yamlValidator(excludeMock)).toStrictEqual({
     failed: 1,
     passed: 0,
@@ -151,8 +151,8 @@ test('fails to validate a yaml file with an incorrect schema', async () => {
 })
 
 test('fails to validate one yaml file with an incorrect schema and succeeds on the other', async () => {
-  process.env.INPUT_YAML_SCHEMA = './__tests__/fixtures/schemas/schema2.yml'
-  process.env.INPUT_BASE_DIR = './__tests__/fixtures/yaml/mixture'
+  process.env.INPUT_YAML_SCHEMA = '__tests__/fixtures/schemas/schema2.yml'
+  process.env.INPUT_BASE_DIR = '__tests__/fixtures/yaml/mixture'
   expect(await yamlValidator(excludeMock)).toStrictEqual({
     failed: 1,
     passed: 1,
@@ -202,7 +202,7 @@ test('skips all files when yaml_as_json is true', async () => {
 
 test('skips all files when yaml_as_json is true, even invalid ones', async () => {
   process.env.INPUT_YAML_AS_JSON = true
-  process.env.INPUT_BASE_DIR = './__tests__/fixtures/yaml/invalid'
+  process.env.INPUT_BASE_DIR = '__tests__/fixtures/yaml/invalid'
   expect(await yamlValidator(excludeMock)).toStrictEqual({
     failed: 0,
     passed: 0,
