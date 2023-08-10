@@ -61,7 +61,7 @@ test('successfully validates a yaml file without using a schema', async () => {
   })
 })
 
-test.only('successfully validates a yaml file with a schema and skips the schema as well with the dot mode disabled', async () => {
+test('successfully validates a yaml file with a schema and skips the schema as well with the dot mode disabled', async () => {
   process.env.INPUT_USE_DOT_MATCH = 'false'
   process.env.INPUT_YAML_SCHEMA =
     '__tests__/fixtures/yaml/project_dir/schemas/schema.yml'
