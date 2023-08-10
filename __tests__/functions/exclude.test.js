@@ -76,7 +76,6 @@ test('does not exclude any files when no exclude file is used', () => {
   process.env.INPUT_USE_GITIGNORE = 'false'
   const exclude = new Exclude()
   expect(exclude.isExcluded('exclude-me.json')).toBe(false)
-  expect(debugMock).not.toHaveBeenCalled()
 })
 
 test('excludes a file that is not tracked by git', () => {

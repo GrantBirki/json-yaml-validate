@@ -31,16 +31,20 @@ export async function yamlValidator(exclude) {
     skipped: 0,
     violations: []
   }
-  const files = globSync(
-    `**/*.{${yamlExtension.replace('.', '')},${yamlExtensionShort.replace(
-      '.',
-      ''
-    )}}`,
-    {cwd: baseDirSanitized, dot: useDotMatch}
-  )
+
+  const glob = `**/*.{${yamlExtension.replace(
+    '.',
+    ''
+  )},${yamlExtensionShort.replace('.', '')}}`
+
+  core.debug(`using baseDir: ${baseDirSanitized}`)
+  core.debug(`using glob: ${glob}`)
+
+  const files = globSync(glob, {cwd: baseDirSanitized, dot: useDotMatch})
   for (const file of files) {
     // construct the full path to the file
     const fullPath = `${baseDirSanitized}/${file}`
+    core.debug(`found file: ${fullPath}`)
 
     if (yamlSchema !== '' && fullPath.includes(yamlSchema)) {
       core.debug(`skipping yaml schema file: ${fullPath}`)

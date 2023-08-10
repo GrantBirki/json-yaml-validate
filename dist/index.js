@@ -43693,10 +43693,14 @@ async function jsonValidator(exclude) {
     ? `**/*{${jsonExtension},${yamlGlob}}`
     : `**/*${jsonExtension}`
 
+  core.debug(`using baseDir: ${baseDirSanitized}`)
+  core.debug(`using glob: ${glob}`)
+
   const files = globSync(glob, {cwd: baseDirSanitized, dot: useDotMatch})
   for (const file of files) {
     // construct the full path to the file
     const fullPath = `${baseDirSanitized}/${file}`
+    core.debug(`found file: ${fullPath}`)
 
     if (jsonSchema !== '' && fullPath.includes(jsonSchema)) {
       // skip the jsonSchema file and don't count it as a skipped file
@@ -43720,7 +43724,6 @@ async function jsonValidator(exclude) {
     }
 
     var data
-
     try {
       // try to parse the file
       if (fullPath.endsWith('.yaml')) {
@@ -43820,16 +43823,20 @@ async function yamlValidator(exclude) {
     skipped: 0,
     violations: []
   }
-  const files = globSync(
-    `**/*.{${yamlExtension.replace('.', '')},${yamlExtensionShort.replace(
-      '.',
-      ''
-    )}}`,
-    {cwd: baseDirSanitized, dot: useDotMatch}
-  )
+
+  const glob = `**/*.{${yamlExtension.replace(
+    '.',
+    ''
+  )},${yamlExtensionShort.replace('.', '')}}`
+
+  core.debug(`using baseDir: ${baseDirSanitized}`)
+  core.debug(`using glob: ${glob}`)
+
+  const files = globSync(glob, {cwd: baseDirSanitized, dot: useDotMatch})
   for (const file of files) {
     // construct the full path to the file
     const fullPath = `${baseDirSanitized}/${file}`
+    core.debug(`found file: ${fullPath}`)
 
     if (yamlSchema !== '' && fullPath.includes(yamlSchema)) {
       core.debug(`skipping yaml schema file: ${fullPath}`)
@@ -44091,6 +44098,8 @@ class Exclude {
 
     // read the exclude file if it was used
     if (this.path && this.path !== '') {
+      core.debug(`loading exclude_file: ${this.path}`)
+
       this.exclude = (0,external_fs_.readFileSync)(this.path, 'utf8')
       // split the exclude file into an array of strings and trim each string
       this.exclude = this.exclude.split('\n').map(item => item.trim())
@@ -44098,10 +44107,16 @@ class Exclude {
       this.exclude = this.exclude.filter(item => item !== '')
       // remove any comments
       this.exclude = this.exclude.filter(item => !item.startsWith('#'))
+
+      core.debug(`loaded exclude patterns: ${this.exclude}`)
     }
 
     // if gitTrackOnly is true, add the git exclude patterns from the .gitignore file if it exists
     if (this.gitTrackedOnly) {
+      core.debug(
+        `use_gitignore: ${this.gitTrackedOnly} - only using git tracked files`
+      )
+
       const gitIgnorePath = core.getInput('git_ignore_path')
       var gitIgnoreExclude = []
       try {

@@ -11,6 +11,8 @@ export class Exclude {
 
     // read the exclude file if it was used
     if (this.path && this.path !== '') {
+      core.debug(`loading exclude_file: ${this.path}`)
+
       this.exclude = readFileSync(this.path, 'utf8')
       // split the exclude file into an array of strings and trim each string
       this.exclude = this.exclude.split('\n').map(item => item.trim())
@@ -18,10 +20,16 @@ export class Exclude {
       this.exclude = this.exclude.filter(item => item !== '')
       // remove any comments
       this.exclude = this.exclude.filter(item => !item.startsWith('#'))
+
+      core.debug(`loaded exclude patterns: ${this.exclude}`)
     }
 
     // if gitTrackOnly is true, add the git exclude patterns from the .gitignore file if it exists
     if (this.gitTrackedOnly) {
+      core.debug(
+        `use_gitignore: ${this.gitTrackedOnly} - only using git tracked files`
+      )
+
       const gitIgnorePath = core.getInput('git_ignore_path')
       var gitIgnoreExclude = []
       try {
