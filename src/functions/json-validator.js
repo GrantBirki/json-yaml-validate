@@ -2,7 +2,7 @@ import * as core from '@actions/core'
 import Ajv from 'ajv'
 import addFormats from 'ajv-formats'
 import {readFileSync} from 'fs'
-import {globSync} from 'glob'
+import {fdir} from 'fdir'
 import {parse} from 'yaml'
 
 // Helper function to setup the schema
@@ -79,10 +79,12 @@ export async function jsonValidator(exclude) {
   core.debug(`json - using baseDir: ${baseDirSanitized}`)
   core.debug(`json - using glob: ${glob}`)
 
-  const files = globSync(glob, {cwd: baseDirSanitized, dot: useDotMatch})
-  for (const file of files) {
-    // construct the full path to the file
-    const fullPath = `${baseDirSanitized}/${file}`
+  const files = await new fdir()
+    .withBasePath()
+    .globWithOptions([glob], {cwd: baseDirSanitized, dot: useDotMatch})
+    .crawl(baseDirSanitized)
+    .withPromise()
+  for (const fullPath of files) {
     core.debug(`found file: ${fullPath}`)
 
     if (jsonSchema !== '' && fullPath.includes(jsonSchema)) {
