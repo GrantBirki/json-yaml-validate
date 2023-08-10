@@ -31,6 +31,7 @@
     "@actions/core": "^1.10.0",
     "@actions/github": "^5.0.1",
     "ajv": "^8.12.0",
+    "ajv-formats": "^2.1.1",
     "dedent-js": "^1.0.1",
     "glob": "^9.3.2",
     "yaml": "^2.2.2",
