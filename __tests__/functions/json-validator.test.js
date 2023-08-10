@@ -201,7 +201,7 @@ test('fails to validate one json file with an incorrect schema and succeeds on t
 })
 
 test('successfully validates a yaml file with a schema when yaml_as_json is true', async () => {
-  process.env.INPUT_YAML_AS_JSON = true
+  process.env.INPUT_YAML_AS_JSON = 'true'
   process.env.INPUT_BASE_DIR = './__tests__/fixtures/yaml_as_json/valid'
 
   expect(await jsonValidator(excludeMock)).toStrictEqual({
@@ -213,8 +213,48 @@ test('successfully validates a yaml file with a schema when yaml_as_json is true
   })
 })
 
+test('processes multiple files when yaml_as_json is true and also a mixture of other json files with yaml are present', async () => {
+  process.env.INPUT_YAML_AS_JSON = 'true'
+  process.env.INPUT_JSON_SCHEMA = ''
+  process.env.INPUT_BASE_DIR = './__tests__/fixtures/yaml_as_json/mixture'
+
+  expect(await jsonValidator(excludeMock)).toStrictEqual({
+    failed: 1,
+    passed: 3,
+    skipped: 0,
+    success: false,
+    violations: [
+      {
+        file: './__tests__/fixtures/yaml_as_json/mixture/invalid-json.json',
+        errors: [
+          {
+            path: null,
+            message: 'Invalid JSON'
+          }
+        ]
+      }
+    ]
+  })
+
+  expect(debugMock).toHaveBeenCalledWith(
+    'using ajv-formats with json-validator'
+  )
+  expect(debugMock).toHaveBeenCalledWith(
+    'json - using baseDir: ./__tests__/fixtures/yaml_as_json/mixture'
+  )
+  expect(debugMock).toHaveBeenCalledWith(
+    'json - using glob: **/*{.json,yaml,yml}'
+  )
+  expect(debugMock).toHaveBeenCalledWith(
+    `attempting to process yaml file: './__tests__/fixtures/yaml_as_json/mixture/yaml1.yaml' as json`
+  )
+  expect(debugMock).toHaveBeenCalledWith(
+    `attempting to process yaml file: './__tests__/fixtures/yaml_as_json/mixture/yaml2.yml' as json`
+  )
+})
+
 test('fails to validate a yaml file with an incorrect schema when yaml_as_json is true', async () => {
-  process.env.INPUT_YAML_AS_JSON = true
+  process.env.INPUT_YAML_AS_JSON = 'true'
   process.env.INPUT_BASE_DIR = './__tests__/fixtures/yaml_as_json/invalid'
 
   expect(await jsonValidator(excludeMock)).toStrictEqual({

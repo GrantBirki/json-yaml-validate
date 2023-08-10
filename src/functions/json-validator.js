@@ -114,6 +114,7 @@ export async function jsonValidator(exclude) {
         (fullPath.endsWith(yamlExtension) ||
           fullPath.endsWith(yamlExtensionShort))
       ) {
+        core.debug(`attempting to process yaml file: '${fullPath}' as json`)
         data = parse(readFileSync(fullPath, 'utf8'))
         // if the file is a json file
       } else {
