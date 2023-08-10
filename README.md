@@ -15,6 +15,8 @@ If you have a repository containing JSON or YAML files and want to validate them
 
 You can provide schemas to check against, or just validate the syntax of the files. This comes very handy when you want to ensure that your JSON and YAML files are valid before committing them to your repository, especially from pull requests.
 
+This Action is also extremely **fast** ⚡. It uses [`fdir`](https://github.com/thecodrr/fdir) under the hood for directory crawling and file globbing when looking for JSON and YAML files. This Action can crawl through a million files in under a second and validate those files in just a few more.
+
 ## Installation 📦
 
 Here is a quick example of how to install this action in any workflow:
