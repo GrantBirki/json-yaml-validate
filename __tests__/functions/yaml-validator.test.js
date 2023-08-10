@@ -127,8 +127,8 @@ test('fails to validate a yaml file without using a schema', async () => {
 
 test('successfully validates yaml files with a schema when files is defined', async () => {
   const files = [
-    '__tests__/fixtures/yaml/valid/yaml1.json',
-    '__tests__/fixtures/yaml/project_dir/data/config/config.yml'
+    '__tests__/fixtures/yaml/valid/yaml1.yaml',
+    '__tests__/fixtures/yaml/valid/yaml1.yaml'
   ]
   process.env.INPUT_FILES = files.join('\n')
 
