@@ -26408,6 +26408,14 @@ module.exports = validateSchema
 
 /***/ }),
 
+/***/ 8302:
+/***/ ((module) => {
+
+module.exports = eval("require")("ajv-formats");
+
+
+/***/ }),
+
 /***/ 2877:
 /***/ ((module) => {
 
@@ -35127,6 +35135,9 @@ var core = __nccwpck_require__(2186);
 // EXTERNAL MODULE: ./node_modules/ajv/dist/ajv.js
 var ajv = __nccwpck_require__(2426);
 var ajv_default = /*#__PURE__*/__nccwpck_require__.n(ajv);
+// EXTERNAL MODULE: ./node_modules/@vercel/ncc/dist/ncc/@@notfound.js?ajv-formats
+var _notfoundajv_formats = __nccwpck_require__(8302);
+var _notfoundajv_formats_default = /*#__PURE__*/__nccwpck_require__.n(_notfoundajv_formats);
 // EXTERNAL MODULE: external "fs"
 var external_fs_ = __nccwpck_require__(7147);
 var external_fs_namespaceObject = /*#__PURE__*/__nccwpck_require__.t(external_fs_, 2);
@@ -43299,8 +43310,10 @@ var dist = __nccwpck_require__(4083);
 
 
 
+
 // setup the ajv instance
 const json_validator_ajv = new (ajv_default())() // options can be passed, e.g. {allErrors: true}
+_notfoundajv_formats_default()(json_validator_ajv)
 
 // Helper function to setup the schema
 // :param jsonSchema: path to the jsonSchema file
