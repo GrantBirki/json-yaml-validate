@@ -13,6 +13,7 @@ export async function yamlValidator(exclude) {
   const yamlExcludeRegex = core.getInput('yaml_exclude_regex')
   const yamlAsJson = core.getBooleanInput('yaml_as_json')
   const useDotMatch = core.getBooleanInput('use_dot_match')
+  let files = core.getInput('files').split('\n')
 
   // remove trailing slash from baseDir
   const baseDirSanitized = baseDir.replace(/\/$/, '')
@@ -40,11 +41,14 @@ export async function yamlValidator(exclude) {
   core.debug(`using baseDir: ${baseDirSanitized}`)
   core.debug(`using glob: ${glob}`)
 
-  const files = await new fdir()
-    .withBasePath()
-    .globWithOptions([glob], {cwd: baseDirSanitized, dot: useDotMatch})
-    .crawl(baseDirSanitized)
-    .withPromise()
+  files =
+    files.length > 0
+      ? files
+      : await new fdir()
+          .withBasePath()
+          .globWithOptions([glob], {cwd: baseDirSanitized, dot: useDotMatch})
+          .crawl(baseDirSanitized)
+          .withPromise()
   for (const fullPath of files) {
     core.debug(`found file: ${fullPath}`)
 
