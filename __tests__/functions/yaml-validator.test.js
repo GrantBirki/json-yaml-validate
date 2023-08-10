@@ -126,8 +126,11 @@ test('fails to validate a yaml file without using a schema', async () => {
 })
 
 test('successfully validates yaml files with a schema when files is defined', async () => {
-  process.env.INPUT_FILES =
-    '__tests__/fixtures/yaml/valid/yaml1.json\n__tests__/fixtures/yaml/project_dir/data/config/config.yml'
+  const files = [
+    '__tests__/fixtures/yaml/valid/yaml1.json',
+    '__tests__/fixtures/yaml/project_dir/data/config/config.yml'
+  ]
+  process.env.INPUT_FILES = files.join('\n')
 
   expect(await yamlValidator(excludeMock)).toStrictEqual({
     failed: 0,
@@ -137,9 +140,7 @@ test('successfully validates yaml files with a schema when files is defined', as
     violations: []
   })
 
-  expect(debugMock).toHaveBeenCalledWith(
-    'using files: __tests__/fixtures/yaml/valid/yaml1.json, __tests__/fixtures/yaml/project_dir/data/config/config.yml'
-  )
+  expect(debugMock).toHaveBeenCalledWith(`using files: ${files.join(', ')}`)
 })
 
 test('fails to validate a yaml file with an incorrect schema', async () => {

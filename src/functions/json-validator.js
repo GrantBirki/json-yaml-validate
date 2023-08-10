@@ -45,7 +45,7 @@ export async function jsonValidator(exclude) {
   const yamlExtension = core.getInput('yaml_extension')
   const yamlExtensionShort = core.getInput('yaml_extension_short')
   const useDotMatch = core.getBooleanInput('use_dot_match')
-  let files = core.getInput('files').split('\n')
+  let files = core.getInput('files').split('\n').filter(Boolean)
 
   // remove trailing slash from baseDir
   const baseDirSanitized = baseDir.replace(/\/$/, '')

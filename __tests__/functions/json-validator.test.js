@@ -213,8 +213,11 @@ test('successfully validates a yaml file with a schema when yaml_as_json is true
 })
 
 test('successfully validates json files with a schema when files is defined', async () => {
-  process.env.INPUT_FILES =
-    '__tests__/fixtures/json/valid/json1.json\n__tests__/fixtures/json/project_dir/data/config/json1.json'
+  const files = [
+    '__tests__/fixtures/json/valid/json1.json',
+    '__tests__/fixtures/json/project_dir/data/config/json1.json'
+  ]
+  process.env.INPUT_FILES = files.join('\n')
 
   expect(await jsonValidator(excludeMock)).toStrictEqual({
     failed: 0,
@@ -224,9 +227,7 @@ test('successfully validates json files with a schema when files is defined', as
     violations: []
   })
 
-  expect(debugMock).toHaveBeenCalledWith(
-    'using files: __tests__/fixtures/json/valid/json1.json, __tests__/fixtures/json/project_dir/data/config/json1.json'
-  )
+  expect(debugMock).toHaveBeenCalledWith(`using files: ${files.join(', ')}`)
 })
 
 test('fails to validate a yaml file with an incorrect schema when yaml_as_json is true', async () => {
