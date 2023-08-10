@@ -70,7 +70,7 @@ export async function jsonValidator(exclude) {
   const yamlGlob = `${yamlExtension.replace(
     '.',
     ''
-  )}, ${yamlExtensionShort.replace('.', '')}`
+  )},${yamlExtensionShort.replace('.', '')}`
 
   const glob = yamlAsJson
     ? `**/*{${jsonExtension},${yamlGlob}}`
