@@ -22,6 +22,7 @@ beforeEach(() => {
   process.env.INPUT_YAML_EXCLUDE_REGEX = '.*bad.*\\.yaml'
   process.env.INPUT_YAML_AS_JSON = false
   process.env.INPUT_USE_DOT_MATCH = 'true'
+  process.env.INPUT_FILES = ''
 })
 
 test('successfully validates a yaml file with a schema', async () => {
@@ -122,6 +123,24 @@ test('fails to validate a yaml file without using a schema', async () => {
   expect(infoMock).toHaveBeenCalledWith(
     'skipping due to exclude match: __tests__/fixtures/yaml/invalid/skip-bad.yaml'
   )
+})
+
+test('successfully validates yaml files with a schema when files is defined', async () => {
+  const files = [
+    '__tests__/fixtures/yaml/valid/yaml1.yaml',
+    '__tests__/fixtures/yaml/valid/yaml1.yaml'
+  ]
+  process.env.INPUT_FILES = files.join('\n')
+
+  expect(await yamlValidator(excludeMock)).toStrictEqual({
+    failed: 0,
+    passed: 2,
+    skipped: 0,
+    success: true,
+    violations: []
+  })
+
+  expect(debugMock).toHaveBeenCalledWith(`using files: ${files.join(', ')}`)
 })
 
 test('fails to validate a yaml file with an incorrect schema', async () => {
