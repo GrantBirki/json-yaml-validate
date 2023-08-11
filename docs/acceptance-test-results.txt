@@ -11,6 +11,8 @@ skipping due to exclude match: __tests__/fixtures/json/invalid/skip-bad.json
 skipping due to exclude match: __tests__/fixtures/json/mixture/json1.json
 skipping due to exclude match: __tests__/fixtures/json/mixture/json2.json
 skipping due to exclude match: __tests__/fixtures/json/valid/json1.json
+skipping due to exclude match: __tests__/fixtures/yaml_as_json/mixture/good-json.json
+skipping due to exclude match: __tests__/fixtures/yaml_as_json/mixture/invalid-json.json
 skipping due to exclude match: __tests__/fixtures/json/project_dir/schemas/schema.json
 skipping due to exclude match: __tests__/fixtures/json/project_dir/data/config/json1.json
 skipping due to exclude match: __tests__/fixtures/json/project_dir/data/config/.github_mock_dir/json2.json
@@ -30,6 +32,8 @@ skipping due to exclude match: __tests__/fixtures/yaml/mixture/yaml1.yaml
 skipping due to exclude match: __tests__/fixtures/yaml/mixture/yaml2.yml
 skipping due to exclude match: __tests__/fixtures/yaml/valid/yaml1.yaml
 skipping due to exclude match: __tests__/fixtures/yaml_as_json/invalid/yaml1.yaml
+skipping due to exclude match: __tests__/fixtures/yaml_as_json/mixture/yaml1.yaml
+skipping due to exclude match: __tests__/fixtures/yaml_as_json/mixture/yaml2.yml
 skipping due to exclude match: __tests__/fixtures/yaml_as_json/valid/yaml1.yaml
 skipping due to exclude match: __tests__/fixtures/yaml/project_dir/schemas/schema.yml
 skipping due to exclude match: __tests__/fixtures/yaml/project_dir/data/.github_mock_dir/config.yml
