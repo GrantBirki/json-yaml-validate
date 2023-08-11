@@ -38128,12 +38128,14 @@ async function jsonValidator(exclude) {
   const yamlGlob = `${yamlExtension.replace(
     '.',
     ''
-  )}, ${yamlExtensionShort.replace('.', '')}`
+  )},${yamlExtensionShort.replace('.', '')}`
 
   const glob = yamlAsJson
     ? `**/*{${jsonExtension},${yamlGlob}}`
     : `**/*${jsonExtension}`
 
+  core.debug(`json - using baseDir: ${baseDirSanitized}`)
+  core.debug(`json - using glob: ${glob}`)
   if (files.length > 0) core.debug(`using files: ${files.join(', ')}`)
   else {
     core.debug(`using baseDir: ${baseDirSanitized}`)
@@ -38172,9 +38174,15 @@ async function jsonValidator(exclude) {
 
     var data
     try {
-      // try to parse the file
-      if (fullPath.endsWith('.yaml')) {
+      // if the file is a yaml file but being treated as json and yamlAsJson is true
+      if (
+        yamlAsJson &&
+        (fullPath.endsWith(yamlExtension) ||
+          fullPath.endsWith(yamlExtensionShort))
+      ) {
+        core.debug(`attempting to process yaml file: '${fullPath}' as json`)
         data = (0,yaml_dist/* parse */.Qc)((0,external_fs_.readFileSync)(fullPath, 'utf8'))
+        // if the file is a json file
       } else {
         data = JSON.parse((0,external_fs_.readFileSync)(fullPath, 'utf8'))
       }
@@ -38277,6 +38285,8 @@ async function yamlValidator(exclude) {
     ''
   )},${yamlExtensionShort.replace('.', '')}}`
 
+  core.debug(`yaml - using baseDir: ${baseDirSanitized}`)
+  core.debug(`yaml - using glob: ${glob}`)
   if (files.length > 0) core.debug(`using files: ${files.join(', ')}`)
   else {
     core.debug(`using baseDir: ${baseDirSanitized}`)

@@ -38,6 +38,8 @@ export async function yamlValidator(exclude) {
     ''
   )},${yamlExtensionShort.replace('.', '')}}`
 
+  core.debug(`yaml - using baseDir: ${baseDirSanitized}`)
+  core.debug(`yaml - using glob: ${glob}`)
   if (files.length > 0) core.debug(`using files: ${files.join(', ')}`)
   else {
     core.debug(`using baseDir: ${baseDirSanitized}`)
