@@ -252,7 +252,7 @@ test('processes multiple files when yaml_as_json is true and also a mixture of o
   expect(debugMock).toHaveBeenCalledWith(
     `attempting to process yaml file: '__tests__/fixtures/yaml_as_json/mixture/yaml2.yml' as json`
   )
-  })
+})
 
 test('successfully validates json files with a schema when files is defined', async () => {
   const files = [
