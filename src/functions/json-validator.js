@@ -45,6 +45,7 @@ export async function jsonValidator(exclude) {
   const yamlExtension = core.getInput('yaml_extension')
   const yamlExtensionShort = core.getInput('yaml_extension_short')
   const useDotMatch = core.getBooleanInput('use_dot_match')
+  let files = core.getMultilineInput('files').filter(Boolean)
 
   // remove trailing slash from baseDir
   const baseDirSanitized = baseDir.replace(/\/$/, '')
@@ -78,12 +79,18 @@ export async function jsonValidator(exclude) {
 
   core.debug(`json - using baseDir: ${baseDirSanitized}`)
   core.debug(`json - using glob: ${glob}`)
+  if (files.length > 0) core.debug(`using files: ${files.join(', ')}`)
+  else {
+    core.debug(`using baseDir: ${baseDirSanitized}`)
+    core.debug(`using glob: ${glob}`)
 
-  const files = await new fdir()
-    .withBasePath()
-    .globWithOptions([glob], {cwd: baseDirSanitized, dot: useDotMatch})
-    .crawl(baseDirSanitized)
-    .withPromise()
+    files = await new fdir()
+      .withBasePath()
+      .globWithOptions([glob], {cwd: baseDirSanitized, dot: useDotMatch})
+      .crawl(baseDirSanitized)
+      .withPromise()
+  }
+
   for (const fullPath of files) {
     core.debug(`found file: ${fullPath}`)
 

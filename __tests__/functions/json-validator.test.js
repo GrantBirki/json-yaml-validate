@@ -24,6 +24,7 @@ beforeEach(() => {
   process.env.INPUT_USE_AJV_FORMATS = true
   process.env.INPUT_YAML_EXTENSION = '.yaml'
   process.env.INPUT_YAML_EXTENSION_SHORT = '.yml'
+  process.env.INPUT_FILES = ''
 })
 
 test('successfully validates a json file with a schema', async () => {
@@ -251,6 +252,24 @@ test('processes multiple files when yaml_as_json is true and also a mixture of o
   expect(debugMock).toHaveBeenCalledWith(
     `attempting to process yaml file: '__tests__/fixtures/yaml_as_json/mixture/yaml2.yml' as json`
   )
+  })
+
+test('successfully validates json files with a schema when files is defined', async () => {
+  const files = [
+    '__tests__/fixtures/json/valid/json1.json',
+    '__tests__/fixtures/json/project_dir/data/config/json1.json'
+  ]
+  process.env.INPUT_FILES = files.join('\n')
+
+  expect(await jsonValidator(excludeMock)).toStrictEqual({
+    failed: 0,
+    passed: 2,
+    skipped: 0,
+    success: true,
+    violations: []
+  })
+
+  expect(debugMock).toHaveBeenCalledWith(`using files: ${files.join(', ')}`)
 })
 
 test('fails to validate a yaml file with an incorrect schema when yaml_as_json is true', async () => {
