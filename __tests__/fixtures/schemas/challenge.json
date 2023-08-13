@@ -1,0 +1,212 @@
+{
+    "type": "object",
+    "description": "This is the challenge format schema used for our challenge repository.\nChallenges you submit to the codosseum challenges repository must adhere to this schema.",
+    "required": [
+        "license",
+        "language",
+        "title",
+        "difficulty",
+        "text",
+        "inputFormat",
+        "publicTests",
+        "solution"
+    ],
+    "properties": {
+        "author": {
+            "type": "object",
+            "description": "Information about the author of the challenge.",
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "description": "Name of the author",
+                    "examples": [
+                        "Jane Doe",
+                        "ExampleUsername04"
+                    ]
+                },
+                "contact": {
+                    "type": "array",
+                    "description": "(Optional) contact information of the author",
+                    "items": {
+                        "type": "object",
+                        "required": [
+                            "type",
+                            "contact"
+                        ],
+                        "examples": [
+                            {
+                            "type": "email",
+                            "contact": "jane.doe@example.com"
+                        },
+                            {
+                            "type": "matrix",
+                            "contact": "@jane:example.com"
+                        },
+                            {
+                            "type": "website",
+                            "contact": "https://user.example.com/blog"
+                        }
+                        ],
+                        "properties": {
+                            "type": {
+                                "type": "string",
+                                "description": "Type of contact information, e.g. \"Email\" or \"Matrix\". This is not restricted to any particular set of values and implementations shouldn't expect it to be."
+                            },
+                            "contact": {
+                                "type": "string",
+                                "description": "The actual contact info"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "license": {
+            "type": "string",
+            "description": "SPDX license expression to describe the license of the challenge. This MUST be compatible with CC-BY-4.0, CC-BY-SA-4.0 or CC0-1.0.",
+            "examples": [
+                "CC-BY-SA-4.0",
+                "CC-BY-4.0 OR MIT",
+                "CC0-1.0"
+            ]
+        },
+        "language": {
+            "type": "string",
+            "description": "Language of the challenge text and title.\nFor this repository, it is always \"en\", for now.",
+            "const": "en"
+        },
+        "title": {
+            "type": "string",
+            "description": "Title of the challenge",
+            "examples": [
+                "Squaring Circles",
+                "The Universal Answer",
+                "Making PI(e)"
+            ]
+        },
+        "difficulty": {
+            "type": "string",
+            "description": "Difficulty level of the challenge",
+            "enum": ["easy", "medium", "hard"]
+        },
+        "tags": {
+            "type": "array",
+            "description": "Keywords that can be used to put this challenge into certain groups and make it more searchable.",
+            "items": {
+                "type": "string",
+                "examples": [
+                    "string-manipulation",
+                    "math",
+                    "lore"
+                ]
+            }
+        },
+        "text": {
+            "type": "string",
+            "description": "Challenge text. This is the field that has to contain the explanation for the task.",
+            "examples": [
+                "Alice just completed an online coding challenge that just required her to square a number. Fortunately, she could come up with a much harder challenge...",
+                "Bob is on an adventure and has to find his way home...",
+                "Given an input of strings, compute the letter with the highest frequency that..."
+            ]
+        },
+        "inputFormat": {
+            "type": "string",
+            "description": "A formal description of what inputs for this challenge look like.\nThis is required to generate secret tests and solution templates.\nTherefore, if this isn't specified, these things cannot be accomplished.\n\nRight now, the formal language for this field has not been specified yet,\nso it cannot be\n"
+        },
+        "examples": {
+            "type": "array",
+            "description": "Example input-output pairs that illustrate the challenge.\nThey should be fairly short and simple to understand, but can be used to\nhint at certain behavior that may not be immediately obvious.\nA handful of examples should be plenty, typically 2-3 are a good number.\nThey may be used together with public tests for the \"reverse\" game mode.\n",
+            "items": {
+                "$ref": "#/$defs/test"
+            }
+        },
+        "publicTests": {
+            "type": "array",
+            "description": "Tests whose inputs and outputs will be made visible to the user.\nThese should cover most cases of the problem and test the user's code for different flaws. There should be more public tests than examples.\nA public test should have a name, and that name should indicate roughly what it is testing.\n\nTests specified in the examples do not have to be specified again here.\n",
+            "minItems": 5,
+            "items": {
+                "$ref": "#/$defs/test"
+            }
+        },
+        "solution": {
+            "type": "object",
+            "description": "Information about the solution (provided alongside the challenge file) that will be used for generative tests.",
+            "required": [
+                "language",
+                "file"
+            ],
+            "properties": {
+                "language": {
+                    "type": "string",
+                    "description": "Programming language descriptor of the language the solution is written in."
+                },
+                "file": {
+                    "type": "string",
+                    "description": "File location (relative to challenge file) containing the solution. Must be a regular file without any external dependencies."
+                }
+            }
+        }
+    },
+    "$defs": {
+        "test": {
+            "type": "object",
+            "description": "A test describes a function (solution for a challenge) by specifying an output\nthat is expected given an input.\nBoth in- and output are arrays representing lines of text.\n",
+            "required": [
+                "in",
+                "out"
+            ],
+            "examples": [
+                {
+                "name": "Simple case",
+                "in": [
+                    "1",
+                    "2",
+                    "3"
+                ],
+                "out": [
+                    "1",
+                    "2",
+                    "3"
+                ]
+            },
+                {
+                "name": "Edge Case A",
+                "in": [
+                    "banana ananab sillygoose"
+                ],
+                "out": [
+                    "Error!"
+                ]
+            },
+                {
+                "name": "Shhh!",
+                "in": [
+                    "0"
+                ],
+                "out": []
+            }
+            ],
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "title": "(Optional) name of the test"
+                },
+                "in": {
+                    "type": "array",
+                    "title": "lines of input",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "out": {
+                    "type": "array",
+                    "title": "lines of output",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        }
+    }
+}

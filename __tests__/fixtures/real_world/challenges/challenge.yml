@@ -1,0 +1,88 @@
+# from https://github.com/codosseum-org/challenges/blob/first-challenge/challenges/rotating-numbers/challenge.yml
+# this file intentionally contains two schema errors for unit testing purposes
+# this is a yamlAsJson test
+
+$schema: https://raw.githubusercontent.com/codosseum-org/challenges/main/challenge-schema.json
+author:
+  name: JohnnyJayJay
+  contact:
+    - type: matrix
+      contact: "@johnny:yatrix.org"
+
+license: CC-BY-SA-4.0
+
+language: en
+title: "Rotating Numbers"
+difficulty: "medium"
+tags: ["numbers", "simple-input", "math"]
+text: |
+  Rotate a number given in a specific base by a given amount of digits **to the right**.
+  Rotating to the right means: *lower order* (last) digits become *higher order* (first) digits.
+
+  There are three lines of input:
+  1. The amount of digits to rotate (non-negative)
+  2. The base of the input number (a value between 2 and 16)
+  3. The input number in that base
+
+  The **output** should be the rotated number **converted to decimal format**.
+
+  Be careful:
+  - The output must not contain leading zeros.
+  - The rotation number can be greater than the number of digits of the number.
+  - Any base between 2 and 16 is possible, not just "common" ones.
+
+
+input_format: "TODO"
+
+examples:
+  - in: ["3", "10", "12345"]
+    out: ["34512"]
+  - in: ["1", "2", "1101"]
+    out: ["14"]
+  - in: ["2", "10", "13408"]
+    out: ["8134"]
+  - in: ["3", "10", "13408"]
+    out: ["40813"]
+
+public_tests:
+  - name: Zero Rotation
+    in: ["0", "10", "12345"]
+    out: ["12345"]
+  - name: Simple decimal case
+    in: ["4", "10", "7062545"]
+    out: ["2545706"]
+  - name: Hex
+    in: ["2", "16", "ABCD"]
+    out: ["52651"]
+  - name: Simple binary
+    in: ["1", "2", "101"]
+    out: ["6"]
+  - name: Complex binary
+    in: ["12", "2", "111101101100111"]
+    out: ["23359"]
+  - name: Obscure base
+    in: ["3", "13", "A32B9"]
+    out: ["82943"]
+  - name: Zero
+    in: ["4", "2", "0"]
+    out: ["0"]
+  - name: Leading zero
+    in: ["1", "10", "24351490"]
+    out: ["2435149"]
+  - name: Leading zeros
+    in: ["5", "16", "2A00028"]
+    out: ["164515"]
+  - name: Skipping zeros
+    in: ["5", "8", "2340076"]
+    out: ["1052563"]
+  - name: Single overflow rotation
+    in: ["4", "10", "123"]
+    out: ["312"]
+  - name: Multi overflow rotation
+    in: ["2478395", "10", "123456"]
+    out: ["234561"]
+
+
+solution:
+  language: python
+  file: solution.py
