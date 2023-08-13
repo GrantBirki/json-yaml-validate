@@ -38067,7 +38067,7 @@ var yaml_dist = __nccwpck_require__(4083);
 // :returns: the compiled schema
 async function schema(jsonSchema) {
   // setup the ajv instance
-  const ajv = new (ajv_default())() // options can be passed, e.g. {allErrors: true}
+  const ajv = new (ajv_default())({allErrors: true}) // options can be passed, e.g. {allErrors: true}
 
   // use ajv-formats if enabled
   if (core.getBooleanInput('use_ajv_formats')) {
