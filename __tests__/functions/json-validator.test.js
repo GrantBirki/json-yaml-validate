@@ -186,6 +186,10 @@ test('fails to validate one json file with an incorrect schema and succeeds on t
           {
             path: '/foo',
             message: 'must be string'
+          },
+          {
+            path: '/bar',
+            message: 'must be string'
           }
         ]
       }
@@ -254,6 +258,47 @@ test('processes multiple files when yaml_as_json is true and also a mixture of o
   )
 })
 
+test('processes a real world example when yaml_as_json is true and the single file contains multiple schema errors', async () => {
+  process.env.INPUT_YAML_AS_JSON = 'true'
+  process.env.INPUT_JSON_SCHEMA = '__tests__/fixtures/schemas/challenge.json'
+  process.env.INPUT_BASE_DIR = '__tests__/fixtures/real_world/challenges'
+
+  expect(await jsonValidator(excludeMock)).toStrictEqual({
+    failed: 1,
+    passed: 0,
+    skipped: 0,
+    success: false,
+    violations: [
+      {
+        file: '__tests__/fixtures/real_world/challenges/challenge.yml',
+        errors: [
+          {
+            path: null,
+            message: `must have required property 'inputFormat'`
+          },
+          {
+            path: null,
+            message: `must have required property 'publicTests'`
+          }
+        ]
+      }
+    ]
+  })
+
+  expect(debugMock).toHaveBeenCalledWith(
+    'using ajv-formats with json-validator'
+  )
+  expect(debugMock).toHaveBeenCalledWith(
+    'json - using baseDir: __tests__/fixtures/real_world/challenges'
+  )
+  expect(debugMock).toHaveBeenCalledWith(
+    'json - using glob: **/*{.json,yaml,yml}'
+  )
+  expect(debugMock).toHaveBeenCalledWith(
+    `attempting to process yaml file: '__tests__/fixtures/real_world/challenges/challenge.yml' as json`
+  )
+})
+
 test('successfully validates json files with a schema when files is defined', async () => {
   const files = [
     '__tests__/fixtures/json/valid/json1.json',
@@ -288,6 +333,10 @@ test('fails to validate a yaml file with an incorrect schema when yaml_as_json i
           {
             path: null,
             message: "must have required property 'foo'"
+          },
+          {
+            path: null,
+            message: 'must NOT have additional properties'
           }
         ]
       }

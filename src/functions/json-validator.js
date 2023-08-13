@@ -10,7 +10,7 @@ import {parse} from 'yaml'
 // :returns: the compiled schema
 async function schema(jsonSchema) {
   // setup the ajv instance
-  const ajv = new Ajv() // options can be passed, e.g. {allErrors: true}
+  const ajv = new Ajv({allErrors: true}) // options can be passed, e.g. {allErrors: true}
 
   // use ajv-formats if enabled
   if (core.getBooleanInput('use_ajv_formats')) {
