@@ -11,8 +11,21 @@ import {parse} from 'yaml'
 // :param jsonSchema: path to the jsonSchema file
 // :returns: the compiled schema
 async function schema(jsonSchema) {
-  // setup the ajv instance
-  const ajv = new Ajv({allErrors: true}) // options can be passed, e.g. {allErrors: true}
+  const jsonSchemaVersion = core.getInput('json_schema_version')
+
+  var ajv
+  if (jsonSchemaVersion === 'draft-07') {
+    ajv = new Ajv({allErrors: true})
+  } else if (jsonSchemaVersion === 'draft-2019-09') {
+    ajv = new Ajv2019({allErrors: true})
+  } else if (jsonSchemaVersion === 'draft-2020-12') {
+    ajv = new Ajv2020({allErrors: true})
+  } else {
+    core.warning(
+      `json_schema_version '${jsonSchemaVersion}' is not supported. Defaulting to 'draft-07'`
+    )
+    ajv = new Ajv({allErrors: true})
+  }
 
   // use ajv-formats if enabled
   if (core.getBooleanInput('use_ajv_formats')) {
