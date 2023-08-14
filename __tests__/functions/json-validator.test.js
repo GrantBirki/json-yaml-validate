@@ -4,6 +4,7 @@ import * as core from '@actions/core'
 const debugMock = jest.spyOn(core, 'debug').mockImplementation(() => {})
 const infoMock = jest.spyOn(core, 'info').mockImplementation(() => {})
 const errorMock = jest.spyOn(core, 'error').mockImplementation(() => {})
+const warningMock = jest.spyOn(core, 'warning').mockImplementation(() => {})
 
 class Exclude {
   isExcluded() {
@@ -25,6 +26,7 @@ beforeEach(() => {
   process.env.INPUT_YAML_EXTENSION = '.yaml'
   process.env.INPUT_YAML_EXTENSION_SHORT = '.yml'
   process.env.INPUT_FILES = ''
+  process.env.INPUT_JSON_SCHEMA_VERSION = 'draft-07'
 })
 
 test('successfully validates a json file with a schema', async () => {
@@ -38,6 +40,25 @@ test('successfully validates a json file with a schema', async () => {
 
   expect(debugMock).toHaveBeenCalledWith(
     'using ajv-formats with json-validator'
+  )
+})
+
+test('successfully validates a json file with a schema and defaults to the draft-07 schema version when none is set', async () => {
+  const badJsonSchemaVersion = 'evil-draft-999'
+  process.env.INPUT_JSON_SCHEMA_VERSION = badJsonSchemaVersion
+  expect(await jsonValidator(excludeMock)).toStrictEqual({
+    failed: 0,
+    passed: 1,
+    skipped: 0,
+    success: true,
+    violations: []
+  })
+
+  expect(debugMock).toHaveBeenCalledWith(
+    'using ajv-formats with json-validator'
+  )
+  expect(warningMock).toHaveBeenCalledWith(
+    `json_schema_version '${badJsonSchemaVersion}' is not supported. Defaulting to 'draft-07'`
   )
 })
 
@@ -262,6 +283,90 @@ test('processes a real world example when yaml_as_json is true and the single fi
   process.env.INPUT_YAML_AS_JSON = 'true'
   process.env.INPUT_JSON_SCHEMA = '__tests__/fixtures/schemas/challenge.json'
   process.env.INPUT_BASE_DIR = '__tests__/fixtures/real_world/challenges'
+
+  expect(await jsonValidator(excludeMock)).toStrictEqual({
+    failed: 1,
+    passed: 0,
+    skipped: 0,
+    success: false,
+    violations: [
+      {
+        file: '__tests__/fixtures/real_world/challenges/challenge.yml',
+        errors: [
+          {
+            path: null,
+            message: `must have required property 'inputFormat'`
+          },
+          {
+            path: null,
+            message: `must have required property 'publicTests'`
+          }
+        ]
+      }
+    ]
+  })
+
+  expect(debugMock).toHaveBeenCalledWith(
+    'using ajv-formats with json-validator'
+  )
+  expect(debugMock).toHaveBeenCalledWith(
+    'json - using baseDir: __tests__/fixtures/real_world/challenges'
+  )
+  expect(debugMock).toHaveBeenCalledWith(
+    'json - using glob: **/*{.json,yaml,yml}'
+  )
+  expect(debugMock).toHaveBeenCalledWith(
+    `attempting to process yaml file: '__tests__/fixtures/real_world/challenges/challenge.yml' as json`
+  )
+})
+
+test('processes a real world example when yaml_as_json is true and the single file contains multiple schema errors and uses the 2020 ajv schema', async () => {
+  process.env.INPUT_YAML_AS_JSON = 'true'
+  process.env.INPUT_JSON_SCHEMA = '__tests__/fixtures/schemas/challenge.json'
+  process.env.INPUT_BASE_DIR = '__tests__/fixtures/real_world/challenges'
+  process.env.INPUT_JSON_SCHEMA_VERSION = 'draft-2020-12'
+
+  expect(await jsonValidator(excludeMock)).toStrictEqual({
+    failed: 1,
+    passed: 0,
+    skipped: 0,
+    success: false,
+    violations: [
+      {
+        file: '__tests__/fixtures/real_world/challenges/challenge.yml',
+        errors: [
+          {
+            path: null,
+            message: `must have required property 'inputFormat'`
+          },
+          {
+            path: null,
+            message: `must have required property 'publicTests'`
+          }
+        ]
+      }
+    ]
+  })
+
+  expect(debugMock).toHaveBeenCalledWith(
+    'using ajv-formats with json-validator'
+  )
+  expect(debugMock).toHaveBeenCalledWith(
+    'json - using baseDir: __tests__/fixtures/real_world/challenges'
+  )
+  expect(debugMock).toHaveBeenCalledWith(
+    'json - using glob: **/*{.json,yaml,yml}'
+  )
+  expect(debugMock).toHaveBeenCalledWith(
+    `attempting to process yaml file: '__tests__/fixtures/real_world/challenges/challenge.yml' as json`
+  )
+})
+
+test('processes a real world example when yaml_as_json is true and the single file contains multiple schema errors and uses the 2019 ajv schema', async () => {
+  process.env.INPUT_YAML_AS_JSON = 'true'
+  process.env.INPUT_JSON_SCHEMA = '__tests__/fixtures/schemas/challenge.json'
+  process.env.INPUT_BASE_DIR = '__tests__/fixtures/real_world/challenges'
+  process.env.INPUT_JSON_SCHEMA_VERSION = 'draft-2019-09'
 
   expect(await jsonValidator(excludeMock)).toStrictEqual({
     failed: 1,

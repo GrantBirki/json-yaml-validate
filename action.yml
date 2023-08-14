@@ -33,6 +33,10 @@ inputs:
     description: The full path to the JSON schema file (e.g. ./schemas/schema.json) - Default is "" which doesn't enforce a strict schema
     required: false
     default: ""
+  json_schema_version:
+    description: The version of the JSON schema to use - "draft-07", "draft-2019-09", "draft-2020-12"
+    default: "draft-07"
+    required: false
   json_extension:
     description: The file extension for JSON files (e.g. .json) - Default is ".json"
     required: false
