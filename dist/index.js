@@ -4678,6 +4678,132 @@ exports["default"] = formatLimitPlugin;
 
 /***/ }),
 
+/***/ 5988:
+/***/ ((module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.MissingRefError = exports.ValidationError = exports.CodeGen = exports.Name = exports.nil = exports.stringify = exports.str = exports._ = exports.KeywordCxt = void 0;
+const core_1 = __nccwpck_require__(2685);
+const draft7_1 = __nccwpck_require__(691);
+const dynamic_1 = __nccwpck_require__(9774);
+const next_1 = __nccwpck_require__(6405);
+const unevaluated_1 = __nccwpck_require__(3357);
+const discriminator_1 = __nccwpck_require__(4025);
+const json_schema_2019_09_1 = __nccwpck_require__(5207);
+const META_SCHEMA_ID = "https://json-schema.org/draft/2019-09/schema";
+class Ajv2019 extends core_1.default {
+    constructor(opts = {}) {
+        super({
+            ...opts,
+            dynamicRef: true,
+            next: true,
+            unevaluated: true,
+        });
+    }
+    _addVocabularies() {
+        super._addVocabularies();
+        this.addVocabulary(dynamic_1.default);
+        draft7_1.default.forEach((v) => this.addVocabulary(v));
+        this.addVocabulary(next_1.default);
+        this.addVocabulary(unevaluated_1.default);
+        if (this.opts.discriminator)
+            this.addKeyword(discriminator_1.default);
+    }
+    _addDefaultMetaSchema() {
+        super._addDefaultMetaSchema();
+        const { $data, meta } = this.opts;
+        if (!meta)
+            return;
+        json_schema_2019_09_1.default.call(this, $data);
+        this.refs["http://json-schema.org/schema"] = META_SCHEMA_ID;
+    }
+    defaultMeta() {
+        return (this.opts.defaultMeta =
+            super.defaultMeta() || (this.getSchema(META_SCHEMA_ID) ? META_SCHEMA_ID : undefined));
+    }
+}
+module.exports = exports = Ajv2019;
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports["default"] = Ajv2019;
+var validate_1 = __nccwpck_require__(8955);
+Object.defineProperty(exports, "KeywordCxt", ({ enumerable: true, get: function () { return validate_1.KeywordCxt; } }));
+var codegen_1 = __nccwpck_require__(9179);
+Object.defineProperty(exports, "_", ({ enumerable: true, get: function () { return codegen_1._; } }));
+Object.defineProperty(exports, "str", ({ enumerable: true, get: function () { return codegen_1.str; } }));
+Object.defineProperty(exports, "stringify", ({ enumerable: true, get: function () { return codegen_1.stringify; } }));
+Object.defineProperty(exports, "nil", ({ enumerable: true, get: function () { return codegen_1.nil; } }));
+Object.defineProperty(exports, "Name", ({ enumerable: true, get: function () { return codegen_1.Name; } }));
+Object.defineProperty(exports, "CodeGen", ({ enumerable: true, get: function () { return codegen_1.CodeGen; } }));
+var validation_error_1 = __nccwpck_require__(7616);
+Object.defineProperty(exports, "ValidationError", ({ enumerable: true, get: function () { return validation_error_1.default; } }));
+var ref_error_1 = __nccwpck_require__(8190);
+Object.defineProperty(exports, "MissingRefError", ({ enumerable: true, get: function () { return ref_error_1.default; } }));
+//# sourceMappingURL=2019.js.map
+
+/***/ }),
+
+/***/ 6121:
+/***/ ((module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.MissingRefError = exports.ValidationError = exports.CodeGen = exports.Name = exports.nil = exports.stringify = exports.str = exports._ = exports.KeywordCxt = void 0;
+const core_1 = __nccwpck_require__(2685);
+const draft2020_1 = __nccwpck_require__(6098);
+const discriminator_1 = __nccwpck_require__(4025);
+const json_schema_2020_12_1 = __nccwpck_require__(9246);
+const META_SCHEMA_ID = "https://json-schema.org/draft/2020-12/schema";
+class Ajv2020 extends core_1.default {
+    constructor(opts = {}) {
+        super({
+            ...opts,
+            dynamicRef: true,
+            next: true,
+            unevaluated: true,
+        });
+    }
+    _addVocabularies() {
+        super._addVocabularies();
+        draft2020_1.default.forEach((v) => this.addVocabulary(v));
+        if (this.opts.discriminator)
+            this.addKeyword(discriminator_1.default);
+    }
+    _addDefaultMetaSchema() {
+        super._addDefaultMetaSchema();
+        const { $data, meta } = this.opts;
+        if (!meta)
+            return;
+        json_schema_2020_12_1.default.call(this, $data);
+        this.refs["http://json-schema.org/schema"] = META_SCHEMA_ID;
+    }
+    defaultMeta() {
+        return (this.opts.defaultMeta =
+            super.defaultMeta() || (this.getSchema(META_SCHEMA_ID) ? META_SCHEMA_ID : undefined));
+    }
+}
+module.exports = exports = Ajv2020;
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports["default"] = Ajv2020;
+var validate_1 = __nccwpck_require__(8955);
+Object.defineProperty(exports, "KeywordCxt", ({ enumerable: true, get: function () { return validate_1.KeywordCxt; } }));
+var codegen_1 = __nccwpck_require__(9179);
+Object.defineProperty(exports, "_", ({ enumerable: true, get: function () { return codegen_1._; } }));
+Object.defineProperty(exports, "str", ({ enumerable: true, get: function () { return codegen_1.str; } }));
+Object.defineProperty(exports, "stringify", ({ enumerable: true, get: function () { return codegen_1.stringify; } }));
+Object.defineProperty(exports, "nil", ({ enumerable: true, get: function () { return codegen_1.nil; } }));
+Object.defineProperty(exports, "Name", ({ enumerable: true, get: function () { return codegen_1.Name; } }));
+Object.defineProperty(exports, "CodeGen", ({ enumerable: true, get: function () { return codegen_1.CodeGen; } }));
+var validation_error_1 = __nccwpck_require__(7616);
+Object.defineProperty(exports, "ValidationError", ({ enumerable: true, get: function () { return validation_error_1.default; } }));
+var ref_error_1 = __nccwpck_require__(8190);
+Object.defineProperty(exports, "MissingRefError", ({ enumerable: true, get: function () { return ref_error_1.default; } }));
+//# sourceMappingURL=2020.js.map
+
+/***/ }),
+
 /***/ 2426:
 /***/ ((module, exports, __nccwpck_require__) => {
 
@@ -8266,6 +8392,78 @@ function schemaOrData(schema) {
 
 /***/ }),
 
+/***/ 5207:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+const metaSchema = __nccwpck_require__(3329);
+const applicator = __nccwpck_require__(8161);
+const content = __nccwpck_require__(7114);
+const core = __nccwpck_require__(484);
+const format = __nccwpck_require__(877);
+const metadata = __nccwpck_require__(5032);
+const validation = __nccwpck_require__(2374);
+const META_SUPPORT_DATA = ["/properties"];
+function addMetaSchema2019($data) {
+    ;
+    [
+        metaSchema,
+        applicator,
+        content,
+        core,
+        with$data(this, format),
+        metadata,
+        with$data(this, validation),
+    ].forEach((sch) => this.addMetaSchema(sch, undefined, false));
+    return this;
+    function with$data(ajv, sch) {
+        return $data ? ajv.$dataMetaSchema(sch, META_SUPPORT_DATA) : sch;
+    }
+}
+exports["default"] = addMetaSchema2019;
+//# sourceMappingURL=index.js.map
+
+/***/ }),
+
+/***/ 9246:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+const metaSchema = __nccwpck_require__(2577);
+const applicator = __nccwpck_require__(996);
+const unevaluated = __nccwpck_require__(5568);
+const content = __nccwpck_require__(6795);
+const core = __nccwpck_require__(235);
+const format = __nccwpck_require__(2567);
+const metadata = __nccwpck_require__(1233);
+const validation = __nccwpck_require__(1968);
+const META_SUPPORT_DATA = ["/properties"];
+function addMetaSchema2020($data) {
+    ;
+    [
+        metaSchema,
+        applicator,
+        unevaluated,
+        content,
+        core,
+        with$data(this, format),
+        metadata,
+        with$data(this, validation),
+    ].forEach((sch) => this.addMetaSchema(sch, undefined, false));
+    return this;
+    function with$data(ajv, sch) {
+        return $data ? ajv.$dataMetaSchema(sch, META_SUPPORT_DATA) : sch;
+    }
+}
+exports["default"] = addMetaSchema2020;
+//# sourceMappingURL=index.js.map
+
+/***/ }),
+
 /***/ 3809:
 /***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
 
@@ -8751,6 +8949,24 @@ function validateSchemaDeps(cxt, schemaDeps = cxt.schema) {
 exports.validateSchemaDeps = validateSchemaDeps;
 exports["default"] = def;
 //# sourceMappingURL=dependencies.js.map
+
+/***/ }),
+
+/***/ 6802:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+const dependencies_1 = __nccwpck_require__(4611);
+const def = {
+    keyword: "dependentSchemas",
+    type: "object",
+    schemaType: "object",
+    code: (cxt) => (0, dependencies_1.validateSchemaDeps)(cxt),
+};
+exports["default"] = def;
+//# sourceMappingURL=dependentSchemas.js.map
 
 /***/ }),
 
@@ -9731,6 +9947,36 @@ var DiscrError;
 
 /***/ }),
 
+/***/ 6098:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+const core_1 = __nccwpck_require__(3707);
+const validation_1 = __nccwpck_require__(9805);
+const applicator_1 = __nccwpck_require__(3048);
+const dynamic_1 = __nccwpck_require__(9774);
+const next_1 = __nccwpck_require__(6405);
+const unevaluated_1 = __nccwpck_require__(3357);
+const format_1 = __nccwpck_require__(9841);
+const metadata_1 = __nccwpck_require__(5799);
+const draft2020Vocabularies = [
+    dynamic_1.default,
+    core_1.default,
+    validation_1.default,
+    (0, applicator_1.default)(true),
+    format_1.default,
+    metadata_1.metadataVocabulary,
+    metadata_1.contentVocabulary,
+    next_1.default,
+    unevaluated_1.default,
+];
+exports["default"] = draft2020Vocabularies;
+//# sourceMappingURL=draft2020.js.map
+
+/***/ }),
+
 /***/ 691:
 /***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
 
@@ -9752,6 +9998,157 @@ const draft7Vocabularies = [
 ];
 exports["default"] = draft7Vocabularies;
 //# sourceMappingURL=draft7.js.map
+
+/***/ }),
+
+/***/ 2850:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.dynamicAnchor = void 0;
+const codegen_1 = __nccwpck_require__(9179);
+const names_1 = __nccwpck_require__(50);
+const compile_1 = __nccwpck_require__(813);
+const ref_1 = __nccwpck_require__(6532);
+const def = {
+    keyword: "$dynamicAnchor",
+    schemaType: "string",
+    code: (cxt) => dynamicAnchor(cxt, cxt.schema),
+};
+function dynamicAnchor(cxt, anchor) {
+    const { gen, it } = cxt;
+    it.schemaEnv.root.dynamicAnchors[anchor] = true;
+    const v = (0, codegen_1._) `${names_1.default.dynamicAnchors}${(0, codegen_1.getProperty)(anchor)}`;
+    const validate = it.errSchemaPath === "#" ? it.validateName : _getValidate(cxt);
+    gen.if((0, codegen_1._) `!${v}`, () => gen.assign(v, validate));
+}
+exports.dynamicAnchor = dynamicAnchor;
+function _getValidate(cxt) {
+    const { schemaEnv, schema, self } = cxt.it;
+    const { root, baseId, localRefs, meta } = schemaEnv.root;
+    const { schemaId } = self.opts;
+    const sch = new compile_1.SchemaEnv({ schema, schemaId, root, baseId, localRefs, meta });
+    compile_1.compileSchema.call(self, sch);
+    return (0, ref_1.getValidate)(cxt, sch);
+}
+exports["default"] = def;
+//# sourceMappingURL=dynamicAnchor.js.map
+
+/***/ }),
+
+/***/ 4217:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.dynamicRef = void 0;
+const codegen_1 = __nccwpck_require__(9179);
+const names_1 = __nccwpck_require__(50);
+const ref_1 = __nccwpck_require__(6532);
+const def = {
+    keyword: "$dynamicRef",
+    schemaType: "string",
+    code: (cxt) => dynamicRef(cxt, cxt.schema),
+};
+function dynamicRef(cxt, ref) {
+    const { gen, keyword, it } = cxt;
+    if (ref[0] !== "#")
+        throw new Error(`"${keyword}" only supports hash fragment reference`);
+    const anchor = ref.slice(1);
+    if (it.allErrors) {
+        _dynamicRef();
+    }
+    else {
+        const valid = gen.let("valid", false);
+        _dynamicRef(valid);
+        cxt.ok(valid);
+    }
+    function _dynamicRef(valid) {
+        // TODO the assumption here is that `recursiveRef: #` always points to the root
+        // of the schema object, which is not correct, because there may be $id that
+        // makes # point to it, and the target schema may not contain dynamic/recursiveAnchor.
+        // Because of that 2 tests in recursiveRef.json fail.
+        // This is a similar problem to #815 (`$id` doesn't alter resolution scope for `{ "$ref": "#" }`).
+        // (This problem is not tested in JSON-Schema-Test-Suite)
+        if (it.schemaEnv.root.dynamicAnchors[anchor]) {
+            const v = gen.let("_v", (0, codegen_1._) `${names_1.default.dynamicAnchors}${(0, codegen_1.getProperty)(anchor)}`);
+            gen.if(v, _callRef(v, valid), _callRef(it.validateName, valid));
+        }
+        else {
+            _callRef(it.validateName, valid)();
+        }
+    }
+    function _callRef(validate, valid) {
+        return valid
+            ? () => gen.block(() => {
+                (0, ref_1.callRef)(cxt, validate);
+                gen.let(valid, true);
+            })
+            : () => (0, ref_1.callRef)(cxt, validate);
+    }
+}
+exports.dynamicRef = dynamicRef;
+exports["default"] = def;
+//# sourceMappingURL=dynamicRef.js.map
+
+/***/ }),
+
+/***/ 9774:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+const dynamicAnchor_1 = __nccwpck_require__(2850);
+const dynamicRef_1 = __nccwpck_require__(4217);
+const recursiveAnchor_1 = __nccwpck_require__(8334);
+const recursiveRef_1 = __nccwpck_require__(8360);
+const dynamic = [dynamicAnchor_1.default, dynamicRef_1.default, recursiveAnchor_1.default, recursiveRef_1.default];
+exports["default"] = dynamic;
+//# sourceMappingURL=index.js.map
+
+/***/ }),
+
+/***/ 8334:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+const dynamicAnchor_1 = __nccwpck_require__(2850);
+const util_1 = __nccwpck_require__(3439);
+const def = {
+    keyword: "$recursiveAnchor",
+    schemaType: "boolean",
+    code(cxt) {
+        if (cxt.schema)
+            (0, dynamicAnchor_1.dynamicAnchor)(cxt, "");
+        else
+            (0, util_1.checkStrictMode)(cxt.it, "$recursiveAnchor: false is ignored");
+    },
+};
+exports["default"] = def;
+//# sourceMappingURL=recursiveAnchor.js.map
+
+/***/ }),
+
+/***/ 8360:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+const dynamicRef_1 = __nccwpck_require__(4217);
+const def = {
+    keyword: "$recursiveRef",
+    schemaType: "string",
+    code: (cxt) => (0, dynamicRef_1.dynamicRef)(cxt, cxt.schema),
+};
+exports["default"] = def;
+//# sourceMappingURL=recursiveRef.js.map
 
 /***/ }),
 
@@ -9892,6 +10289,154 @@ exports.contentVocabulary = [
 
 /***/ }),
 
+/***/ 6405:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+const dependentRequired_1 = __nccwpck_require__(1973);
+const dependentSchemas_1 = __nccwpck_require__(6802);
+const limitContains_1 = __nccwpck_require__(2473);
+const next = [dependentRequired_1.default, dependentSchemas_1.default, limitContains_1.default];
+exports["default"] = next;
+//# sourceMappingURL=next.js.map
+
+/***/ }),
+
+/***/ 3357:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+const unevaluatedProperties_1 = __nccwpck_require__(6217);
+const unevaluatedItems_1 = __nccwpck_require__(7186);
+const unevaluated = [unevaluatedProperties_1.default, unevaluatedItems_1.default];
+exports["default"] = unevaluated;
+//# sourceMappingURL=index.js.map
+
+/***/ }),
+
+/***/ 7186:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+const codegen_1 = __nccwpck_require__(9179);
+const util_1 = __nccwpck_require__(3439);
+const error = {
+    message: ({ params: { len } }) => (0, codegen_1.str) `must NOT have more than ${len} items`,
+    params: ({ params: { len } }) => (0, codegen_1._) `{limit: ${len}}`,
+};
+const def = {
+    keyword: "unevaluatedItems",
+    type: "array",
+    schemaType: ["boolean", "object"],
+    error,
+    code(cxt) {
+        const { gen, schema, data, it } = cxt;
+        const items = it.items || 0;
+        if (items === true)
+            return;
+        const len = gen.const("len", (0, codegen_1._) `${data}.length`);
+        if (schema === false) {
+            cxt.setParams({ len: items });
+            cxt.fail((0, codegen_1._) `${len} > ${items}`);
+        }
+        else if (typeof schema == "object" && !(0, util_1.alwaysValidSchema)(it, schema)) {
+            const valid = gen.var("valid", (0, codegen_1._) `${len} <= ${items}`);
+            gen.if((0, codegen_1.not)(valid), () => validateItems(valid, items));
+            cxt.ok(valid);
+        }
+        it.items = true;
+        function validateItems(valid, from) {
+            gen.forRange("i", from, len, (i) => {
+                cxt.subschema({ keyword: "unevaluatedItems", dataProp: i, dataPropType: util_1.Type.Num }, valid);
+                if (!it.allErrors)
+                    gen.if((0, codegen_1.not)(valid), () => gen.break());
+            });
+        }
+    },
+};
+exports["default"] = def;
+//# sourceMappingURL=unevaluatedItems.js.map
+
+/***/ }),
+
+/***/ 6217:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+const codegen_1 = __nccwpck_require__(9179);
+const util_1 = __nccwpck_require__(3439);
+const names_1 = __nccwpck_require__(50);
+const error = {
+    message: "must NOT have unevaluated properties",
+    params: ({ params }) => (0, codegen_1._) `{unevaluatedProperty: ${params.unevaluatedProperty}}`,
+};
+const def = {
+    keyword: "unevaluatedProperties",
+    type: "object",
+    schemaType: ["boolean", "object"],
+    trackErrors: true,
+    error,
+    code(cxt) {
+        const { gen, schema, data, errsCount, it } = cxt;
+        /* istanbul ignore if */
+        if (!errsCount)
+            throw new Error("ajv implementation error");
+        const { allErrors, props } = it;
+        if (props instanceof codegen_1.Name) {
+            gen.if((0, codegen_1._) `${props} !== true`, () => gen.forIn("key", data, (key) => gen.if(unevaluatedDynamic(props, key), () => unevaluatedPropCode(key))));
+        }
+        else if (props !== true) {
+            gen.forIn("key", data, (key) => props === undefined
+                ? unevaluatedPropCode(key)
+                : gen.if(unevaluatedStatic(props, key), () => unevaluatedPropCode(key)));
+        }
+        it.props = true;
+        cxt.ok((0, codegen_1._) `${errsCount} === ${names_1.default.errors}`);
+        function unevaluatedPropCode(key) {
+            if (schema === false) {
+                cxt.setParams({ unevaluatedProperty: key });
+                cxt.error();
+                if (!allErrors)
+                    gen.break();
+                return;
+            }
+            if (!(0, util_1.alwaysValidSchema)(it, schema)) {
+                const valid = gen.name("valid");
+                cxt.subschema({
+                    keyword: "unevaluatedProperties",
+                    dataProp: key,
+                    dataPropType: util_1.Type.Str,
+                }, valid);
+                if (!allErrors)
+                    gen.if((0, codegen_1.not)(valid), () => gen.break());
+            }
+        }
+        function unevaluatedDynamic(evaluatedProps, key) {
+            return (0, codegen_1._) `!${evaluatedProps} || !${evaluatedProps}[${key}]`;
+        }
+        function unevaluatedStatic(evaluatedProps, key) {
+            const ps = [];
+            for (const p in evaluatedProps) {
+                if (evaluatedProps[p] === true)
+                    ps.push((0, codegen_1._) `${key} !== ${p}`);
+            }
+            return (0, codegen_1.and)(...ps);
+        }
+    },
+};
+exports["default"] = def;
+//# sourceMappingURL=unevaluatedProperties.js.map
+
+/***/ }),
+
 /***/ 3694:
 /***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
 
@@ -9921,6 +10466,25 @@ const def = {
 };
 exports["default"] = def;
 //# sourceMappingURL=const.js.map
+
+/***/ }),
+
+/***/ 1973:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+const dependencies_1 = __nccwpck_require__(4611);
+const def = {
+    keyword: "dependentRequired",
+    type: "object",
+    schemaType: "object",
+    error: dependencies_1.error,
+    code: (cxt) => (0, dependencies_1.validatePropertyDeps)(cxt),
+};
+exports["default"] = def;
+//# sourceMappingURL=dependentRequired.js.map
 
 /***/ }),
 
@@ -10016,6 +10580,28 @@ const validation = [
 ];
 exports["default"] = validation;
 //# sourceMappingURL=index.js.map
+
+/***/ }),
+
+/***/ 2473:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+const util_1 = __nccwpck_require__(3439);
+const def = {
+    keyword: ["maxContains", "minContains"],
+    type: "array",
+    schemaType: "number",
+    code({ keyword, parentSchema, it }) {
+        if (parentSchema.contains === undefined) {
+            (0, util_1.checkStrictMode)(it, `"${keyword}" without "contains" is ignored`);
+        }
+    },
+};
+exports["default"] = def;
+//# sourceMappingURL=limitContains.js.map
 
 /***/ }),
 
@@ -37914,6 +38500,126 @@ module.exports = JSON.parse('{"$id":"https://raw.githubusercontent.com/ajv-valid
 
 /***/ }),
 
+/***/ 8161:
+/***/ ((module) => {
+
+"use strict";
+module.exports = JSON.parse('{"$schema":"https://json-schema.org/draft/2019-09/schema","$id":"https://json-schema.org/draft/2019-09/meta/applicator","$vocabulary":{"https://json-schema.org/draft/2019-09/vocab/applicator":true},"$recursiveAnchor":true,"title":"Applicator vocabulary meta-schema","type":["object","boolean"],"properties":{"additionalItems":{"$recursiveRef":"#"},"unevaluatedItems":{"$recursiveRef":"#"},"items":{"anyOf":[{"$recursiveRef":"#"},{"$ref":"#/$defs/schemaArray"}]},"contains":{"$recursiveRef":"#"},"additionalProperties":{"$recursiveRef":"#"},"unevaluatedProperties":{"$recursiveRef":"#"},"properties":{"type":"object","additionalProperties":{"$recursiveRef":"#"},"default":{}},"patternProperties":{"type":"object","additionalProperties":{"$recursiveRef":"#"},"propertyNames":{"format":"regex"},"default":{}},"dependentSchemas":{"type":"object","additionalProperties":{"$recursiveRef":"#"}},"propertyNames":{"$recursiveRef":"#"},"if":{"$recursiveRef":"#"},"then":{"$recursiveRef":"#"},"else":{"$recursiveRef":"#"},"allOf":{"$ref":"#/$defs/schemaArray"},"anyOf":{"$ref":"#/$defs/schemaArray"},"oneOf":{"$ref":"#/$defs/schemaArray"},"not":{"$recursiveRef":"#"}},"$defs":{"schemaArray":{"type":"array","minItems":1,"items":{"$recursiveRef":"#"}}}}');
+
+/***/ }),
+
+/***/ 7114:
+/***/ ((module) => {
+
+"use strict";
+module.exports = JSON.parse('{"$schema":"https://json-schema.org/draft/2019-09/schema","$id":"https://json-schema.org/draft/2019-09/meta/content","$vocabulary":{"https://json-schema.org/draft/2019-09/vocab/content":true},"$recursiveAnchor":true,"title":"Content vocabulary meta-schema","type":["object","boolean"],"properties":{"contentMediaType":{"type":"string"},"contentEncoding":{"type":"string"},"contentSchema":{"$recursiveRef":"#"}}}');
+
+/***/ }),
+
+/***/ 484:
+/***/ ((module) => {
+
+"use strict";
+module.exports = JSON.parse('{"$schema":"https://json-schema.org/draft/2019-09/schema","$id":"https://json-schema.org/draft/2019-09/meta/core","$vocabulary":{"https://json-schema.org/draft/2019-09/vocab/core":true},"$recursiveAnchor":true,"title":"Core vocabulary meta-schema","type":["object","boolean"],"properties":{"$id":{"type":"string","format":"uri-reference","$comment":"Non-empty fragments not allowed.","pattern":"^[^#]*#?$"},"$schema":{"type":"string","format":"uri"},"$anchor":{"type":"string","pattern":"^[A-Za-z][-A-Za-z0-9.:_]*$"},"$ref":{"type":"string","format":"uri-reference"},"$recursiveRef":{"type":"string","format":"uri-reference"},"$recursiveAnchor":{"type":"boolean","default":false},"$vocabulary":{"type":"object","propertyNames":{"type":"string","format":"uri"},"additionalProperties":{"type":"boolean"}},"$comment":{"type":"string"},"$defs":{"type":"object","additionalProperties":{"$recursiveRef":"#"},"default":{}}}}');
+
+/***/ }),
+
+/***/ 877:
+/***/ ((module) => {
+
+"use strict";
+module.exports = JSON.parse('{"$schema":"https://json-schema.org/draft/2019-09/schema","$id":"https://json-schema.org/draft/2019-09/meta/format","$vocabulary":{"https://json-schema.org/draft/2019-09/vocab/format":true},"$recursiveAnchor":true,"title":"Format vocabulary meta-schema","type":["object","boolean"],"properties":{"format":{"type":"string"}}}');
+
+/***/ }),
+
+/***/ 5032:
+/***/ ((module) => {
+
+"use strict";
+module.exports = JSON.parse('{"$schema":"https://json-schema.org/draft/2019-09/schema","$id":"https://json-schema.org/draft/2019-09/meta/meta-data","$vocabulary":{"https://json-schema.org/draft/2019-09/vocab/meta-data":true},"$recursiveAnchor":true,"title":"Meta-data vocabulary meta-schema","type":["object","boolean"],"properties":{"title":{"type":"string"},"description":{"type":"string"},"default":true,"deprecated":{"type":"boolean","default":false},"readOnly":{"type":"boolean","default":false},"writeOnly":{"type":"boolean","default":false},"examples":{"type":"array","items":true}}}');
+
+/***/ }),
+
+/***/ 2374:
+/***/ ((module) => {
+
+"use strict";
+module.exports = JSON.parse('{"$schema":"https://json-schema.org/draft/2019-09/schema","$id":"https://json-schema.org/draft/2019-09/meta/validation","$vocabulary":{"https://json-schema.org/draft/2019-09/vocab/validation":true},"$recursiveAnchor":true,"title":"Validation vocabulary meta-schema","type":["object","boolean"],"properties":{"multipleOf":{"type":"number","exclusiveMinimum":0},"maximum":{"type":"number"},"exclusiveMaximum":{"type":"number"},"minimum":{"type":"number"},"exclusiveMinimum":{"type":"number"},"maxLength":{"$ref":"#/$defs/nonNegativeInteger"},"minLength":{"$ref":"#/$defs/nonNegativeIntegerDefault0"},"pattern":{"type":"string","format":"regex"},"maxItems":{"$ref":"#/$defs/nonNegativeInteger"},"minItems":{"$ref":"#/$defs/nonNegativeIntegerDefault0"},"uniqueItems":{"type":"boolean","default":false},"maxContains":{"$ref":"#/$defs/nonNegativeInteger"},"minContains":{"$ref":"#/$defs/nonNegativeInteger","default":1},"maxProperties":{"$ref":"#/$defs/nonNegativeInteger"},"minProperties":{"$ref":"#/$defs/nonNegativeIntegerDefault0"},"required":{"$ref":"#/$defs/stringArray"},"dependentRequired":{"type":"object","additionalProperties":{"$ref":"#/$defs/stringArray"}},"const":true,"enum":{"type":"array","items":true},"type":{"anyOf":[{"$ref":"#/$defs/simpleTypes"},{"type":"array","items":{"$ref":"#/$defs/simpleTypes"},"minItems":1,"uniqueItems":true}]}},"$defs":{"nonNegativeInteger":{"type":"integer","minimum":0},"nonNegativeIntegerDefault0":{"$ref":"#/$defs/nonNegativeInteger","default":0},"simpleTypes":{"enum":["array","boolean","integer","null","number","object","string"]},"stringArray":{"type":"array","items":{"type":"string"},"uniqueItems":true,"default":[]}}}');
+
+/***/ }),
+
+/***/ 3329:
+/***/ ((module) => {
+
+"use strict";
+module.exports = JSON.parse('{"$schema":"https://json-schema.org/draft/2019-09/schema","$id":"https://json-schema.org/draft/2019-09/schema","$vocabulary":{"https://json-schema.org/draft/2019-09/vocab/core":true,"https://json-schema.org/draft/2019-09/vocab/applicator":true,"https://json-schema.org/draft/2019-09/vocab/validation":true,"https://json-schema.org/draft/2019-09/vocab/meta-data":true,"https://json-schema.org/draft/2019-09/vocab/format":false,"https://json-schema.org/draft/2019-09/vocab/content":true},"$recursiveAnchor":true,"title":"Core and Validation specifications meta-schema","allOf":[{"$ref":"meta/core"},{"$ref":"meta/applicator"},{"$ref":"meta/validation"},{"$ref":"meta/meta-data"},{"$ref":"meta/format"},{"$ref":"meta/content"}],"type":["object","boolean"],"properties":{"definitions":{"$comment":"While no longer an official keyword as it is replaced by $defs, this keyword is retained in the meta-schema to prevent incompatible extensions as it remains in common use.","type":"object","additionalProperties":{"$recursiveRef":"#"},"default":{}},"dependencies":{"$comment":"\\"dependencies\\" is no longer a keyword, but schema authors should avoid redefining it to facilitate a smooth transition to \\"dependentSchemas\\" and \\"dependentRequired\\"","type":"object","additionalProperties":{"anyOf":[{"$recursiveRef":"#"},{"$ref":"meta/validation#/$defs/stringArray"}]}}}}');
+
+/***/ }),
+
+/***/ 996:
+/***/ ((module) => {
+
+"use strict";
+module.exports = JSON.parse('{"$schema":"https://json-schema.org/draft/2020-12/schema","$id":"https://json-schema.org/draft/2020-12/meta/applicator","$vocabulary":{"https://json-schema.org/draft/2020-12/vocab/applicator":true},"$dynamicAnchor":"meta","title":"Applicator vocabulary meta-schema","type":["object","boolean"],"properties":{"prefixItems":{"$ref":"#/$defs/schemaArray"},"items":{"$dynamicRef":"#meta"},"contains":{"$dynamicRef":"#meta"},"additionalProperties":{"$dynamicRef":"#meta"},"properties":{"type":"object","additionalProperties":{"$dynamicRef":"#meta"},"default":{}},"patternProperties":{"type":"object","additionalProperties":{"$dynamicRef":"#meta"},"propertyNames":{"format":"regex"},"default":{}},"dependentSchemas":{"type":"object","additionalProperties":{"$dynamicRef":"#meta"},"default":{}},"propertyNames":{"$dynamicRef":"#meta"},"if":{"$dynamicRef":"#meta"},"then":{"$dynamicRef":"#meta"},"else":{"$dynamicRef":"#meta"},"allOf":{"$ref":"#/$defs/schemaArray"},"anyOf":{"$ref":"#/$defs/schemaArray"},"oneOf":{"$ref":"#/$defs/schemaArray"},"not":{"$dynamicRef":"#meta"}},"$defs":{"schemaArray":{"type":"array","minItems":1,"items":{"$dynamicRef":"#meta"}}}}');
+
+/***/ }),
+
+/***/ 6795:
+/***/ ((module) => {
+
+"use strict";
+module.exports = JSON.parse('{"$schema":"https://json-schema.org/draft/2020-12/schema","$id":"https://json-schema.org/draft/2020-12/meta/content","$vocabulary":{"https://json-schema.org/draft/2020-12/vocab/content":true},"$dynamicAnchor":"meta","title":"Content vocabulary meta-schema","type":["object","boolean"],"properties":{"contentEncoding":{"type":"string"},"contentMediaType":{"type":"string"},"contentSchema":{"$dynamicRef":"#meta"}}}');
+
+/***/ }),
+
+/***/ 235:
+/***/ ((module) => {
+
+"use strict";
+module.exports = JSON.parse('{"$schema":"https://json-schema.org/draft/2020-12/schema","$id":"https://json-schema.org/draft/2020-12/meta/core","$vocabulary":{"https://json-schema.org/draft/2020-12/vocab/core":true},"$dynamicAnchor":"meta","title":"Core vocabulary meta-schema","type":["object","boolean"],"properties":{"$id":{"$ref":"#/$defs/uriReferenceString","$comment":"Non-empty fragments not allowed.","pattern":"^[^#]*#?$"},"$schema":{"$ref":"#/$defs/uriString"},"$ref":{"$ref":"#/$defs/uriReferenceString"},"$anchor":{"$ref":"#/$defs/anchorString"},"$dynamicRef":{"$ref":"#/$defs/uriReferenceString"},"$dynamicAnchor":{"$ref":"#/$defs/anchorString"},"$vocabulary":{"type":"object","propertyNames":{"$ref":"#/$defs/uriString"},"additionalProperties":{"type":"boolean"}},"$comment":{"type":"string"},"$defs":{"type":"object","additionalProperties":{"$dynamicRef":"#meta"}}},"$defs":{"anchorString":{"type":"string","pattern":"^[A-Za-z_][-A-Za-z0-9._]*$"},"uriString":{"type":"string","format":"uri"},"uriReferenceString":{"type":"string","format":"uri-reference"}}}');
+
+/***/ }),
+
+/***/ 2567:
+/***/ ((module) => {
+
+"use strict";
+module.exports = JSON.parse('{"$schema":"https://json-schema.org/draft/2020-12/schema","$id":"https://json-schema.org/draft/2020-12/meta/format-annotation","$vocabulary":{"https://json-schema.org/draft/2020-12/vocab/format-annotation":true},"$dynamicAnchor":"meta","title":"Format vocabulary meta-schema for annotation results","type":["object","boolean"],"properties":{"format":{"type":"string"}}}');
+
+/***/ }),
+
+/***/ 1233:
+/***/ ((module) => {
+
+"use strict";
+module.exports = JSON.parse('{"$schema":"https://json-schema.org/draft/2020-12/schema","$id":"https://json-schema.org/draft/2020-12/meta/meta-data","$vocabulary":{"https://json-schema.org/draft/2020-12/vocab/meta-data":true},"$dynamicAnchor":"meta","title":"Meta-data vocabulary meta-schema","type":["object","boolean"],"properties":{"title":{"type":"string"},"description":{"type":"string"},"default":true,"deprecated":{"type":"boolean","default":false},"readOnly":{"type":"boolean","default":false},"writeOnly":{"type":"boolean","default":false},"examples":{"type":"array","items":true}}}');
+
+/***/ }),
+
+/***/ 5568:
+/***/ ((module) => {
+
+"use strict";
+module.exports = JSON.parse('{"$schema":"https://json-schema.org/draft/2020-12/schema","$id":"https://json-schema.org/draft/2020-12/meta/unevaluated","$vocabulary":{"https://json-schema.org/draft/2020-12/vocab/unevaluated":true},"$dynamicAnchor":"meta","title":"Unevaluated applicator vocabulary meta-schema","type":["object","boolean"],"properties":{"unevaluatedItems":{"$dynamicRef":"#meta"},"unevaluatedProperties":{"$dynamicRef":"#meta"}}}');
+
+/***/ }),
+
+/***/ 1968:
+/***/ ((module) => {
+
+"use strict";
+module.exports = JSON.parse('{"$schema":"https://json-schema.org/draft/2020-12/schema","$id":"https://json-schema.org/draft/2020-12/meta/validation","$vocabulary":{"https://json-schema.org/draft/2020-12/vocab/validation":true},"$dynamicAnchor":"meta","title":"Validation vocabulary meta-schema","type":["object","boolean"],"properties":{"type":{"anyOf":[{"$ref":"#/$defs/simpleTypes"},{"type":"array","items":{"$ref":"#/$defs/simpleTypes"},"minItems":1,"uniqueItems":true}]},"const":true,"enum":{"type":"array","items":true},"multipleOf":{"type":"number","exclusiveMinimum":0},"maximum":{"type":"number"},"exclusiveMaximum":{"type":"number"},"minimum":{"type":"number"},"exclusiveMinimum":{"type":"number"},"maxLength":{"$ref":"#/$defs/nonNegativeInteger"},"minLength":{"$ref":"#/$defs/nonNegativeIntegerDefault0"},"pattern":{"type":"string","format":"regex"},"maxItems":{"$ref":"#/$defs/nonNegativeInteger"},"minItems":{"$ref":"#/$defs/nonNegativeIntegerDefault0"},"uniqueItems":{"type":"boolean","default":false},"maxContains":{"$ref":"#/$defs/nonNegativeInteger"},"minContains":{"$ref":"#/$defs/nonNegativeInteger","default":1},"maxProperties":{"$ref":"#/$defs/nonNegativeInteger"},"minProperties":{"$ref":"#/$defs/nonNegativeIntegerDefault0"},"required":{"$ref":"#/$defs/stringArray"},"dependentRequired":{"type":"object","additionalProperties":{"$ref":"#/$defs/stringArray"}}},"$defs":{"nonNegativeInteger":{"type":"integer","minimum":0},"nonNegativeIntegerDefault0":{"$ref":"#/$defs/nonNegativeInteger","default":0},"simpleTypes":{"enum":["array","boolean","integer","null","number","object","string"]},"stringArray":{"type":"array","items":{"type":"string"},"uniqueItems":true,"default":[]}}}');
+
+/***/ }),
+
+/***/ 2577:
+/***/ ((module) => {
+
+"use strict";
+module.exports = JSON.parse('{"$schema":"https://json-schema.org/draft/2020-12/schema","$id":"https://json-schema.org/draft/2020-12/schema","$vocabulary":{"https://json-schema.org/draft/2020-12/vocab/core":true,"https://json-schema.org/draft/2020-12/vocab/applicator":true,"https://json-schema.org/draft/2020-12/vocab/unevaluated":true,"https://json-schema.org/draft/2020-12/vocab/validation":true,"https://json-schema.org/draft/2020-12/vocab/meta-data":true,"https://json-schema.org/draft/2020-12/vocab/format-annotation":true,"https://json-schema.org/draft/2020-12/vocab/content":true},"$dynamicAnchor":"meta","title":"Core and Validation specifications meta-schema","allOf":[{"$ref":"meta/core"},{"$ref":"meta/applicator"},{"$ref":"meta/unevaluated"},{"$ref":"meta/validation"},{"$ref":"meta/meta-data"},{"$ref":"meta/format-annotation"},{"$ref":"meta/content"}],"type":["object","boolean"],"$comment":"This meta-schema also defines keywords that have appeared in previous drafts in order to prevent incompatible extensions as they remain in common use.","properties":{"definitions":{"$comment":"\\"definitions\\" has been replaced by \\"$defs\\".","type":"object","additionalProperties":{"$dynamicRef":"#meta"},"deprecated":true,"default":{}},"dependencies":{"$comment":"\\"dependencies\\" has been split and replaced by \\"dependentSchemas\\" and \\"dependentRequired\\" in order to serve their differing semantics.","type":"object","additionalProperties":{"anyOf":[{"$dynamicRef":"#meta"},{"$ref":"meta/validation#/$defs/stringArray"}]},"deprecated":true,"default":{}},"$recursiveAnchor":{"$comment":"\\"$recursiveAnchor\\" has been replaced by \\"$dynamicAnchor\\".","$ref":"meta/core#/$defs/anchorString","deprecated":true},"$recursiveRef":{"$comment":"\\"$recursiveRef\\" has been replaced by \\"$dynamicRef\\".","$ref":"meta/core#/$defs/uriReferenceString","deprecated":true}}}');
+
+/***/ }),
+
 /***/ 98:
 /***/ ((module) => {
 
@@ -38045,6 +38751,12 @@ var core = __nccwpck_require__(2186);
 // EXTERNAL MODULE: ./node_modules/ajv/dist/ajv.js
 var dist_ajv = __nccwpck_require__(2426);
 var ajv_default = /*#__PURE__*/__nccwpck_require__.n(dist_ajv);
+// EXTERNAL MODULE: ./node_modules/ajv/dist/2019.js
+var _2019 = __nccwpck_require__(5988);
+var _2019_default = /*#__PURE__*/__nccwpck_require__.n(_2019);
+// EXTERNAL MODULE: ./node_modules/ajv/dist/2020.js
+var _2020 = __nccwpck_require__(6121);
+var _2020_default = /*#__PURE__*/__nccwpck_require__.n(_2020);
 // EXTERNAL MODULE: ./node_modules/ajv-formats/dist/index.js
 var dist = __nccwpck_require__(567);
 var dist_default = /*#__PURE__*/__nccwpck_require__.n(dist);
@@ -38062,12 +38774,27 @@ var yaml_dist = __nccwpck_require__(4083);
 
 
 
+
+
 // Helper function to setup the schema
 // :param jsonSchema: path to the jsonSchema file
 // :returns: the compiled schema
 async function schema(jsonSchema) {
-  // setup the ajv instance
-  const ajv = new (ajv_default())({allErrors: true}) // options can be passed, e.g. {allErrors: true}
+  const jsonSchemaVersion = core.getInput('json_schema_version')
+
+  var ajv
+  if (jsonSchemaVersion === 'draft-07') {
+    ajv = new (ajv_default())({allErrors: true})
+  } else if (jsonSchemaVersion === 'draft-2019-09') {
+    ajv = new (_2019_default())({allErrors: true})
+  } else if (jsonSchemaVersion === 'draft-2020-12') {
+    ajv = new (_2020_default())({allErrors: true})
+  } else {
+    core.warning(
+      `json_schema_version '${jsonSchemaVersion}' is not supported. Defaulting to 'draft-07'`
+    )
+    ajv = new (ajv_default())({allErrors: true})
+  }
 
   // use ajv-formats if enabled
   if (core.getBooleanInput('use_ajv_formats')) {

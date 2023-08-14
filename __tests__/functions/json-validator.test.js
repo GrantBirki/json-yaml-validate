@@ -57,7 +57,9 @@ test('successfully validates a json file with a schema and defaults to the draft
   expect(debugMock).toHaveBeenCalledWith(
     'using ajv-formats with json-validator'
   )
-  expect(warningMock).toHaveBeenCalledWith(`json_schema_version '${badJsonSchemaVersion}' is not supported. Defaulting to 'draft-07'`)
+  expect(warningMock).toHaveBeenCalledWith(
+    `json_schema_version '${badJsonSchemaVersion}' is not supported. Defaulting to 'draft-07'`
+  )
 })
 
 test('successfully validates a json file without using a schema', async () => {
