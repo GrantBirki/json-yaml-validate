@@ -558,7 +558,7 @@ class OidcClient {
                 .catch(error => {
                 throw new Error(`Failed to get ID Token. \n 
         Error Code : ${error.statusCode}\n 
-        Error Message: ${error.result.message}`);
+        Error Message: ${error.message}`);
             });
             const id_token = (_a = res.result) === null || _a === void 0 ? void 0 : _a.value;
             if (!id_token) {
@@ -14577,27 +14577,25 @@ exports.build = build;
 /***/ }),
 
 /***/ 2179:
-/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+/***/ ((__unused_webpack_module, exports) => {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.build = exports.joinDirectoryPath = void 0;
-const path_1 = __nccwpck_require__(1017);
 function joinPathWithBasePath(filename, directoryPath) {
     return directoryPath + filename;
 }
-function joinPathWithRelativePath(relativePath) {
-    relativePath += relativePath[relativePath.length - 1] === path_1.sep ? "" : path_1.sep;
+function joinPathWithRelativePath(root) {
     return function (filename, directoryPath) {
-        return directoryPath.substring(relativePath.length) + filename;
+        return directoryPath.substring(root.length) + filename;
     };
 }
 function joinPath(filename) {
     return filename;
 }
-function joinDirectoryPath(filename, directoryPath) {
-    return directoryPath + filename + path_1.sep;
+function joinDirectoryPath(filename, directoryPath, separator) {
+    return directoryPath + filename + separator;
 }
 exports.joinDirectoryPath = joinDirectoryPath;
 function build(root, options) {
@@ -14908,16 +14906,17 @@ class Walker {
         return this.isSynchronous ? this.callbackInvoker(this.state, null) : null;
     }
     normalizePath(path) {
+        const { resolvePaths, normalizePath, pathSeparator } = this.state.options;
         const pathNeedsCleaning = (process.platform === "win32" && path.includes("/")) ||
             path.startsWith(".");
-        if (this.state.options.resolvePaths)
+        if (resolvePaths)
             path = (0, path_1.resolve)(path);
-        if (this.state.options.normalizePath || pathNeedsCleaning)
+        if (normalizePath || pathNeedsCleaning)
             path = (0, utils_1.cleanPath)(path);
         if (path === ".")
             return "";
-        const needsSeperator = path[path.length - 1] !== path_1.sep;
-        return needsSeperator ? path + path_1.sep : path;
+        const needsSeperator = path[path.length - 1] !== pathSeparator;
+        return (0, utils_1.convertSlashes)(needsSeperator ? path + pathSeparator : path, pathSeparator);
     }
     walk = (entries, directoryPath, depth) => {
         const { paths, options: { filters, resolveSymlinks, exclude, maxFiles, signal }, } = this.state;
@@ -14932,13 +14931,13 @@ class Walker {
                 this.pushFile(filename, files, this.state.counts, filters);
             }
             else if (entry.isDirectory()) {
-                let path = joinPath.joinDirectoryPath(entry.name, directoryPath);
+                let path = joinPath.joinDirectoryPath(entry.name, directoryPath, this.state.options.pathSeparator);
                 if (exclude && exclude(entry.name, path))
                     continue;
                 this.walkDirectory(this.state, path, depth - 1, this.walk);
             }
             else if (entry.isSymbolicLink() && resolveSymlinks) {
-                let path = joinPath.joinDirectoryPath(entry.name, directoryPath);
+                let path = joinPath.joinDirectoryPath(entry.name, directoryPath, this.state.options.pathSeparator);
                 this.resolveSymlink(path, this.state, (stat, resolvedPath) => {
                     if (stat.isDirectory()) {
                         resolvedPath = this.normalizePath(resolvedPath);
@@ -14998,6 +14997,7 @@ exports.APIBuilder = APIBuilder;
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.Builder = void 0;
+const path_1 = __nccwpck_require__(1017);
 const api_builder_1 = __nccwpck_require__(1892);
 var pm = null;
 /* c8 ignore next 6 */
@@ -15013,6 +15013,7 @@ class Builder {
     options = {
         maxDepth: Infinity,
         suppressErrors: true,
+        pathSeparator: path_1.sep,
         filters: [],
     };
     constructor(options) {
@@ -15020,6 +15021,10 @@ class Builder {
     }
     group() {
         this.options.group = true;
+        return this;
+    }
+    withPathSeparator(separator) {
+        this.options.pathSeparator = separator;
         return this;
     }
     withBasePath() {
@@ -15158,16 +15163,22 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.cleanPath = void 0;
+exports.convertSlashes = exports.cleanPath = void 0;
 const path_1 = __nccwpck_require__(1017);
 function cleanPath(path) {
     let normalized = (0, path_1.normalize)(path);
-    // to account for / path
+    // we have to remove the last path separator
+    // to account for / root path
     if (normalized.length > 1 && normalized[normalized.length - 1] === path_1.sep)
         normalized = normalized.substring(0, normalized.length - 1);
     return normalized;
 }
 exports.cleanPath = cleanPath;
+const SLASHES_REGEX = /[\\/]+/g;
+function convertSlashes(path, separator) {
+    return path.replace(SLASHES_REGEX, separator);
+}
+exports.convertSlashes = convertSlashes;
 
 
 /***/ }),
@@ -16706,10 +16717,6 @@ function getNodeRequestOptions(request) {
 		agent = agent(parsedURL);
 	}
 
-	if (!headers.has('Connection') && !agent) {
-		headers.set('Connection', 'close');
-	}
-
 	// HTTP-network fetch step 4.2
 	// chunked encoding is handled by Node.js
 
@@ -17129,6 +17136,7 @@ exports.Headers = Headers;
 exports.Request = Request;
 exports.Response = Response;
 exports.FetchError = FetchError;
+exports.AbortError = AbortError;
 
 
 /***/ }),
@@ -32696,6 +32704,8 @@ function debug(logLevel, ...messages) {
 }
 function warn(logLevel, warning) {
     if (logLevel === 'debug' || logLevel === 'warn') {
+        // https://github.com/typescript-eslint/typescript-eslint/issues/7478
+        // eslint-disable-next-line @typescript-eslint/prefer-optional-chain
         if (typeof process !== 'undefined' && process.emitWarning)
             process.emitWarning(warning);
         else
@@ -33477,7 +33487,7 @@ function stringifyKey(key, jsKey, ctx) {
         return '';
     if (typeof jsKey !== 'object')
         return String(jsKey);
-    if (identity.isNode(key) && ctx && ctx.doc) {
+    if (identity.isNode(key) && ctx?.doc) {
         const strCtx = stringify.createStringifyContext(ctx.doc, {});
         strCtx.anchors = new Set();
         for (const node of ctx.anchors.keys())
@@ -36856,8 +36866,9 @@ function createPairs(schema, iterable, ctx) {
                     key = keys[0];
                     value = it[key];
                 }
-                else
-                    throw new TypeError(`Expected { key: value } tuple: ${it}`);
+                else {
+                    throw new TypeError(`Expected tuple with one key, not ${keys.length} keys`);
+                }
             }
             else {
                 key = it;
@@ -37532,7 +37543,7 @@ function stringifyFlowCollection({ comment, items }, ctx, { flowChars, itemInden
                 if (iv.commentBefore)
                     reqNewline = true;
             }
-            else if (item.value == null && ik && ik.comment) {
+            else if (item.value == null && ik?.comment) {
                 comment = ik.comment;
             }
         }
@@ -38158,7 +38169,7 @@ function blockString({ comment, type, value }, ctx, onComment, onChompKeep) {
 function plainString(item, ctx, onComment, onChompKeep) {
     const { type, value } = item;
     const { actualString, implicitKey, indent, indentStep, inFlow } = ctx;
-    if ((implicitKey && /[\n[\]{},]/.test(value)) ||
+    if ((implicitKey && value.includes('\n')) ||
         (inFlow && /[[\]{},]/.test(value))) {
         return quotedString(value, ctx);
     }
