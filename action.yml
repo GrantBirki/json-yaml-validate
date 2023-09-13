@@ -85,5 +85,5 @@ outputs:
   success:
     description: Whether or not the validation was successful for all files - "true" or "false"
 runs:
-  using: "node16"
+  using: "node20"
   main: "dist/index.js"
