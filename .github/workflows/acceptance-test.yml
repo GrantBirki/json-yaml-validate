@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       # Need to checkout for testing the Action in this repo
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       # creates invalid files that are excluded by git and should not fail
       - name: invalid file creation
