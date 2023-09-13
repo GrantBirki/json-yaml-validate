@@ -4,6 +4,7 @@ package-lock.json is valid
 package.json is valid
 dist/schema.json is valid
 skipping due to exclude match: tmp/invalid.json
+skipping due to exclude match: __tests__/fixtures/schemas/challenge.json
 skipping due to exclude match: __tests__/fixtures/schemas/schema1.json
 skipping due to exclude match: __tests__/fixtures/schemas/schema2.json
 skipping due to exclude match: __tests__/fixtures/json/invalid/json1.json
@@ -26,6 +27,7 @@ skipping due to exclude match: tmp/invalid.yaml
 .github/workflows/test.yml is valid
 skipping due to exclude match: __tests__/fixtures/schemas/schema1.yaml
 skipping due to exclude match: __tests__/fixtures/schemas/schema2.yml
+skipping due to exclude match: __tests__/fixtures/real_world/challenges/challenge.yml
 skipping due to exclude match: __tests__/fixtures/yaml/invalid/skip-bad.yaml
 skipping due to exclude match: __tests__/fixtures/yaml/invalid/yaml1.yaml
 skipping due to exclude match: __tests__/fixtures/yaml/mixture/yaml1.yaml
