@@ -2,7 +2,7 @@ import * as core from '@actions/core'
 import validateSchema from 'yaml-schema-validator'
 import {readFileSync} from 'fs'
 import {fdir} from 'fdir'
-import {parse} from 'yaml'
+import {parse,parseAllDocuments} from 'yaml'
 
 // Helper function to validate all yaml files in the baseDir
 export async function yamlValidator(exclude) {
@@ -13,6 +13,7 @@ export async function yamlValidator(exclude) {
   const yamlExcludeRegex = core.getInput('yaml_exclude_regex')
   const yamlAsJson = core.getBooleanInput('yaml_as_json')
   const useDotMatch = core.getBooleanInput('use_dot_match')
+  const allowMultipleDocuments = core.getBooleanInput('allow_multiple_documents')
   let files = core.getMultilineInput('files').filter(Boolean)
 
   // remove trailing slash from baseDir
@@ -83,24 +84,42 @@ export async function yamlValidator(exclude) {
       continue
     }
 
+    let multipleDocuments = false
     try {
       // try to parse the yaml file
       parse(readFileSync(fullPath, 'utf8'))
+
     } catch {
-      // if the yaml file is invalid, log an error and set success to false
-      core.error(`❌ failed to parse YAML file: ${fullPath}`)
-      result.success = false
-      result.failed++
-      result.violations.push({
-        file: fullPath,
-        errors: [
-          {
-            path: null,
-            message: 'Invalid YAML'
+      if (allowMultipleDocuments) {
+        try {
+          let documents = parseAllDocuments(readFileSync(fullPath, 'utf8'))
+          for (let doc of documents) {
+            parse(doc.toString())
           }
-        ]
-      })
-      continue
+          multipleDocuments = true
+        } catch {
+          // doc.toString() will throw an error if the document is invalid
+        }
+      } 
+
+      if (!multipleDocuments) {
+        // if the yaml file is invalid, log an error and set success to false
+        core.error(`❌ failed to parse YAML file: ${fullPath}`)
+        result.success = false
+        result.failed++
+        result.violations.push({
+          file: fullPath,
+          errors: [
+            {
+              path: null,
+              message: 'Invalid YAML'
+            }
+          ]
+        })
+        continue
+      } else {
+        core.info(`multiple documents found in file: ${fullPath}`)
+      }
     }
 
     // if no yamlSchema is provided, skip validation against the schema
@@ -108,7 +127,8 @@ export async function yamlValidator(exclude) {
       !yamlSchema ||
       yamlSchema === '' ||
       yamlSchema === null ||
-      yamlSchema === undefined
+      yamlSchema === undefined ||
+      multipleDocuments
     ) {
       result.passed++
       core.info(`${fullPath} is valid`)

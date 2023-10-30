@@ -23,6 +23,7 @@ beforeEach(() => {
   process.env.INPUT_YAML_AS_JSON = false
   process.env.INPUT_USE_DOT_MATCH = 'true'
   process.env.INPUT_FILES = ''
+  process.env.INPUT_ALLOW_MULTIPLE_DOCUMENTS = 'false'
 })
 
 test('successfully validates a yaml file with a schema', async () => {
@@ -235,5 +236,33 @@ test('skips all files when yaml_as_json is true, even invalid ones', async () =>
   )
   expect(debugMock).toHaveBeenCalledWith(
     'skipping yaml since it should be treated as json: __tests__/fixtures/yaml/invalid/skip-bad.yaml'
+  )
+})
+
+test('successfully validates a yaml file with multiple documents but fails on the other', async () => {
+  process.env.INPUT_ALLOW_MULTIPLE_DOCUMENTS = 'true'
+  process.env.INPUT_BASE_DIR = '__tests__/fixtures/yaml/multiple'
+  expect(await yamlValidator(excludeMock)).toStrictEqual({
+    failed: 1,
+    passed: 1,
+    skipped: 0,
+    success: false,
+    violations: [{
+      file: '__tests__/fixtures/yaml/multiple/invalid.yaml',
+      errors: [
+        {
+          path: null,
+          message: 'Invalid YAML'
+        }
+      ]
+    }]
+  })
+  expect(infoMock).toHaveBeenCalledWith(
+    `multiple documents found in file: __tests__/fixtures/yaml/multiple/yaml1.yaml`
+  )
+  expect(errorMock).toHaveBeenCalledWith(
+    expect.stringMatching(
+      '❌ failed to parse YAML file: __tests__/fixtures/yaml/multiple/invalid.yaml'
+    )
   )
 })
