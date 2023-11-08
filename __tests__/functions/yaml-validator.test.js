@@ -113,7 +113,8 @@ test('fails to validate a yaml file without using a schema', async () => {
           {
             path: null,
             message: 'Invalid YAML',
-            error: "YAMLParseError Nested mappings are not allowed in compact mappings at line 4, column 17"
+            error:
+              'YAMLParseError Nested mappings are not allowed in compact mappings at line 4, column 17'
           }
         ]
       }
@@ -248,16 +249,19 @@ test('successfully validates a yaml file with multiple documents but fails on th
     passed: 1,
     skipped: 0,
     success: false,
-    violations: [{
-      file: '__tests__/fixtures/yaml/multiple/invalid.yaml',
-      errors: [
-        {
-          path: null,
-          message: 'Invalid YAML',
-          error: 'YAMLParseError Nested mappings are not allowed in compact mappings at line 13, column 9'
-        }
-      ]
-    }]
+    violations: [
+      {
+        file: '__tests__/fixtures/yaml/multiple/invalid.yaml',
+        errors: [
+          {
+            path: null,
+            message: 'Invalid YAML',
+            error:
+              'YAMLParseError Nested mappings are not allowed in compact mappings at line 13, column 9'
+          }
+        ]
+      }
+    ]
   })
   expect(infoMock).toHaveBeenCalledWith(
     `multiple documents found in file: __tests__/fixtures/yaml/multiple/yaml1.yaml`
