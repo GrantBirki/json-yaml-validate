@@ -112,7 +112,8 @@ test('fails to validate a yaml file without using a schema', async () => {
         errors: [
           {
             path: null,
-            message: 'Invalid YAML'
+            message: 'Invalid YAML',
+            error: "YAMLParseError Nested mappings are not allowed in compact mappings at line 4, column 17"
           }
         ]
       }
@@ -252,7 +253,8 @@ test('successfully validates a yaml file with multiple documents but fails on th
       errors: [
         {
           path: null,
-          message: 'Invalid YAML'
+          message: 'Invalid YAML',
+          error: 'YAMLParseError Nested mappings are not allowed in compact mappings at line 13, column 9'
         }
       ]
     }]

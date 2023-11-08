@@ -85,41 +85,41 @@ export async function yamlValidator(exclude) {
     }
 
     let multipleDocuments = false
+
     try {
       // try to parse the yaml file
-      parse(readFileSync(fullPath, 'utf8'))
-
-    } catch {
       if (allowMultipleDocuments) {
-        try {
           let documents = parseAllDocuments(readFileSync(fullPath, 'utf8'))
           for (let doc of documents) {
-            parse(doc.toString())
-          }
-          multipleDocuments = true
-        } catch {
-          // doc.toString() will throw an error if the document is invalid
-        }
-      } 
-
-      if (!multipleDocuments) {
-        // if the yaml file is invalid, log an error and set success to false
-        core.error(`❌ failed to parse YAML file: ${fullPath}`)
-        result.success = false
-        result.failed++
-        result.violations.push({
-          file: fullPath,
-          errors: [
-            {
-              path: null,
-              message: 'Invalid YAML'
+            if (doc.errors.length > 0) {
+              // format and show the first error
+              throw doc.errors[0]
             }
-          ]
-        })
-        continue
-      } else {
-        core.info(`multiple documents found in file: ${fullPath}`)
+            parse(doc.toString()) // doc.toString() will throw an error if the document is invalid
+          }
+          core.info(`multiple documents found in file: ${fullPath}`)
+          multipleDocuments = true
+      } 
+      else {
+        parse(readFileSync(fullPath, 'utf8'))
       }
+    } catch(err) {
+      // if the yaml file is invalid, log an error and set success to false
+      core.error(`❌ failed to parse YAML file: ${fullPath}`)
+      result.success = false
+      result.failed++
+      result.violations.push({
+        file: fullPath,
+        errors: [
+          {
+            path: null,
+            message: 'Invalid YAML',
+            // format error message
+            error: err.toString().split(':').slice(0, 2).join('')
+          }
+        ]
+      })
+      continue
     }
 
     // if no yamlSchema is provided, skip validation against the schema
