@@ -1,0 +1,9 @@
+---
+code:
+  app:
+    name: coolapp
+  cpu: 2
+  secured: true
+  gpus:
+    - gpu1
+    - gpu2
