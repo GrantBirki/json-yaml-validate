@@ -151,15 +151,15 @@ export async function jsonValidator(exclude) {
         data = parse(readFileSync(fullPath, 'utf8'))
 
         // if the file is a yaml file but it should not be treated as json
-      } else if (
-        yamlAsJson === false &&
-        (fullPath.endsWith(yamlExtension) ||
-          fullPath.endsWith(yamlExtensionShort))
-      ) {
-        core.debug(
-          `the json-validator found a yaml file so it will be skipped here: '${fullPath}'`
-        )
-        continue
+        // } else if (
+        //   yamlAsJson === false &&
+        //   (fullPath.endsWith(yamlExtension) ||
+        //     fullPath.endsWith(yamlExtensionShort))
+        // ) {
+        //   core.debug(
+        //     `the json-validator found a yaml file so it will be skipped here: '${fullPath}'`
+        //   )
+        //   continue
 
         // if the file is a json file
       } else {
