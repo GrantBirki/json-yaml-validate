@@ -6,6 +6,7 @@ import addFormats from 'ajv-formats'
 import {readFileSync} from 'fs'
 import {fdir} from 'fdir'
 import {parse} from 'yaml'
+import {globSync} from 'glob'
 
 // Helper function to setup the schema
 // :param jsonSchema: path to the jsonSchema file
@@ -60,7 +61,13 @@ export async function jsonValidator(exclude) {
   const yamlExtension = core.getInput('yaml_extension')
   const yamlExtensionShort = core.getInput('yaml_extension_short')
   const useDotMatch = core.getBooleanInput('use_dot_match')
-  let files = core.getMultilineInput('files').filter(Boolean)
+  let patterns = core.getMultilineInput('files').filter(Boolean)
+
+  // construct a list of file paths to validate and use glob if necessary
+  let files = []
+  patterns.forEach(pattern => {
+    files = [...files, ...globSync(pattern)]
+  })
 
   // remove trailing slash from baseDir
   const baseDirSanitized = baseDir.replace(/\/$/, '')
