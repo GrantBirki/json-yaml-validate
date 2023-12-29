@@ -67064,6 +67064,8 @@ async function jsonValidator(exclude) {
   const useDotMatch = core.getBooleanInput('use_dot_match')
   let patterns = core.getMultilineInput('files').filter(Boolean)
 
+  core.debug(`yaml_as_json: ${yamlAsJson}`)
+
   // construct a list of file paths to validate and use glob if necessary
   let files = []
   patterns.forEach(pattern => {
