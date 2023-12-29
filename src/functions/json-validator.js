@@ -142,6 +142,7 @@ export async function jsonValidator(exclude) {
     // if the file is a yaml file but it should not be treated as json
     // skipped++ does not need to be called here as the file should be validated later...
     // ...on as yaml with the yaml-validator
+    /* istanbul ignore next */
     if (
       yamlAsJson === false &&
       (fullPath.endsWith(yamlExtension) ||
