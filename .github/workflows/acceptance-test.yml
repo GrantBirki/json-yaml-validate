@@ -40,7 +40,7 @@ jobs:
         id: json-yaml-validate-glob-test
         with:
           comment: "true"
-          exclude_file: .github/config/exclude.txt
+          exclude_file: .github/config/exclude-alt.txt
           files: |
             __tests__/**/test1.yml
             __tests__/**/test*.json
