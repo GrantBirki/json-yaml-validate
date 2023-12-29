@@ -6,6 +6,7 @@ import addFormats from 'ajv-formats'
 import {readFileSync} from 'fs'
 import {fdir} from 'fdir'
 import {parse} from 'yaml'
+import {globSync} from 'glob'
 
 // Helper function to setup the schema
 // :param jsonSchema: path to the jsonSchema file
@@ -60,7 +61,15 @@ export async function jsonValidator(exclude) {
   const yamlExtension = core.getInput('yaml_extension')
   const yamlExtensionShort = core.getInput('yaml_extension_short')
   const useDotMatch = core.getBooleanInput('use_dot_match')
-  let files = core.getMultilineInput('files').filter(Boolean)
+  let patterns = core.getMultilineInput('files').filter(Boolean)
+
+  core.debug(`yaml_as_json: ${yamlAsJson}`)
+
+  // construct a list of file paths to validate and use glob if necessary
+  let files = []
+  patterns.forEach(pattern => {
+    files = [...files, ...globSync(pattern)]
+  })
 
   // remove trailing slash from baseDir
   const baseDirSanitized = baseDir.replace(/\/$/, '')
@@ -130,16 +139,32 @@ export async function jsonValidator(exclude) {
       continue
     }
 
+    // if the file is a yaml file but it should not be treated as json
+    // skipped++ does not need to be called here as the file should be validated later...
+    // ...on as yaml with the yaml-validator
+    /* istanbul ignore next */
+    if (
+      yamlAsJson === false &&
+      (fullPath.endsWith(yamlExtension) ||
+        fullPath.endsWith(yamlExtensionShort))
+    ) {
+      core.debug(
+        `the json-validator found a yaml file so it will be skipped here: '${fullPath}'`
+      )
+      continue
+    }
+
     var data
     try {
       // if the file is a yaml file but being treated as json and yamlAsJson is true
       if (
-        yamlAsJson &&
+        yamlAsJson === true &&
         (fullPath.endsWith(yamlExtension) ||
           fullPath.endsWith(yamlExtensionShort))
       ) {
         core.debug(`attempting to process yaml file: '${fullPath}' as json`)
         data = parse(readFileSync(fullPath, 'utf8'))
+
         // if the file is a json file
       } else {
         data = JSON.parse(readFileSync(fullPath, 'utf8'))

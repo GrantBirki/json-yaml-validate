@@ -1,0 +1,9 @@
+---
+person:
+  name:
+    first_name: lisamona
+  age: 5000
+  employeed: false
+  hobbies:
+    - golf
+    - skiing

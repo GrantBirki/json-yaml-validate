@@ -28,8 +28,20 @@ jobs:
       - name: valid file creation
         run: echo "{}" > valid.yaml
 
-      - uses: ./
+      - name: acceptance test
+        uses: ./
         id: json-yaml-validate
         with:
           comment: "true"
           exclude_file: .github/config/exclude.txt
+
+      - name: acceptance test - files input option (glob)
+        uses: ./
+        id: json-yaml-validate-glob-test
+        with:
+          comment: "true"
+          yaml_as_json: "false"
+          exclude_file: .github/config/exclude-alt.txt
+          files: |
+            __tests__/**/test1.yml
+            __tests__/**/test*.json

@@ -3,6 +3,7 @@ import validateSchema from 'yaml-schema-validator'
 import {readFileSync} from 'fs'
 import {fdir} from 'fdir'
 import {parse, parseAllDocuments} from 'yaml'
+import {globSync} from 'glob'
 
 // Helper function to validate all yaml files in the baseDir
 export async function yamlValidator(exclude) {
@@ -16,7 +17,13 @@ export async function yamlValidator(exclude) {
   const allowMultipleDocuments = core.getBooleanInput(
     'allow_multiple_documents'
   )
-  let files = core.getMultilineInput('files').filter(Boolean)
+  let patterns = core.getMultilineInput('files').filter(Boolean)
+
+  // construct a list of file paths to validate and use glob if necessary
+  let files = []
+  patterns.forEach(pattern => {
+    files = [...files, ...globSync(pattern)]
+  })
 
   // remove trailing slash from baseDir
   const baseDirSanitized = baseDir.replace(/\/$/, '')

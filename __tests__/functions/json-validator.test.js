@@ -239,6 +239,24 @@ test('successfully validates a yaml file with a schema when yaml_as_json is true
   })
 })
 
+test('successfully validates a json file and skips over the yaml one in the json processor', async () => {
+  process.env.INPUT_YAML_AS_JSON = 'false'
+  process.env.INPUT_BASE_DIR = '.'
+  process.env.INPUT_JSON_SCHEMA = ''
+  process.env.INPUT_FILES = `
+  __tests__/fixtures/json/with_yaml/**/test1.yml,
+  __tests__/fixtures/json/with_yaml/**/test*.json
+`
+
+  expect(await jsonValidator(excludeMock)).toStrictEqual({
+    failed: 0,
+    passed: 2,
+    skipped: 0,
+    success: true,
+    violations: []
+  })
+})
+
 test('processes multiple files when yaml_as_json is true and also a mixture of other json files with yaml are present', async () => {
   process.env.INPUT_YAML_AS_JSON = 'true'
   process.env.INPUT_JSON_SCHEMA = ''
