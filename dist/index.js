@@ -67140,27 +67140,30 @@ async function jsonValidator(exclude) {
       continue
     }
 
+    // if the file is a yaml file but it should not be treated as json
+    // skipped++ does not need to be called here as the file should be validated later...
+    // ...on as yaml with the yaml-validator
+    if (
+      yamlAsJson === false &&
+      (fullPath.endsWith(yamlExtension) ||
+        fullPath.endsWith(yamlExtensionShort))
+    ) {
+      core.debug(
+        `the json-validator found a yaml file so it will be skipped here: '${fullPath}'`
+      )
+      continue
+    }
+
     var data
     try {
       // if the file is a yaml file but being treated as json and yamlAsJson is true
       if (
-        yamlAsJson &&
+        yamlAsJson === true &&
         (fullPath.endsWith(yamlExtension) ||
           fullPath.endsWith(yamlExtensionShort))
       ) {
         core.debug(`attempting to process yaml file: '${fullPath}' as json`)
         data = (0,yaml_dist/* parse */.Qc)((0,external_fs_.readFileSync)(fullPath, 'utf8'))
-
-        // if the file is a yaml file but it should not be treated as json
-        // } else if (
-        //   yamlAsJson === false &&
-        //   (fullPath.endsWith(yamlExtension) ||
-        //     fullPath.endsWith(yamlExtensionShort))
-        // ) {
-        //   core.debug(
-        //     `the json-validator found a yaml file so it will be skipped here: '${fullPath}'`
-        //   )
-        //   continue
 
         // if the file is a json file
       } else {
