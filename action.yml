@@ -85,6 +85,10 @@ inputs:
     description: Whether or not to allow multiple documents in a single YAML file - "true" or "false" - Default is "false"
     required: false
     default: "false"
+  ajv_strict_mode:
+    description: Whether or not to use strict mode for AJV - "true" or "false" - Default is "true"
+    required: false
+    default: "true"
 outputs:
   success:
     description: Whether or not the validation was successful for all files - "true" or "false"
