@@ -13,19 +13,23 @@ import {globSync} from 'glob'
 // :returns: the compiled schema
 async function schema(jsonSchema) {
   const jsonSchemaVersion = core.getInput('json_schema_version')
+  const strict = core.getBooleanInput('ajv_strict_mode')
+
+  core.debug(`json_schema_version: ${jsonSchemaVersion}`)
+  core.debug(`strict: ${strict}`)
 
   var ajv
   if (jsonSchemaVersion === 'draft-07') {
-    ajv = new Ajv({allErrors: true})
+    ajv = new Ajv({allErrors: true, strict: strict})
   } else if (jsonSchemaVersion === 'draft-2019-09') {
-    ajv = new Ajv2019({allErrors: true})
+    ajv = new Ajv2019({allErrors: true, strict: strict})
   } else if (jsonSchemaVersion === 'draft-2020-12') {
-    ajv = new Ajv2020({allErrors: true})
+    ajv = new Ajv2020({allErrors: true, strict: strict})
   } else {
     core.warning(
       `json_schema_version '${jsonSchemaVersion}' is not supported. Defaulting to 'draft-07'`
     )
-    ajv = new Ajv({allErrors: true})
+    ajv = new Ajv({allErrors: true, strict: strict})
   }
 
   // use ajv-formats if enabled

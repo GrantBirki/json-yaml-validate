@@ -27,6 +27,7 @@ beforeEach(() => {
   process.env.INPUT_YAML_EXTENSION_SHORT = '.yml'
   process.env.INPUT_FILES = ''
   process.env.INPUT_JSON_SCHEMA_VERSION = 'draft-07'
+  process.env.INPUT_AJV_STRICT_MODE = 'true'
 })
 
 test('successfully validates a json file with a schema', async () => {
