@@ -4,17 +4,22 @@ package-lock.json is valid
 package.json is valid
 dist/schema.json is valid
 skipping due to exclude match: tmp/invalid.json
+skipping due to exclude match: __tests__/acceptance/dev/test2.json
+skipping due to exclude match: __tests__/acceptance/prod/test1.json
+skipping due to exclude match: __tests__/acceptance/staging/code.json
 skipping due to exclude match: __tests__/fixtures/schemas/challenge.json
 skipping due to exclude match: __tests__/fixtures/schemas/schema1.json
 skipping due to exclude match: __tests__/fixtures/schemas/schema2.json
 skipping due to exclude match: __tests__/fixtures/json/invalid/json1.json
 skipping due to exclude match: __tests__/fixtures/json/invalid/skip-bad.json
+skipping due to exclude match: __tests__/fixtures/json/valid/json1.json
 skipping due to exclude match: __tests__/fixtures/json/mixture/json1.json
 skipping due to exclude match: __tests__/fixtures/json/mixture/json2.json
-skipping due to exclude match: __tests__/fixtures/json/valid/json1.json
 skipping due to exclude match: __tests__/fixtures/yaml_as_json/mixture/good-json.json
 skipping due to exclude match: __tests__/fixtures/yaml_as_json/mixture/invalid-json.json
 skipping due to exclude match: __tests__/fixtures/json/project_dir/schemas/schema.json
+skipping due to exclude match: __tests__/fixtures/json/with_yaml/first/test1.json
+skipping due to exclude match: __tests__/fixtures/json/with_yaml/second/test2.json
 skipping due to exclude match: __tests__/fixtures/json/project_dir/data/config/json1.json
 skipping due to exclude match: __tests__/fixtures/json/project_dir/data/config/.github_mock_dir/json2.json
 action.yml is valid
@@ -25,20 +30,28 @@ skipping due to exclude match: tmp/invalid.yaml
 .github/workflows/lint.yml is valid
 .github/workflows/package-check.yml is valid
 .github/workflows/test.yml is valid
+.github/workflows/update-latest-release-tag.yml is valid
+skipping due to exclude match: __tests__/acceptance/staging/test1.yml
+skipping due to exclude match: __tests__/acceptance/prod/deployment.yml
+skipping due to exclude match: __tests__/acceptance/prod/test1.yml
 skipping due to exclude match: __tests__/fixtures/schemas/schema1.yaml
 skipping due to exclude match: __tests__/fixtures/schemas/schema2.yml
 skipping due to exclude match: __tests__/fixtures/real_world/challenges/challenge.yml
+skipping due to exclude match: __tests__/fixtures/yaml_as_json/invalid/yaml1.yaml
+skipping due to exclude match: __tests__/fixtures/yaml_as_json/valid/yaml1.yaml
+skipping due to exclude match: __tests__/fixtures/yaml_as_json/mixture/yaml1.yaml
+skipping due to exclude match: __tests__/fixtures/yaml_as_json/mixture/yaml2.yml
 skipping due to exclude match: __tests__/fixtures/yaml/invalid/skip-bad.yaml
 skipping due to exclude match: __tests__/fixtures/yaml/invalid/yaml1.yaml
 skipping due to exclude match: __tests__/fixtures/yaml/mixture/yaml1.yaml
 skipping due to exclude match: __tests__/fixtures/yaml/mixture/yaml2.yml
+skipping due to exclude match: __tests__/fixtures/yaml/multiple/invalid.yaml
+skipping due to exclude match: __tests__/fixtures/yaml/multiple/yaml1.yaml
 skipping due to exclude match: __tests__/fixtures/yaml/valid/yaml1.yaml
-skipping due to exclude match: __tests__/fixtures/yaml_as_json/invalid/yaml1.yaml
-skipping due to exclude match: __tests__/fixtures/yaml_as_json/mixture/yaml1.yaml
-skipping due to exclude match: __tests__/fixtures/yaml_as_json/mixture/yaml2.yml
-skipping due to exclude match: __tests__/fixtures/yaml_as_json/valid/yaml1.yaml
+skipping due to exclude match: __tests__/fixtures/json/with_yaml/first/test1.yml
+skipping due to exclude match: __tests__/fixtures/json/with_yaml/second/test2.yml
 skipping due to exclude match: __tests__/fixtures/yaml/project_dir/schemas/schema.yml
-skipping due to exclude match: __tests__/fixtures/yaml/project_dir/data/.github_mock_dir/config.yml
 skipping due to exclude match: __tests__/fixtures/yaml/project_dir/data/config/config.yml
+skipping due to exclude match: __tests__/fixtures/yaml/project_dir/data/.github_mock_dir/config.yml
 ✅ all 5 detected JSON files are valid
-✅ all 7 detected YAML files are valid
+✅ all 8 detected YAML files are valid
