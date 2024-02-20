@@ -45,6 +45,3 @@ jobs:
           files: |
             __tests__/**/test1.yml
             __tests__/**/test*.json
-
-      - name: echo stdout of json-yaml-validate
-        run: echo "${{ steps.json-yaml-validate.outputs.stdout }}"
