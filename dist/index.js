@@ -16969,33 +16969,37 @@ function onceStrict (fn) {
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 "use strict";
+/*global navigator*/
 
 
-const os = __nccwpck_require__(2037);
+
 const pico = __nccwpck_require__(3322);
 
-const isWindows = os.platform() === 'win32';
+const isWindows = () => {
+  if (typeof navigator !== 'undefined' && navigator.platform) {
+    const platform = navigator.platform.toLowerCase();
+    return platform === 'win32' || platform === 'windows';
+  }
+
+  if (typeof process !== 'undefined' && process.platform) {
+    return process.platform === 'win32';
+  }
+
+  return false;
+};
 
 function picomatch(glob, options, returnState = false) {
   // default to os.platform()
   if (options && (options.windows === null || options.windows === undefined)) {
     // don't mutate the original options object
-    options = { ...options, windows: isWindows };
+    options = { ...options, windows: isWindows() };
   }
+
   return pico(glob, options, returnState);
 }
 
+Object.assign(picomatch, pico);
 module.exports = picomatch;
-// public api
-module.exports.test = pico.test;
-module.exports.matchBase = pico.matchBase;
-module.exports.isMatch = pico.isMatch;
-module.exports.parse = pico.parse;
-module.exports.scan = pico.scan;
-module.exports.compileRe = pico.compileRe;
-module.exports.toRegex = pico.toRegex;
-// for tests
-module.exports.makeRe = pico.makeRe;
 
 
 /***/ }),
@@ -17402,8 +17406,8 @@ const parse = (input, options) => {
 
     if (tok.value || tok.output) append(tok);
     if (prev && prev.type === 'text' && tok.type === 'text') {
+      prev.output = (prev.output || prev.value) + tok.value;
       prev.value += tok.value;
-      prev.output = (prev.output || '') + tok.value;
       return;
     }
 
@@ -17890,10 +17894,6 @@ const parse = (input, options) => {
       if (prev && prev.type === 'paren') {
         const next = peek();
         let output = value;
-
-        if (next === '<' && !utils.supportsLookbehinds()) {
-          throw new Error('Node.js v10 or higher is required for regex lookbehinds');
-        }
 
         if ((prev.value === '(' && !/[!=<:]/.test(next)) || (next === '<' && !/<([!=]|\w+>)/.test(remaining()))) {
           output = `\\${value}`;
@@ -19055,16 +19055,6 @@ exports.removeBackslashes = str => {
   return str.replace(REGEX_REMOVE_BACKSLASH, match => {
     return match === '\\' ? '' : match;
   });
-};
-
-exports.supportsLookbehinds = () => {
-  if (typeof process !== 'undefined') {
-    const segs = process.version.slice(1).split('.').map(Number);
-    if (segs.length === 3 && segs[0] >= 9 || (segs[0] === 8 && segs[1] >= 10)) {
-      return true;
-    }
-  }
-  return false;
 };
 
 exports.escapeLast = (input, char, lastIdx) => {
