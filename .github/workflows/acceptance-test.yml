@@ -51,7 +51,6 @@ jobs:
         id: json-yaml-validate-custom-formats-test
         with:
           comment: "true"
-          exclude_file: .github/config/exclude-alt.txt
           json_schema: ./__tests__/fixtures/schemas/schema_with_custom_ajv_regexp_format.json
           ajv_custom_regexp_formats: |
             lowercase_char=^[a-z]*$
