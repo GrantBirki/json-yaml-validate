@@ -490,7 +490,7 @@ test('successfully validates a json file with a schema containing a custom ajv f
   })
 })
 
-test('fails to validate a json file with a schema containing a custom ajv format when custom format was not added', async () => {
+test('fails to validate a json file with a schema containing a custom ajv format when custom format added', async () => {
   process.env.INPUT_JSON_SCHEMA =
     '__tests__/fixtures/schemas/schema_with_custom_ajv_regexp_format.json'
   process.env.INPUT_FILES =
