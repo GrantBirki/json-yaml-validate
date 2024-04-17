@@ -53,7 +53,7 @@ jobs:
           comment: "true"
           json_schema: ./__tests__/fixtures/schemas/schema_with_custom_ajv_regexp_format.json
           ajv_custom_regexp_formats: |
-            lowercase_char=^[a-z]*$
+            lowercase_char=^[a-c]*$
             lowercase_alphanumeric=^[a-z0-9]*$
           files: |
             __tests__/fixtures/json/custom_ajv_regexp_format/valid.json
