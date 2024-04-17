@@ -90,7 +90,7 @@ inputs:
     required: false
     default: "true"
   ajv_custom_regexp_formats:
-    description: List of key value pairs of format_name=regexp. Each pair must be on a newline. (e.g. lowercase_chars=/[a-z]+/ )
+    description: List of key value pairs of format_name=regexp. Each pair must be on a newline. (e.g. lowercase_chars=^[a-z]*$ )
     required: false
     default: ""
 outputs:
