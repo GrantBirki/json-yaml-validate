@@ -54,7 +54,7 @@ Here is a quick example of how to install this action in any workflow:
 | `git_ignore_path` | `false` | `".gitignore"` | The full path to the .gitignore file to use if use_gitignore is set to "true" (e.g. ./src/.gitignore) - Default is ".gitignore" which uses the .gitignore file in the root of the repository |
 | `allow_multiple_documents` | `false` | `"false"` | Whether or not to allow multiple documents in a single YAML file - `"true"` or `"false"` - Default is `"false"`. Useful for k8s documents. |
 | `ajv_strict_mode` | `false` | `"true"` | Whether or not to use strict mode for AJV - "true" or "false" - Default is "true" |
-| `ajv_custom_regexp_formats` | `false` | `""` | List of key value pairs of format_name=regexp. Each pair must be on a newline. (e.g. lowercase_chars=^[a-z]*$ ) |
+| `ajv_custom_regexp_formats` | `false` | `""` | List of key value pairs of `format_name=regexp`. Each pair must be on a newline. (e.g. `lowercase_chars=^[a-z]*$` - See below for more details) |
 | `github_token` | `false` | `${{ github.token }}` | The GitHub token used to create an authenticated client - Provided for you by default! |
 
 ## Outputs 📤
@@ -206,6 +206,68 @@ Details on the fields seen in the schema above:
 - `type` - the type of the value, can be one of `string`, `number`, `integer`, `boolean`, `array`, `object`, `null`
 - `required` - an array of strings, each of which is a property name that is required
 - `additionalProperties` - a boolean value that determines if additional properties are allowed in the object
+
+### JSON Schema with Custom Regex Formats
+
+You can also use custom regex formats in your JSON schema. This is useful for validating specific formats of strings. This section describes how you can use custom regex formats with this Action.
+
+#### JSON Schema Example with Custom Regex Formats
+
+Here is an example JSON schema that uses custom regex formats:
+
+> For this example, assume that the JSON schema's file path is `./schemas/custom_with_regex.json` from the root of the repository
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "lowercase_char_property": {
+      "type": "string",
+      "format": "lowercase_char"
+    },
+    "lowercase_alphanumeric_property": {
+      "type": "string",
+      "format": "lowercase_alphanumeric"
+    }
+  },
+  "required": ["lowercase_char_property", "lowercase_alphanumeric_property"],
+  "additionalProperties": false
+}
+```
+
+#### JSON Input Example with Custom Regex Formats
+
+Here is an example file that we are going to validate against the schema above:
+
+> For this example, assume that the JSON file's file path is `config/valid.json` from the root of the repository
+
+```json
+{
+  "lowercase_char_property": "valid",
+  "lowercase_alphanumeric_property": "valid1"
+}
+```
+
+#### Custom Regex Formats - Action Input
+
+Now that we have a JSON schema that uses custom regex formats and a JSON file that we want to validate against the schema, we need to provide the custom regex formats to the Action. The example workflow step below shows how to do this:
+
+```yaml
+- name: json-yaml-validate
+  uses: GrantBirki/json-yaml-validate@vX.X.X # replace with the latest version
+  id: json-yaml-validate
+  with:
+    json_schema: ./schemas/custom_with_regex.json # <--- the schema file that uses custom regex formats
+    ajv_custom_regexp_formats: |
+      lowercase_char=^[a-z]*$
+      lowercase_alphanumeric=^[a-z0-9]*$
+    # ^ these are the custom regex formats used in the schema that we inject into the Action so they can be used
+    files: |
+      config/valid.json
+    # ^ uses the example file as seen in the section above
+```
+
+The `ajv_custom_regexp_formats` input is a multi-line string that contains the custom regex formats used in the JSON schema. Each line in the string should be in the format `format_name=regex_pattern`. The `format_name` is the name of the custom regex format used in the schema, and `regex_pattern` is the regex pattern that the value in the JSON file must match.
 
 ### YAML Schema Docs
 
