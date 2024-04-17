@@ -68040,6 +68040,14 @@ async function schema(jsonSchema) {
     core.debug('ajv-formats will not be used with the json-validator')
   }
 
+  // add custom regexp format if provided
+  core.getMultilineInput('ajv_custom_regexp_formats')
+    .filter(Boolean)
+    .forEach(customFormat => {
+      customFormat = customFormat.trim().split(/=(.*)/s).filter(Boolean)
+      ajv.addFormat(customFormat[0], new RegExp(customFormat[1]))
+    })
+
   // if a jsonSchema is provided, validate the json against it
   var schema
   if (jsonSchema && jsonSchema !== '') {

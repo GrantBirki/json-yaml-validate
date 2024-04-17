@@ -54,6 +54,7 @@ Here is a quick example of how to install this action in any workflow:
 | `git_ignore_path` | `false` | `".gitignore"` | The full path to the .gitignore file to use if use_gitignore is set to "true" (e.g. ./src/.gitignore) - Default is ".gitignore" which uses the .gitignore file in the root of the repository |
 | `allow_multiple_documents` | `false` | `"false"` | Whether or not to allow multiple documents in a single YAML file - `"true"` or `"false"` - Default is `"false"`. Useful for k8s documents. |
 | `ajv_strict_mode` | `false` | `"true"` | Whether or not to use strict mode for AJV - "true" or "false" - Default is "true" |
+| `ajv_custom_regexp_formats` | `false` | `""` | List of key value pairs of format_name=regexp. Each pair must be on a newline. (e.g. lowercase_chars=^[a-z]*$ ) |
 | `github_token` | `false` | `${{ github.token }}` | The GitHub token used to create an authenticated client - Provided for you by default! |
 
 ## Outputs 📤

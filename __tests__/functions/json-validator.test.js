@@ -28,6 +28,7 @@ beforeEach(() => {
   process.env.INPUT_FILES = ''
   process.env.INPUT_JSON_SCHEMA_VERSION = 'draft-07'
   process.env.INPUT_AJV_STRICT_MODE = 'true'
+  process.env.INPUT_AJV_CUSTOM_REGEXP_FORMATS = ''
 })
 
 test('successfully validates a json file with a schema', async () => {
@@ -472,3 +473,53 @@ test('fails to validate a yaml file with an incorrect schema when yaml_as_json i
     )
   )
 })
+
+test('successfully validates a json file with a schema containing a custom ajv format when custom format was added', async () => {
+  process.env.INPUT_JSON_SCHEMA =
+    '__tests__/fixtures/schemas/schema_with_custom_ajv_regexp_format.json'
+  process.env.INPUT_FILES =
+    '__tests__/fixtures/json/custom_ajv_regexp_format/valid.json'
+  process.env.INPUT_AJV_CUSTOM_REGEXP_FORMATS =
+    'lowercase_char=^[a-z]*$\nlowercase_alphanumeric=^[a-z0-9]*$'
+  expect(await jsonValidator(excludeMock)).toStrictEqual({
+    failed: 0,
+    passed: 1,
+    skipped: 0,
+    success: true,
+    violations: []
+  })
+})
+
+test('fails to validate a json file with a schema containing a custom ajv format when custom format added', async () => {
+  process.env.INPUT_JSON_SCHEMA =
+    '__tests__/fixtures/schemas/schema_with_custom_ajv_regexp_format.json'
+  process.env.INPUT_FILES =
+    '__tests__/fixtures/json/custom_ajv_regexp_format/invalid.json'
+  process.env.INPUT_AJV_CUSTOM_REGEXP_FORMATS =
+    'lowercase_char=^[a-z]*$\nlowercase_alphanumeric=^[a-z0-9]*$'
+  expect(await jsonValidator(excludeMock)).toStrictEqual({
+    failed: 1,
+    passed: 0,
+    skipped: 0,
+    success: false,
+    violations: [
+      {
+        file: '__tests__/fixtures/json/custom_ajv_regexp_format/invalid.json',
+        errors: [
+          {
+            path: '/lowercase_char_property',
+            message: 'must match format "lowercase_char"'
+          },
+          {
+            path: '/lowercase_alphanumeric_property',
+            message: 'must match format "lowercase_alphanumeric"'
+          }
+        ]
+      }
+    ]
+  })
+})
+
+test('todo - testcase needed for format referenced in schema but not added?', async () => {})
+
+test('todo - testcase needed for invalid INPUT_AJV_CUSTOM_REGEXP_FORMATS input (structure, regex etc.)?', async () => {})
