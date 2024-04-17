@@ -1,0 +1,15 @@
+{
+  "type": "object",
+  "properties": {
+    "lowercase_char_property": {
+      "type": "string",
+      "format": "lowercase_char"
+    },
+    "lowercase_alphanumeric_property": {
+      "type": "string",
+      "format": "lowercase_alphanumeric"
+    }
+  },
+  "required": ["lowercase_char_property", "lowercase_alphanumeric_property"],
+  "additionalProperties": false
+}

@@ -89,6 +89,10 @@ inputs:
     description: Whether or not to use strict mode for AJV - "true" or "false" - Default is "true"
     required: false
     default: "true"
+  ajv_custom_regexp_formats:
+    description: List of key value pairs of format_name=regexp. Each pair must be on a newline. (e.g. lowercase_chars=/[a-z]+/ )
+    required: false
+    default: ""
 outputs:
   success:
     description: Whether or not the validation was successful for all files - "true" or "false"
