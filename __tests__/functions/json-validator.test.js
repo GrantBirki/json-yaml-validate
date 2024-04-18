@@ -520,6 +520,41 @@ test('fails to validate a json file with a schema containing a custom ajv format
   })
 })
 
-test('todo - testcase needed for format referenced in schema but not added?', async () => {})
+test('test that validator throws error when custom_ajv_regexp_format does not comply to key=value format', async () => {
+  expect.assertions(1)
+  try {
+    process.env.INPUT_AJV_CUSTOM_REGEXP_FORMATS = 'foobar'
+    expect(await jsonValidator(excludeMock))
+  } catch (e) {
+    expect(e.message).toBe(
+      'Invalid ajv_custom_regexp_formats format: "foobar" is not in expected format "key=regex"'
+    )
+  }
+})
 
-test('todo - testcase needed for invalid INPUT_AJV_CUSTOM_REGEXP_FORMATS input (structure, regex etc.)?', async () => {})
+test('test that validator throws error when custom_ajv_regexp_format does not contain a valid regexp', async () => {
+  expect.assertions(1)
+  try {
+    process.env.INPUT_AJV_CUSTOM_REGEXP_FORMATS = 'foobar=\\'
+    expect(await jsonValidator(excludeMock))
+  } catch (e) {
+    expect(e.message).toBe(
+      'Invalid regular expression: Invalid regular expression: /\\/: \\ at end of pattern'
+    )
+  }
+})
+
+test('test that schema compile throws error when attemting to validate a json to a schema with unknown format', async () => {
+  expect.assertions(1)
+  try {
+    process.env.INPUT_JSON_SCHEMA =
+      '__tests__/fixtures/schemas/schema_with_custom_ajv_regexp_format.json'
+    process.env.INPUT_FILES =
+      '__tests__/fixtures/json/custom_ajv_regexp_format/valid.json'
+    expect(await jsonValidator(excludeMock))
+  } catch (e) {
+    expect(e.message).toBe(
+      'unknown format "lowercase_char" ignored in schema at path "#/properties/lowercase_char_property"'
+    )
+  }
+})
