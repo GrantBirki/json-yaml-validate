@@ -68043,10 +68043,28 @@ async function schema(jsonSchema) {
 
   // add custom regexp format if provided
   core.getMultilineInput('ajv_custom_regexp_formats')
-    .filter(Boolean)
+    .filter(Boolean) // Filter out any empty lines
     .forEach(customFormat => {
-      customFormat = customFormat.trim().split(/=(.*)/s).filter(Boolean)
-      ajv.addFormat(customFormat[0], new RegExp(customFormat[1]))
+      // Check format using a regex
+      if (!/^[\w-]+=.+$/.test(customFormat.trim())) {
+        throw Error(
+          `Invalid ajv_custom_regexp_formats format: "${customFormat}" is not in expected format "key=regex"`
+        )
+      }
+
+      // Split into key-value pair
+      const keyValuePair = customFormat.trim().split(/=(.*)/s)
+
+      // Validate and compile the regular expression
+      let regex
+      try {
+        regex = new RegExp(keyValuePair[1])
+      } catch (syntaxError) {
+        throw Error(`Invalid regular expression: ${syntaxError.message}`)
+      }
+
+      // Add format if the regex is successfully compiled
+      ajv.addFormat(keyValuePair[0], regex)
     })
 
   // if a jsonSchema is provided, validate the json against it
