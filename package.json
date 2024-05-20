@@ -35,6 +35,7 @@
     "dedent-js": "^1.0.1",
     "fdir": "^6.1.1",
     "glob": "^10.3.12",
+    "ignore": "^5.3.1",
     "picomatch": "^3.0.1",
     "yaml": "^2.4.1",
     "yaml-schema-validator": "^1.2.3"
@@ -56,12 +57,12 @@
     }
   },
   "devDependencies": {
+    "@babel/core": "^7.24.4",
     "@babel/plugin-transform-modules-commonjs": "^7.24.1",
     "@babel/preset-env": "^7.24.4",
     "@octokit/rest": "^20.1.0",
     "@types/node": "^20.12.4",
     "@vercel/ncc": "^0.38.1",
-    "@babel/core": "^7.24.4",
     "babel-jest": "^29.7.0",
     "eslint": "^8.57.0",
     "eslint-plugin-jest": "^27.9.0",

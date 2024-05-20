@@ -17,4 +17,4 @@ dog.txt
 !dog.txt
 
 # test with a regex pattern match
-/^.*cars.*\.txt$/
+*cars*.txt
