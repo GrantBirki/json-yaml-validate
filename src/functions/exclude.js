@@ -19,9 +19,7 @@ export class Exclude {
 
     // if gitTrackOnly is true, add the git exclude patterns from the .gitignore file if it exists
     if (this.gitTrackedOnly) {
-      core.debug(
-        `use_gitignore: ${this.gitTrackedOnly}`
-      )
+      core.debug(`use_gitignore: ${this.gitTrackedOnly}`)
 
       const gitIgnorePath = core.getInput('git_ignore_path')
       core.debug(`loading .gitignore file from path: ${gitIgnorePath}`)

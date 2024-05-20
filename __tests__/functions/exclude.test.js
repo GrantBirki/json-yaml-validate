@@ -30,9 +30,7 @@ test('successfully excludes a file in a dir one level down', () => {
 })
 
 test('successfully excludes a file in a dir two levels down', () => {
-  expect(exclude.isExcluded('evil-base-dir/sub-dir/exclude-me.json')).toBe(
-    true
-  )
+  expect(exclude.isExcluded('evil-base-dir/sub-dir/exclude-me.json')).toBe(true)
 })
 
 test('successfully checks a file and finds that it is not excluded', () => {
