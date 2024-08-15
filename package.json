@@ -59,7 +59,7 @@
   "devDependencies": {
     "@babel/core": "^7.24.4",
     "@babel/plugin-transform-modules-commonjs": "^7.24.1",
-    "@octokit/rest": "^20.1.0",
+    "@octokit/rest": "^21.0.1",
     "@types/node": "^22.3.0",
     "@vercel/ncc": "^0.38.1",
     "eslint": "^8.57.0",
