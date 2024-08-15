@@ -69234,6 +69234,7 @@ var ignore_default = /*#__PURE__*/__nccwpck_require__.n(ignore);
 class Exclude {
   constructor() {
     this.path = core.getInput('exclude_file')
+    this.required = core.getBooleanInput('exclude_file_required')
     this.gitTrackedOnly = core.getBooleanInput('use_gitignore')
 
     // initialize the exclude array
@@ -69242,8 +69243,19 @@ class Exclude {
     // read the exclude file if it was used
     if (this.path && this.path !== '') {
       core.debug(`loading exclude_file: ${this.path}`)
-      this.ignore.add((0,external_fs_.readFileSync)(this.path, 'utf8').toString())
-      core.debug(`loaded custom exclude patterns`)
+      try {
+        this.ignore.add((0,external_fs_.readFileSync)(this.path, 'utf8').toString())
+        core.debug(`loaded custom exclude patterns`)
+      } catch (error) {
+        if (this.required === true) {
+          core.setFailed(`error reading exclude_file: ${this.path}`)
+          throw new Error(error)
+        }
+
+        core.info(`exclude_file was not found, but it is not required - OK`)
+      }
+    } else {
+      core.debug(`exclude_file was not provided - OK`)
     }
 
     // if gitTrackOnly is true, add the git exclude patterns from the .gitignore file if it exists

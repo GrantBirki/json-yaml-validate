@@ -73,6 +73,10 @@ inputs:
     description: The full path to a file in the repository where this Action is running that contains a list of '.gitignore'-style patterns to exclude files from validation (e.g. ./exclude.txt)
     required: false
     default: ""
+  exclude_file_required:
+    description: Whether or not the exclude_file must exist if it is used. If this is true and the exclude_file does not exist, the Action will fail - "true" or "false" - Default is "true"
+    required: false
+    default: "true"
   use_gitignore:
     description: Whether or not to use the .gitignore file in the root of the repository to exclude files from validation - "true" or "false" - Default is "true"
     required: true
