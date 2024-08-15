@@ -6119,7 +6119,7 @@ exports["default"] = formatLimitPlugin;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.MissingRefError = exports.ValidationError = exports.CodeGen = exports.Name = exports.nil = exports.stringify = exports.str = exports._ = exports.KeywordCxt = void 0;
+exports.MissingRefError = exports.ValidationError = exports.CodeGen = exports.Name = exports.nil = exports.stringify = exports.str = exports._ = exports.KeywordCxt = exports.Ajv2019 = void 0;
 const core_1 = __nccwpck_require__(2685);
 const draft7_1 = __nccwpck_require__(691);
 const dynamic_1 = __nccwpck_require__(9774);
@@ -6159,7 +6159,9 @@ class Ajv2019 extends core_1.default {
             super.defaultMeta() || (this.getSchema(META_SCHEMA_ID) ? META_SCHEMA_ID : undefined));
     }
 }
+exports.Ajv2019 = Ajv2019;
 module.exports = exports = Ajv2019;
+module.exports.Ajv2019 = Ajv2019;
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports["default"] = Ajv2019;
 var validate_1 = __nccwpck_require__(8955);
@@ -6185,7 +6187,7 @@ Object.defineProperty(exports, "MissingRefError", ({ enumerable: true, get: func
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.MissingRefError = exports.ValidationError = exports.CodeGen = exports.Name = exports.nil = exports.stringify = exports.str = exports._ = exports.KeywordCxt = void 0;
+exports.MissingRefError = exports.ValidationError = exports.CodeGen = exports.Name = exports.nil = exports.stringify = exports.str = exports._ = exports.KeywordCxt = exports.Ajv2020 = void 0;
 const core_1 = __nccwpck_require__(2685);
 const draft2020_1 = __nccwpck_require__(6098);
 const discriminator_1 = __nccwpck_require__(4025);
@@ -6219,7 +6221,9 @@ class Ajv2020 extends core_1.default {
             super.defaultMeta() || (this.getSchema(META_SCHEMA_ID) ? META_SCHEMA_ID : undefined));
     }
 }
+exports.Ajv2020 = Ajv2020;
 module.exports = exports = Ajv2020;
+module.exports.Ajv2020 = Ajv2020;
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports["default"] = Ajv2020;
 var validate_1 = __nccwpck_require__(8955);
@@ -6245,7 +6249,7 @@ Object.defineProperty(exports, "MissingRefError", ({ enumerable: true, get: func
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.MissingRefError = exports.ValidationError = exports.CodeGen = exports.Name = exports.nil = exports.stringify = exports.str = exports._ = exports.KeywordCxt = void 0;
+exports.MissingRefError = exports.ValidationError = exports.CodeGen = exports.Name = exports.nil = exports.stringify = exports.str = exports._ = exports.KeywordCxt = exports.Ajv = void 0;
 const core_1 = __nccwpck_require__(2685);
 const draft7_1 = __nccwpck_require__(691);
 const discriminator_1 = __nccwpck_require__(4025);
@@ -6274,7 +6278,9 @@ class Ajv extends core_1.default {
             super.defaultMeta() || (this.getSchema(META_SCHEMA_ID) ? META_SCHEMA_ID : undefined));
     }
 }
+exports.Ajv = Ajv;
 module.exports = exports = Ajv;
+module.exports.Ajv = Ajv;
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports["default"] = Ajv;
 var validate_1 = __nccwpck_require__(8955);
@@ -6301,6 +6307,7 @@ Object.defineProperty(exports, "MissingRefError", ({ enumerable: true, get: func
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.regexpCode = exports.getEsmExportName = exports.getProperty = exports.safeStringify = exports.stringify = exports.strConcat = exports.addCodeArg = exports.str = exports._ = exports.nil = exports._Code = exports.Name = exports.IDENTIFIER = exports._CodeOrName = void 0;
+// eslint-disable-next-line @typescript-eslint/no-extraneous-class
 class _CodeOrName {
 }
 exports._CodeOrName = _CodeOrName;
@@ -7178,7 +7185,7 @@ var UsedValueState;
 (function (UsedValueState) {
     UsedValueState[UsedValueState["Started"] = 0] = "Started";
     UsedValueState[UsedValueState["Completed"] = 1] = "Completed";
-})(UsedValueState = exports.UsedValueState || (exports.UsedValueState = {}));
+})(UsedValueState || (exports.UsedValueState = UsedValueState = {}));
 exports.varKinds = {
     const: new code_1.Name("const"),
     let: new code_1.Name("let"),
@@ -7388,7 +7395,7 @@ function returnErrors(it, errs) {
 }
 const E = {
     keyword: new codegen_1.Name("keyword"),
-    schemaPath: new codegen_1.Name("schemaPath"),
+    schemaPath: new codegen_1.Name("schemaPath"), // also used in JTD errors
     params: new codegen_1.Name("params"),
     propertyName: new codegen_1.Name("propertyName"),
     message: new codegen_1.Name("message"),
@@ -7501,7 +7508,7 @@ function compileSchema(sch) {
         parentData: names_1.default.parentData,
         parentDataProperty: names_1.default.parentDataProperty,
         dataNames: [names_1.default.data],
-        dataPathArr: [codegen_1.nil],
+        dataPathArr: [codegen_1.nil], // TODO can its length be used as dataLevel if nil is removed?
         dataLevel: 0,
         dataTypes: [],
         definedProperties: new Set(),
@@ -7698,17 +7705,17 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 const codegen_1 = __nccwpck_require__(9179);
 const names = {
     // validation function arguments
-    data: new codegen_1.Name("data"),
+    data: new codegen_1.Name("data"), // data passed to validation function
     // args passed from referencing schema
-    valCxt: new codegen_1.Name("valCxt"),
+    valCxt: new codegen_1.Name("valCxt"), // validation/data context - should not be used directly, it is destructured to the names below
     instancePath: new codegen_1.Name("instancePath"),
     parentData: new codegen_1.Name("parentData"),
     parentDataProperty: new codegen_1.Name("parentDataProperty"),
-    rootData: new codegen_1.Name("rootData"),
-    dynamicAnchors: new codegen_1.Name("dynamicAnchors"),
+    rootData: new codegen_1.Name("rootData"), // root data - same as the data passed to the first/top validation function
+    dynamicAnchors: new codegen_1.Name("dynamicAnchors"), // used to support recursiveRef and dynamicRef
     // function scoped variables
-    vErrors: new codegen_1.Name("vErrors"),
-    errors: new codegen_1.Name("errors"),
+    vErrors: new codegen_1.Name("vErrors"), // null or array of validation errors
+    errors: new codegen_1.Name("errors"), // counter of validation errors
     this: new codegen_1.Name("this"),
     // "globals"
     self: new codegen_1.Name("self"),
@@ -7853,16 +7860,16 @@ function getSchemaRefs(schema, baseId) {
         if (parentJsonPtr === undefined)
             return;
         const fullPath = pathPrefix + jsonPtr;
-        let baseId = baseIds[parentJsonPtr];
+        let innerBaseId = baseIds[parentJsonPtr];
         if (typeof sch[schemaId] == "string")
-            baseId = addRef.call(this, sch[schemaId]);
+            innerBaseId = addRef.call(this, sch[schemaId]);
         addAnchor.call(this, sch.$anchor);
         addAnchor.call(this, sch.$dynamicAnchor);
-        baseIds[jsonPtr] = baseId;
+        baseIds[jsonPtr] = innerBaseId;
         function addRef(ref) {
             // eslint-disable-next-line @typescript-eslint/unbound-method
             const _resolve = this.opts.uriResolver.resolve;
-            ref = normalizeId(baseId ? _resolve(baseId, ref) : ref);
+            ref = normalizeId(innerBaseId ? _resolve(innerBaseId, ref) : ref);
             if (schemaRefs.has(ref))
                 throw ambiguos(ref);
             schemaRefs.add(ref);
@@ -8094,7 +8101,7 @@ var Type;
 (function (Type) {
     Type[Type["Num"] = 0] = "Num";
     Type[Type["Str"] = 1] = "Str";
-})(Type = exports.Type || (exports.Type = {}));
+})(Type || (exports.Type = Type = {}));
 function getErrorPath(dataProp, dataPropType, jsPropertySyntax) {
     // let path
     if (dataProp instanceof codegen_1.Name) {
@@ -8222,7 +8229,7 @@ var DataType;
 (function (DataType) {
     DataType[DataType["Correct"] = 0] = "Correct";
     DataType[DataType["Wrong"] = 1] = "Wrong";
-})(DataType = exports.DataType || (exports.DataType = {}));
+})(DataType || (exports.DataType = DataType = {}));
 function getSchemaTypes(schema) {
     const types = getJSONTypes(schema.type);
     const hasNull = types.includes("null");
@@ -8240,6 +8247,7 @@ function getSchemaTypes(schema) {
     return types;
 }
 exports.getSchemaTypes = getSchemaTypes;
+// eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
 function getJSONTypes(ts) {
     const types = Array.isArray(ts) ? ts : ts ? [ts] : [];
     if (types.every(rules_1.isJSONType))
@@ -9347,6 +9355,7 @@ class Ajv {
         return (this.opts.defaultMeta = typeof meta == "object" ? meta[schemaId] || meta : undefined);
     }
     validate(schemaKeyRef, // key, ref or schema object
+    // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
     data // to be validated
     ) {
         let v;
@@ -9695,9 +9704,9 @@ class Ajv {
         }
     }
 }
-exports["default"] = Ajv;
 Ajv.ValidationError = validation_error_1.default;
 Ajv.MissingRefError = ref_error_1.default;
+exports["default"] = Ajv;
 function checkOptions(checkOpts, options, msg, log = "error") {
     for (const key in checkOpts) {
         const opt = key;
@@ -9950,7 +9959,7 @@ ucs2length.code = 'require("ajv/dist/runtime/ucs2length").default';
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-const uri = __nccwpck_require__(20);
+const uri = __nccwpck_require__(9688);
 uri.code = 'require("ajv/dist/runtime/uri").default';
 exports["default"] = uri;
 //# sourceMappingURL=uri.js.map
@@ -11268,6 +11277,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 const codegen_1 = __nccwpck_require__(9179);
 const types_1 = __nccwpck_require__(8374);
 const compile_1 = __nccwpck_require__(813);
+const ref_error_1 = __nccwpck_require__(8190);
 const util_1 = __nccwpck_require__(3439);
 const error = {
     message: ({ params: { discrError, tagName } }) => discrError === types_1.DiscrError.Tag
@@ -11322,9 +11332,12 @@ const def = {
             for (let i = 0; i < oneOf.length; i++) {
                 let sch = oneOf[i];
                 if ((sch === null || sch === void 0 ? void 0 : sch.$ref) && !(0, util_1.schemaHasRulesButRef)(sch, it.self.RULES)) {
-                    sch = compile_1.resolveRef.call(it.self, it.schemaEnv.root, it.baseId, sch === null || sch === void 0 ? void 0 : sch.$ref);
+                    const ref = sch.$ref;
+                    sch = compile_1.resolveRef.call(it.self, it.schemaEnv.root, it.baseId, ref);
                     if (sch instanceof compile_1.SchemaEnv)
                         sch = sch.schema;
+                    if (sch === undefined)
+                        throw new ref_error_1.default(it.opts.uriResolver, it.baseId, ref);
                 }
                 const propSch = (_a = sch === null || sch === void 0 ? void 0 : sch.properties) === null || _a === void 0 ? void 0 : _a[tagName];
                 if (typeof propSch != "object") {
@@ -11377,7 +11390,7 @@ var DiscrError;
 (function (DiscrError) {
     DiscrError["Tag"] = "tag";
     DiscrError["Mapping"] = "mapping";
-})(DiscrError = exports.DiscrError || (exports.DiscrError = {}));
+})(DiscrError || (exports.DiscrError = DiscrError = {}));
 //# sourceMappingURL=types.js.map
 
 /***/ }),
@@ -16123,6 +16136,19 @@ exports.build = build;
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.build = void 0;
+function pushDirectoryWithRelativePath(root) {
+    return function (directoryPath, paths) {
+        paths.push((directoryPath || ".").substring(root.length));
+    };
+}
+function pushDirectoryFilterWithRelativePath(root) {
+    return function (directoryPath, paths, filters) {
+        const relativePath = directoryPath.substring(root.length);
+        if (filters.every((filter) => filter(relativePath, true))) {
+            paths.push(relativePath);
+        }
+    };
+}
 const pushDirectory = (directoryPath, paths) => {
     paths.push(directoryPath || ".");
 };
@@ -16132,10 +16158,14 @@ const pushDirectoryFilter = (directoryPath, paths, filters) => {
     }
 };
 const empty = () => { };
-function build(options) {
-    const { includeDirs, filters } = options;
+function build(root, options) {
+    const { includeDirs, filters, relativePaths } = options;
     if (!includeDirs)
         return empty;
+    if (relativePaths)
+        return filters && filters.length
+            ? pushDirectoryFilterWithRelativePath(root)
+            : pushDirectoryWithRelativePath(root);
     return filters && filters.length ? pushDirectoryFilter : pushDirectory;
 }
 exports.build = build;
@@ -16399,7 +16429,7 @@ class Walker {
          * by the javascript engine so there's no function call overhead (in most cases).
          */
         this.joinPath = joinPath.build(this.root, options);
-        this.pushDirectory = pushDirectory.build(options);
+        this.pushDirectory = pushDirectory.build(this.root, options);
         this.pushFile = pushFile.build(options);
         this.getArray = getArray.build(options);
         this.groupFiles = groupFiles.build(options);
@@ -16998,17 +17028,26 @@ const REPLACERS = [
   [
     // (a\ ) -> (a )
     // (a  ) -> (a)
+    // (a ) -> (a)
     // (a \ ) -> (a  )
-    /\\?\s+$/,
-    match => match.indexOf('\\') === 0
-      ? SPACE
-      : EMPTY
+    /((?:\\\\)*?)(\\?\s+)$/,
+    (_, m1, m2) => m1 + (
+      m2.indexOf('\\') === 0
+        ? SPACE
+        : EMPTY
+    )
   ],
 
   // replace (\ ) with ' '
+  // (\ ) -> ' '
+  // (\\ ) -> '\\ '
+  // (\\\ ) -> '\\ '
   [
-    /\\\s/g,
-    () => SPACE
+    /(\\+?)\s/g,
+    (_, m1) => {
+      const {length} = m1
+      return m1.slice(0, length - length % 2) + SPACE
+    }
   ],
 
   // Escape metacharacters
@@ -17236,7 +17275,8 @@ const makeRegex = (pattern, ignoreCase) => {
 
   if (!source) {
     source = REPLACERS.reduce(
-      (prev, current) => prev.replace(current[0], current[1].bind(pattern)),
+      (prev, [matcher, replacer]) =>
+        prev.replace(matcher, replacer.bind(pattern)),
       pattern
     )
     regexCache[pattern] = source
@@ -42532,1455 +42572,6 @@ exports.getUserAgent = getUserAgent;
 
 /***/ }),
 
-/***/ 20:
-/***/ (function(__unused_webpack_module, exports) {
-
-/** @license URI.js v4.4.1 (c) 2011 Gary Court. License: http://github.com/garycourt/uri-js */
-(function (global, factory) {
-	 true ? factory(exports) :
-	0;
-}(this, (function (exports) { 'use strict';
-
-function merge() {
-    for (var _len = arguments.length, sets = Array(_len), _key = 0; _key < _len; _key++) {
-        sets[_key] = arguments[_key];
-    }
-
-    if (sets.length > 1) {
-        sets[0] = sets[0].slice(0, -1);
-        var xl = sets.length - 1;
-        for (var x = 1; x < xl; ++x) {
-            sets[x] = sets[x].slice(1, -1);
-        }
-        sets[xl] = sets[xl].slice(1);
-        return sets.join('');
-    } else {
-        return sets[0];
-    }
-}
-function subexp(str) {
-    return "(?:" + str + ")";
-}
-function typeOf(o) {
-    return o === undefined ? "undefined" : o === null ? "null" : Object.prototype.toString.call(o).split(" ").pop().split("]").shift().toLowerCase();
-}
-function toUpperCase(str) {
-    return str.toUpperCase();
-}
-function toArray(obj) {
-    return obj !== undefined && obj !== null ? obj instanceof Array ? obj : typeof obj.length !== "number" || obj.split || obj.setInterval || obj.call ? [obj] : Array.prototype.slice.call(obj) : [];
-}
-function assign(target, source) {
-    var obj = target;
-    if (source) {
-        for (var key in source) {
-            obj[key] = source[key];
-        }
-    }
-    return obj;
-}
-
-function buildExps(isIRI) {
-    var ALPHA$$ = "[A-Za-z]",
-        CR$ = "[\\x0D]",
-        DIGIT$$ = "[0-9]",
-        DQUOTE$$ = "[\\x22]",
-        HEXDIG$$ = merge(DIGIT$$, "[A-Fa-f]"),
-        //case-insensitive
-    LF$$ = "[\\x0A]",
-        SP$$ = "[\\x20]",
-        PCT_ENCODED$ = subexp(subexp("%[EFef]" + HEXDIG$$ + "%" + HEXDIG$$ + HEXDIG$$ + "%" + HEXDIG$$ + HEXDIG$$) + "|" + subexp("%[89A-Fa-f]" + HEXDIG$$ + "%" + HEXDIG$$ + HEXDIG$$) + "|" + subexp("%" + HEXDIG$$ + HEXDIG$$)),
-        //expanded
-    GEN_DELIMS$$ = "[\\:\\/\\?\\#\\[\\]\\@]",
-        SUB_DELIMS$$ = "[\\!\\$\\&\\'\\(\\)\\*\\+\\,\\;\\=]",
-        RESERVED$$ = merge(GEN_DELIMS$$, SUB_DELIMS$$),
-        UCSCHAR$$ = isIRI ? "[\\xA0-\\u200D\\u2010-\\u2029\\u202F-\\uD7FF\\uF900-\\uFDCF\\uFDF0-\\uFFEF]" : "[]",
-        //subset, excludes bidi control characters
-    IPRIVATE$$ = isIRI ? "[\\uE000-\\uF8FF]" : "[]",
-        //subset
-    UNRESERVED$$ = merge(ALPHA$$, DIGIT$$, "[\\-\\.\\_\\~]", UCSCHAR$$),
-        SCHEME$ = subexp(ALPHA$$ + merge(ALPHA$$, DIGIT$$, "[\\+\\-\\.]") + "*"),
-        USERINFO$ = subexp(subexp(PCT_ENCODED$ + "|" + merge(UNRESERVED$$, SUB_DELIMS$$, "[\\:]")) + "*"),
-        DEC_OCTET$ = subexp(subexp("25[0-5]") + "|" + subexp("2[0-4]" + DIGIT$$) + "|" + subexp("1" + DIGIT$$ + DIGIT$$) + "|" + subexp("[1-9]" + DIGIT$$) + "|" + DIGIT$$),
-        DEC_OCTET_RELAXED$ = subexp(subexp("25[0-5]") + "|" + subexp("2[0-4]" + DIGIT$$) + "|" + subexp("1" + DIGIT$$ + DIGIT$$) + "|" + subexp("0?[1-9]" + DIGIT$$) + "|0?0?" + DIGIT$$),
-        //relaxed parsing rules
-    IPV4ADDRESS$ = subexp(DEC_OCTET_RELAXED$ + "\\." + DEC_OCTET_RELAXED$ + "\\." + DEC_OCTET_RELAXED$ + "\\." + DEC_OCTET_RELAXED$),
-        H16$ = subexp(HEXDIG$$ + "{1,4}"),
-        LS32$ = subexp(subexp(H16$ + "\\:" + H16$) + "|" + IPV4ADDRESS$),
-        IPV6ADDRESS1$ = subexp(subexp(H16$ + "\\:") + "{6}" + LS32$),
-        //                           6( h16 ":" ) ls32
-    IPV6ADDRESS2$ = subexp("\\:\\:" + subexp(H16$ + "\\:") + "{5}" + LS32$),
-        //                      "::" 5( h16 ":" ) ls32
-    IPV6ADDRESS3$ = subexp(subexp(H16$) + "?\\:\\:" + subexp(H16$ + "\\:") + "{4}" + LS32$),
-        //[               h16 ] "::" 4( h16 ":" ) ls32
-    IPV6ADDRESS4$ = subexp(subexp(subexp(H16$ + "\\:") + "{0,1}" + H16$) + "?\\:\\:" + subexp(H16$ + "\\:") + "{3}" + LS32$),
-        //[ *1( h16 ":" ) h16 ] "::" 3( h16 ":" ) ls32
-    IPV6ADDRESS5$ = subexp(subexp(subexp(H16$ + "\\:") + "{0,2}" + H16$) + "?\\:\\:" + subexp(H16$ + "\\:") + "{2}" + LS32$),
-        //[ *2( h16 ":" ) h16 ] "::" 2( h16 ":" ) ls32
-    IPV6ADDRESS6$ = subexp(subexp(subexp(H16$ + "\\:") + "{0,3}" + H16$) + "?\\:\\:" + H16$ + "\\:" + LS32$),
-        //[ *3( h16 ":" ) h16 ] "::"    h16 ":"   ls32
-    IPV6ADDRESS7$ = subexp(subexp(subexp(H16$ + "\\:") + "{0,4}" + H16$) + "?\\:\\:" + LS32$),
-        //[ *4( h16 ":" ) h16 ] "::"              ls32
-    IPV6ADDRESS8$ = subexp(subexp(subexp(H16$ + "\\:") + "{0,5}" + H16$) + "?\\:\\:" + H16$),
-        //[ *5( h16 ":" ) h16 ] "::"              h16
-    IPV6ADDRESS9$ = subexp(subexp(subexp(H16$ + "\\:") + "{0,6}" + H16$) + "?\\:\\:"),
-        //[ *6( h16 ":" ) h16 ] "::"
-    IPV6ADDRESS$ = subexp([IPV6ADDRESS1$, IPV6ADDRESS2$, IPV6ADDRESS3$, IPV6ADDRESS4$, IPV6ADDRESS5$, IPV6ADDRESS6$, IPV6ADDRESS7$, IPV6ADDRESS8$, IPV6ADDRESS9$].join("|")),
-        ZONEID$ = subexp(subexp(UNRESERVED$$ + "|" + PCT_ENCODED$) + "+"),
-        //RFC 6874
-    IPV6ADDRZ$ = subexp(IPV6ADDRESS$ + "\\%25" + ZONEID$),
-        //RFC 6874
-    IPV6ADDRZ_RELAXED$ = subexp(IPV6ADDRESS$ + subexp("\\%25|\\%(?!" + HEXDIG$$ + "{2})") + ZONEID$),
-        //RFC 6874, with relaxed parsing rules
-    IPVFUTURE$ = subexp("[vV]" + HEXDIG$$ + "+\\." + merge(UNRESERVED$$, SUB_DELIMS$$, "[\\:]") + "+"),
-        IP_LITERAL$ = subexp("\\[" + subexp(IPV6ADDRZ_RELAXED$ + "|" + IPV6ADDRESS$ + "|" + IPVFUTURE$) + "\\]"),
-        //RFC 6874
-    REG_NAME$ = subexp(subexp(PCT_ENCODED$ + "|" + merge(UNRESERVED$$, SUB_DELIMS$$)) + "*"),
-        HOST$ = subexp(IP_LITERAL$ + "|" + IPV4ADDRESS$ + "(?!" + REG_NAME$ + ")" + "|" + REG_NAME$),
-        PORT$ = subexp(DIGIT$$ + "*"),
-        AUTHORITY$ = subexp(subexp(USERINFO$ + "@") + "?" + HOST$ + subexp("\\:" + PORT$) + "?"),
-        PCHAR$ = subexp(PCT_ENCODED$ + "|" + merge(UNRESERVED$$, SUB_DELIMS$$, "[\\:\\@]")),
-        SEGMENT$ = subexp(PCHAR$ + "*"),
-        SEGMENT_NZ$ = subexp(PCHAR$ + "+"),
-        SEGMENT_NZ_NC$ = subexp(subexp(PCT_ENCODED$ + "|" + merge(UNRESERVED$$, SUB_DELIMS$$, "[\\@]")) + "+"),
-        PATH_ABEMPTY$ = subexp(subexp("\\/" + SEGMENT$) + "*"),
-        PATH_ABSOLUTE$ = subexp("\\/" + subexp(SEGMENT_NZ$ + PATH_ABEMPTY$) + "?"),
-        //simplified
-    PATH_NOSCHEME$ = subexp(SEGMENT_NZ_NC$ + PATH_ABEMPTY$),
-        //simplified
-    PATH_ROOTLESS$ = subexp(SEGMENT_NZ$ + PATH_ABEMPTY$),
-        //simplified
-    PATH_EMPTY$ = "(?!" + PCHAR$ + ")",
-        PATH$ = subexp(PATH_ABEMPTY$ + "|" + PATH_ABSOLUTE$ + "|" + PATH_NOSCHEME$ + "|" + PATH_ROOTLESS$ + "|" + PATH_EMPTY$),
-        QUERY$ = subexp(subexp(PCHAR$ + "|" + merge("[\\/\\?]", IPRIVATE$$)) + "*"),
-        FRAGMENT$ = subexp(subexp(PCHAR$ + "|[\\/\\?]") + "*"),
-        HIER_PART$ = subexp(subexp("\\/\\/" + AUTHORITY$ + PATH_ABEMPTY$) + "|" + PATH_ABSOLUTE$ + "|" + PATH_ROOTLESS$ + "|" + PATH_EMPTY$),
-        URI$ = subexp(SCHEME$ + "\\:" + HIER_PART$ + subexp("\\?" + QUERY$) + "?" + subexp("\\#" + FRAGMENT$) + "?"),
-        RELATIVE_PART$ = subexp(subexp("\\/\\/" + AUTHORITY$ + PATH_ABEMPTY$) + "|" + PATH_ABSOLUTE$ + "|" + PATH_NOSCHEME$ + "|" + PATH_EMPTY$),
-        RELATIVE$ = subexp(RELATIVE_PART$ + subexp("\\?" + QUERY$) + "?" + subexp("\\#" + FRAGMENT$) + "?"),
-        URI_REFERENCE$ = subexp(URI$ + "|" + RELATIVE$),
-        ABSOLUTE_URI$ = subexp(SCHEME$ + "\\:" + HIER_PART$ + subexp("\\?" + QUERY$) + "?"),
-        GENERIC_REF$ = "^(" + SCHEME$ + ")\\:" + subexp(subexp("\\/\\/(" + subexp("(" + USERINFO$ + ")@") + "?(" + HOST$ + ")" + subexp("\\:(" + PORT$ + ")") + "?)") + "?(" + PATH_ABEMPTY$ + "|" + PATH_ABSOLUTE$ + "|" + PATH_ROOTLESS$ + "|" + PATH_EMPTY$ + ")") + subexp("\\?(" + QUERY$ + ")") + "?" + subexp("\\#(" + FRAGMENT$ + ")") + "?$",
-        RELATIVE_REF$ = "^(){0}" + subexp(subexp("\\/\\/(" + subexp("(" + USERINFO$ + ")@") + "?(" + HOST$ + ")" + subexp("\\:(" + PORT$ + ")") + "?)") + "?(" + PATH_ABEMPTY$ + "|" + PATH_ABSOLUTE$ + "|" + PATH_NOSCHEME$ + "|" + PATH_EMPTY$ + ")") + subexp("\\?(" + QUERY$ + ")") + "?" + subexp("\\#(" + FRAGMENT$ + ")") + "?$",
-        ABSOLUTE_REF$ = "^(" + SCHEME$ + ")\\:" + subexp(subexp("\\/\\/(" + subexp("(" + USERINFO$ + ")@") + "?(" + HOST$ + ")" + subexp("\\:(" + PORT$ + ")") + "?)") + "?(" + PATH_ABEMPTY$ + "|" + PATH_ABSOLUTE$ + "|" + PATH_ROOTLESS$ + "|" + PATH_EMPTY$ + ")") + subexp("\\?(" + QUERY$ + ")") + "?$",
-        SAMEDOC_REF$ = "^" + subexp("\\#(" + FRAGMENT$ + ")") + "?$",
-        AUTHORITY_REF$ = "^" + subexp("(" + USERINFO$ + ")@") + "?(" + HOST$ + ")" + subexp("\\:(" + PORT$ + ")") + "?$";
-    return {
-        NOT_SCHEME: new RegExp(merge("[^]", ALPHA$$, DIGIT$$, "[\\+\\-\\.]"), "g"),
-        NOT_USERINFO: new RegExp(merge("[^\\%\\:]", UNRESERVED$$, SUB_DELIMS$$), "g"),
-        NOT_HOST: new RegExp(merge("[^\\%\\[\\]\\:]", UNRESERVED$$, SUB_DELIMS$$), "g"),
-        NOT_PATH: new RegExp(merge("[^\\%\\/\\:\\@]", UNRESERVED$$, SUB_DELIMS$$), "g"),
-        NOT_PATH_NOSCHEME: new RegExp(merge("[^\\%\\/\\@]", UNRESERVED$$, SUB_DELIMS$$), "g"),
-        NOT_QUERY: new RegExp(merge("[^\\%]", UNRESERVED$$, SUB_DELIMS$$, "[\\:\\@\\/\\?]", IPRIVATE$$), "g"),
-        NOT_FRAGMENT: new RegExp(merge("[^\\%]", UNRESERVED$$, SUB_DELIMS$$, "[\\:\\@\\/\\?]"), "g"),
-        ESCAPE: new RegExp(merge("[^]", UNRESERVED$$, SUB_DELIMS$$), "g"),
-        UNRESERVED: new RegExp(UNRESERVED$$, "g"),
-        OTHER_CHARS: new RegExp(merge("[^\\%]", UNRESERVED$$, RESERVED$$), "g"),
-        PCT_ENCODED: new RegExp(PCT_ENCODED$, "g"),
-        IPV4ADDRESS: new RegExp("^(" + IPV4ADDRESS$ + ")$"),
-        IPV6ADDRESS: new RegExp("^\\[?(" + IPV6ADDRESS$ + ")" + subexp(subexp("\\%25|\\%(?!" + HEXDIG$$ + "{2})") + "(" + ZONEID$ + ")") + "?\\]?$") //RFC 6874, with relaxed parsing rules
-    };
-}
-var URI_PROTOCOL = buildExps(false);
-
-var IRI_PROTOCOL = buildExps(true);
-
-var slicedToArray = function () {
-  function sliceIterator(arr, i) {
-    var _arr = [];
-    var _n = true;
-    var _d = false;
-    var _e = undefined;
-
-    try {
-      for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) {
-        _arr.push(_s.value);
-
-        if (i && _arr.length === i) break;
-      }
-    } catch (err) {
-      _d = true;
-      _e = err;
-    } finally {
-      try {
-        if (!_n && _i["return"]) _i["return"]();
-      } finally {
-        if (_d) throw _e;
-      }
-    }
-
-    return _arr;
-  }
-
-  return function (arr, i) {
-    if (Array.isArray(arr)) {
-      return arr;
-    } else if (Symbol.iterator in Object(arr)) {
-      return sliceIterator(arr, i);
-    } else {
-      throw new TypeError("Invalid attempt to destructure non-iterable instance");
-    }
-  };
-}();
-
-
-
-
-
-
-
-
-
-
-
-
-
-var toConsumableArray = function (arr) {
-  if (Array.isArray(arr)) {
-    for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) arr2[i] = arr[i];
-
-    return arr2;
-  } else {
-    return Array.from(arr);
-  }
-};
-
-/** Highest positive signed 32-bit float value */
-
-var maxInt = 2147483647; // aka. 0x7FFFFFFF or 2^31-1
-
-/** Bootstring parameters */
-var base = 36;
-var tMin = 1;
-var tMax = 26;
-var skew = 38;
-var damp = 700;
-var initialBias = 72;
-var initialN = 128; // 0x80
-var delimiter = '-'; // '\x2D'
-
-/** Regular expressions */
-var regexPunycode = /^xn--/;
-var regexNonASCII = /[^\0-\x7E]/; // non-ASCII chars
-var regexSeparators = /[\x2E\u3002\uFF0E\uFF61]/g; // RFC 3490 separators
-
-/** Error messages */
-var errors = {
-	'overflow': 'Overflow: input needs wider integers to process',
-	'not-basic': 'Illegal input >= 0x80 (not a basic code point)',
-	'invalid-input': 'Invalid input'
-};
-
-/** Convenience shortcuts */
-var baseMinusTMin = base - tMin;
-var floor = Math.floor;
-var stringFromCharCode = String.fromCharCode;
-
-/*--------------------------------------------------------------------------*/
-
-/**
- * A generic error utility function.
- * @private
- * @param {String} type The error type.
- * @returns {Error} Throws a `RangeError` with the applicable error message.
- */
-function error$1(type) {
-	throw new RangeError(errors[type]);
-}
-
-/**
- * A generic `Array#map` utility function.
- * @private
- * @param {Array} array The array to iterate over.
- * @param {Function} callback The function that gets called for every array
- * item.
- * @returns {Array} A new array of values returned by the callback function.
- */
-function map(array, fn) {
-	var result = [];
-	var length = array.length;
-	while (length--) {
-		result[length] = fn(array[length]);
-	}
-	return result;
-}
-
-/**
- * A simple `Array#map`-like wrapper to work with domain name strings or email
- * addresses.
- * @private
- * @param {String} domain The domain name or email address.
- * @param {Function} callback The function that gets called for every
- * character.
- * @returns {Array} A new string of characters returned by the callback
- * function.
- */
-function mapDomain(string, fn) {
-	var parts = string.split('@');
-	var result = '';
-	if (parts.length > 1) {
-		// In email addresses, only the domain name should be punycoded. Leave
-		// the local part (i.e. everything up to `@`) intact.
-		result = parts[0] + '@';
-		string = parts[1];
-	}
-	// Avoid `split(regex)` for IE8 compatibility. See #17.
-	string = string.replace(regexSeparators, '\x2E');
-	var labels = string.split('.');
-	var encoded = map(labels, fn).join('.');
-	return result + encoded;
-}
-
-/**
- * Creates an array containing the numeric code points of each Unicode
- * character in the string. While JavaScript uses UCS-2 internally,
- * this function will convert a pair of surrogate halves (each of which
- * UCS-2 exposes as separate characters) into a single code point,
- * matching UTF-16.
- * @see `punycode.ucs2.encode`
- * @see <https://mathiasbynens.be/notes/javascript-encoding>
- * @memberOf punycode.ucs2
- * @name decode
- * @param {String} string The Unicode input string (UCS-2).
- * @returns {Array} The new array of code points.
- */
-function ucs2decode(string) {
-	var output = [];
-	var counter = 0;
-	var length = string.length;
-	while (counter < length) {
-		var value = string.charCodeAt(counter++);
-		if (value >= 0xD800 && value <= 0xDBFF && counter < length) {
-			// It's a high surrogate, and there is a next character.
-			var extra = string.charCodeAt(counter++);
-			if ((extra & 0xFC00) == 0xDC00) {
-				// Low surrogate.
-				output.push(((value & 0x3FF) << 10) + (extra & 0x3FF) + 0x10000);
-			} else {
-				// It's an unmatched surrogate; only append this code unit, in case the
-				// next code unit is the high surrogate of a surrogate pair.
-				output.push(value);
-				counter--;
-			}
-		} else {
-			output.push(value);
-		}
-	}
-	return output;
-}
-
-/**
- * Creates a string based on an array of numeric code points.
- * @see `punycode.ucs2.decode`
- * @memberOf punycode.ucs2
- * @name encode
- * @param {Array} codePoints The array of numeric code points.
- * @returns {String} The new Unicode string (UCS-2).
- */
-var ucs2encode = function ucs2encode(array) {
-	return String.fromCodePoint.apply(String, toConsumableArray(array));
-};
-
-/**
- * Converts a basic code point into a digit/integer.
- * @see `digitToBasic()`
- * @private
- * @param {Number} codePoint The basic numeric code point value.
- * @returns {Number} The numeric value of a basic code point (for use in
- * representing integers) in the range `0` to `base - 1`, or `base` if
- * the code point does not represent a value.
- */
-var basicToDigit = function basicToDigit(codePoint) {
-	if (codePoint - 0x30 < 0x0A) {
-		return codePoint - 0x16;
-	}
-	if (codePoint - 0x41 < 0x1A) {
-		return codePoint - 0x41;
-	}
-	if (codePoint - 0x61 < 0x1A) {
-		return codePoint - 0x61;
-	}
-	return base;
-};
-
-/**
- * Converts a digit/integer into a basic code point.
- * @see `basicToDigit()`
- * @private
- * @param {Number} digit The numeric value of a basic code point.
- * @returns {Number} The basic code point whose value (when used for
- * representing integers) is `digit`, which needs to be in the range
- * `0` to `base - 1`. If `flag` is non-zero, the uppercase form is
- * used; else, the lowercase form is used. The behavior is undefined
- * if `flag` is non-zero and `digit` has no uppercase form.
- */
-var digitToBasic = function digitToBasic(digit, flag) {
-	//  0..25 map to ASCII a..z or A..Z
-	// 26..35 map to ASCII 0..9
-	return digit + 22 + 75 * (digit < 26) - ((flag != 0) << 5);
-};
-
-/**
- * Bias adaptation function as per section 3.4 of RFC 3492.
- * https://tools.ietf.org/html/rfc3492#section-3.4
- * @private
- */
-var adapt = function adapt(delta, numPoints, firstTime) {
-	var k = 0;
-	delta = firstTime ? floor(delta / damp) : delta >> 1;
-	delta += floor(delta / numPoints);
-	for (; /* no initialization */delta > baseMinusTMin * tMax >> 1; k += base) {
-		delta = floor(delta / baseMinusTMin);
-	}
-	return floor(k + (baseMinusTMin + 1) * delta / (delta + skew));
-};
-
-/**
- * Converts a Punycode string of ASCII-only symbols to a string of Unicode
- * symbols.
- * @memberOf punycode
- * @param {String} input The Punycode string of ASCII-only symbols.
- * @returns {String} The resulting string of Unicode symbols.
- */
-var decode = function decode(input) {
-	// Don't use UCS-2.
-	var output = [];
-	var inputLength = input.length;
-	var i = 0;
-	var n = initialN;
-	var bias = initialBias;
-
-	// Handle the basic code points: let `basic` be the number of input code
-	// points before the last delimiter, or `0` if there is none, then copy
-	// the first basic code points to the output.
-
-	var basic = input.lastIndexOf(delimiter);
-	if (basic < 0) {
-		basic = 0;
-	}
-
-	for (var j = 0; j < basic; ++j) {
-		// if it's not a basic code point
-		if (input.charCodeAt(j) >= 0x80) {
-			error$1('not-basic');
-		}
-		output.push(input.charCodeAt(j));
-	}
-
-	// Main decoding loop: start just after the last delimiter if any basic code
-	// points were copied; start at the beginning otherwise.
-
-	for (var index = basic > 0 ? basic + 1 : 0; index < inputLength;) /* no final expression */{
-
-		// `index` is the index of the next character to be consumed.
-		// Decode a generalized variable-length integer into `delta`,
-		// which gets added to `i`. The overflow checking is easier
-		// if we increase `i` as we go, then subtract off its starting
-		// value at the end to obtain `delta`.
-		var oldi = i;
-		for (var w = 1, k = base;; /* no condition */k += base) {
-
-			if (index >= inputLength) {
-				error$1('invalid-input');
-			}
-
-			var digit = basicToDigit(input.charCodeAt(index++));
-
-			if (digit >= base || digit > floor((maxInt - i) / w)) {
-				error$1('overflow');
-			}
-
-			i += digit * w;
-			var t = k <= bias ? tMin : k >= bias + tMax ? tMax : k - bias;
-
-			if (digit < t) {
-				break;
-			}
-
-			var baseMinusT = base - t;
-			if (w > floor(maxInt / baseMinusT)) {
-				error$1('overflow');
-			}
-
-			w *= baseMinusT;
-		}
-
-		var out = output.length + 1;
-		bias = adapt(i - oldi, out, oldi == 0);
-
-		// `i` was supposed to wrap around from `out` to `0`,
-		// incrementing `n` each time, so we'll fix that now:
-		if (floor(i / out) > maxInt - n) {
-			error$1('overflow');
-		}
-
-		n += floor(i / out);
-		i %= out;
-
-		// Insert `n` at position `i` of the output.
-		output.splice(i++, 0, n);
-	}
-
-	return String.fromCodePoint.apply(String, output);
-};
-
-/**
- * Converts a string of Unicode symbols (e.g. a domain name label) to a
- * Punycode string of ASCII-only symbols.
- * @memberOf punycode
- * @param {String} input The string of Unicode symbols.
- * @returns {String} The resulting Punycode string of ASCII-only symbols.
- */
-var encode = function encode(input) {
-	var output = [];
-
-	// Convert the input in UCS-2 to an array of Unicode code points.
-	input = ucs2decode(input);
-
-	// Cache the length.
-	var inputLength = input.length;
-
-	// Initialize the state.
-	var n = initialN;
-	var delta = 0;
-	var bias = initialBias;
-
-	// Handle the basic code points.
-	var _iteratorNormalCompletion = true;
-	var _didIteratorError = false;
-	var _iteratorError = undefined;
-
-	try {
-		for (var _iterator = input[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
-			var _currentValue2 = _step.value;
-
-			if (_currentValue2 < 0x80) {
-				output.push(stringFromCharCode(_currentValue2));
-			}
-		}
-	} catch (err) {
-		_didIteratorError = true;
-		_iteratorError = err;
-	} finally {
-		try {
-			if (!_iteratorNormalCompletion && _iterator.return) {
-				_iterator.return();
-			}
-		} finally {
-			if (_didIteratorError) {
-				throw _iteratorError;
-			}
-		}
-	}
-
-	var basicLength = output.length;
-	var handledCPCount = basicLength;
-
-	// `handledCPCount` is the number of code points that have been handled;
-	// `basicLength` is the number of basic code points.
-
-	// Finish the basic string with a delimiter unless it's empty.
-	if (basicLength) {
-		output.push(delimiter);
-	}
-
-	// Main encoding loop:
-	while (handledCPCount < inputLength) {
-
-		// All non-basic code points < n have been handled already. Find the next
-		// larger one:
-		var m = maxInt;
-		var _iteratorNormalCompletion2 = true;
-		var _didIteratorError2 = false;
-		var _iteratorError2 = undefined;
-
-		try {
-			for (var _iterator2 = input[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
-				var currentValue = _step2.value;
-
-				if (currentValue >= n && currentValue < m) {
-					m = currentValue;
-				}
-			}
-
-			// Increase `delta` enough to advance the decoder's <n,i> state to <m,0>,
-			// but guard against overflow.
-		} catch (err) {
-			_didIteratorError2 = true;
-			_iteratorError2 = err;
-		} finally {
-			try {
-				if (!_iteratorNormalCompletion2 && _iterator2.return) {
-					_iterator2.return();
-				}
-			} finally {
-				if (_didIteratorError2) {
-					throw _iteratorError2;
-				}
-			}
-		}
-
-		var handledCPCountPlusOne = handledCPCount + 1;
-		if (m - n > floor((maxInt - delta) / handledCPCountPlusOne)) {
-			error$1('overflow');
-		}
-
-		delta += (m - n) * handledCPCountPlusOne;
-		n = m;
-
-		var _iteratorNormalCompletion3 = true;
-		var _didIteratorError3 = false;
-		var _iteratorError3 = undefined;
-
-		try {
-			for (var _iterator3 = input[Symbol.iterator](), _step3; !(_iteratorNormalCompletion3 = (_step3 = _iterator3.next()).done); _iteratorNormalCompletion3 = true) {
-				var _currentValue = _step3.value;
-
-				if (_currentValue < n && ++delta > maxInt) {
-					error$1('overflow');
-				}
-				if (_currentValue == n) {
-					// Represent delta as a generalized variable-length integer.
-					var q = delta;
-					for (var k = base;; /* no condition */k += base) {
-						var t = k <= bias ? tMin : k >= bias + tMax ? tMax : k - bias;
-						if (q < t) {
-							break;
-						}
-						var qMinusT = q - t;
-						var baseMinusT = base - t;
-						output.push(stringFromCharCode(digitToBasic(t + qMinusT % baseMinusT, 0)));
-						q = floor(qMinusT / baseMinusT);
-					}
-
-					output.push(stringFromCharCode(digitToBasic(q, 0)));
-					bias = adapt(delta, handledCPCountPlusOne, handledCPCount == basicLength);
-					delta = 0;
-					++handledCPCount;
-				}
-			}
-		} catch (err) {
-			_didIteratorError3 = true;
-			_iteratorError3 = err;
-		} finally {
-			try {
-				if (!_iteratorNormalCompletion3 && _iterator3.return) {
-					_iterator3.return();
-				}
-			} finally {
-				if (_didIteratorError3) {
-					throw _iteratorError3;
-				}
-			}
-		}
-
-		++delta;
-		++n;
-	}
-	return output.join('');
-};
-
-/**
- * Converts a Punycode string representing a domain name or an email address
- * to Unicode. Only the Punycoded parts of the input will be converted, i.e.
- * it doesn't matter if you call it on a string that has already been
- * converted to Unicode.
- * @memberOf punycode
- * @param {String} input The Punycoded domain name or email address to
- * convert to Unicode.
- * @returns {String} The Unicode representation of the given Punycode
- * string.
- */
-var toUnicode = function toUnicode(input) {
-	return mapDomain(input, function (string) {
-		return regexPunycode.test(string) ? decode(string.slice(4).toLowerCase()) : string;
-	});
-};
-
-/**
- * Converts a Unicode string representing a domain name or an email address to
- * Punycode. Only the non-ASCII parts of the domain name will be converted,
- * i.e. it doesn't matter if you call it with a domain that's already in
- * ASCII.
- * @memberOf punycode
- * @param {String} input The domain name or email address to convert, as a
- * Unicode string.
- * @returns {String} The Punycode representation of the given domain name or
- * email address.
- */
-var toASCII = function toASCII(input) {
-	return mapDomain(input, function (string) {
-		return regexNonASCII.test(string) ? 'xn--' + encode(string) : string;
-	});
-};
-
-/*--------------------------------------------------------------------------*/
-
-/** Define the public API */
-var punycode = {
-	/**
-  * A string representing the current Punycode.js version number.
-  * @memberOf punycode
-  * @type String
-  */
-	'version': '2.1.0',
-	/**
-  * An object of methods to convert from JavaScript's internal character
-  * representation (UCS-2) to Unicode code points, and back.
-  * @see <https://mathiasbynens.be/notes/javascript-encoding>
-  * @memberOf punycode
-  * @type Object
-  */
-	'ucs2': {
-		'decode': ucs2decode,
-		'encode': ucs2encode
-	},
-	'decode': decode,
-	'encode': encode,
-	'toASCII': toASCII,
-	'toUnicode': toUnicode
-};
-
-/**
- * URI.js
- *
- * @fileoverview An RFC 3986 compliant, scheme extendable URI parsing/validating/resolving library for JavaScript.
- * @author <a href="mailto:gary.court@gmail.com">Gary Court</a>
- * @see http://github.com/garycourt/uri-js
- */
-/**
- * Copyright 2011 Gary Court. All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without modification, are
- * permitted provided that the following conditions are met:
- *
- *    1. Redistributions of source code must retain the above copyright notice, this list of
- *       conditions and the following disclaimer.
- *
- *    2. Redistributions in binary form must reproduce the above copyright notice, this list
- *       of conditions and the following disclaimer in the documentation and/or other materials
- *       provided with the distribution.
- *
- * THIS SOFTWARE IS PROVIDED BY GARY COURT ``AS IS'' AND ANY EXPRESS OR IMPLIED
- * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND
- * FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL GARY COURT OR
- * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
- * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
- * ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
- * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
- * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- * The views and conclusions contained in the software and documentation are those of the
- * authors and should not be interpreted as representing official policies, either expressed
- * or implied, of Gary Court.
- */
-var SCHEMES = {};
-function pctEncChar(chr) {
-    var c = chr.charCodeAt(0);
-    var e = void 0;
-    if (c < 16) e = "%0" + c.toString(16).toUpperCase();else if (c < 128) e = "%" + c.toString(16).toUpperCase();else if (c < 2048) e = "%" + (c >> 6 | 192).toString(16).toUpperCase() + "%" + (c & 63 | 128).toString(16).toUpperCase();else e = "%" + (c >> 12 | 224).toString(16).toUpperCase() + "%" + (c >> 6 & 63 | 128).toString(16).toUpperCase() + "%" + (c & 63 | 128).toString(16).toUpperCase();
-    return e;
-}
-function pctDecChars(str) {
-    var newStr = "";
-    var i = 0;
-    var il = str.length;
-    while (i < il) {
-        var c = parseInt(str.substr(i + 1, 2), 16);
-        if (c < 128) {
-            newStr += String.fromCharCode(c);
-            i += 3;
-        } else if (c >= 194 && c < 224) {
-            if (il - i >= 6) {
-                var c2 = parseInt(str.substr(i + 4, 2), 16);
-                newStr += String.fromCharCode((c & 31) << 6 | c2 & 63);
-            } else {
-                newStr += str.substr(i, 6);
-            }
-            i += 6;
-        } else if (c >= 224) {
-            if (il - i >= 9) {
-                var _c = parseInt(str.substr(i + 4, 2), 16);
-                var c3 = parseInt(str.substr(i + 7, 2), 16);
-                newStr += String.fromCharCode((c & 15) << 12 | (_c & 63) << 6 | c3 & 63);
-            } else {
-                newStr += str.substr(i, 9);
-            }
-            i += 9;
-        } else {
-            newStr += str.substr(i, 3);
-            i += 3;
-        }
-    }
-    return newStr;
-}
-function _normalizeComponentEncoding(components, protocol) {
-    function decodeUnreserved(str) {
-        var decStr = pctDecChars(str);
-        return !decStr.match(protocol.UNRESERVED) ? str : decStr;
-    }
-    if (components.scheme) components.scheme = String(components.scheme).replace(protocol.PCT_ENCODED, decodeUnreserved).toLowerCase().replace(protocol.NOT_SCHEME, "");
-    if (components.userinfo !== undefined) components.userinfo = String(components.userinfo).replace(protocol.PCT_ENCODED, decodeUnreserved).replace(protocol.NOT_USERINFO, pctEncChar).replace(protocol.PCT_ENCODED, toUpperCase);
-    if (components.host !== undefined) components.host = String(components.host).replace(protocol.PCT_ENCODED, decodeUnreserved).toLowerCase().replace(protocol.NOT_HOST, pctEncChar).replace(protocol.PCT_ENCODED, toUpperCase);
-    if (components.path !== undefined) components.path = String(components.path).replace(protocol.PCT_ENCODED, decodeUnreserved).replace(components.scheme ? protocol.NOT_PATH : protocol.NOT_PATH_NOSCHEME, pctEncChar).replace(protocol.PCT_ENCODED, toUpperCase);
-    if (components.query !== undefined) components.query = String(components.query).replace(protocol.PCT_ENCODED, decodeUnreserved).replace(protocol.NOT_QUERY, pctEncChar).replace(protocol.PCT_ENCODED, toUpperCase);
-    if (components.fragment !== undefined) components.fragment = String(components.fragment).replace(protocol.PCT_ENCODED, decodeUnreserved).replace(protocol.NOT_FRAGMENT, pctEncChar).replace(protocol.PCT_ENCODED, toUpperCase);
-    return components;
-}
-
-function _stripLeadingZeros(str) {
-    return str.replace(/^0*(.*)/, "$1") || "0";
-}
-function _normalizeIPv4(host, protocol) {
-    var matches = host.match(protocol.IPV4ADDRESS) || [];
-
-    var _matches = slicedToArray(matches, 2),
-        address = _matches[1];
-
-    if (address) {
-        return address.split(".").map(_stripLeadingZeros).join(".");
-    } else {
-        return host;
-    }
-}
-function _normalizeIPv6(host, protocol) {
-    var matches = host.match(protocol.IPV6ADDRESS) || [];
-
-    var _matches2 = slicedToArray(matches, 3),
-        address = _matches2[1],
-        zone = _matches2[2];
-
-    if (address) {
-        var _address$toLowerCase$ = address.toLowerCase().split('::').reverse(),
-            _address$toLowerCase$2 = slicedToArray(_address$toLowerCase$, 2),
-            last = _address$toLowerCase$2[0],
-            first = _address$toLowerCase$2[1];
-
-        var firstFields = first ? first.split(":").map(_stripLeadingZeros) : [];
-        var lastFields = last.split(":").map(_stripLeadingZeros);
-        var isLastFieldIPv4Address = protocol.IPV4ADDRESS.test(lastFields[lastFields.length - 1]);
-        var fieldCount = isLastFieldIPv4Address ? 7 : 8;
-        var lastFieldsStart = lastFields.length - fieldCount;
-        var fields = Array(fieldCount);
-        for (var x = 0; x < fieldCount; ++x) {
-            fields[x] = firstFields[x] || lastFields[lastFieldsStart + x] || '';
-        }
-        if (isLastFieldIPv4Address) {
-            fields[fieldCount - 1] = _normalizeIPv4(fields[fieldCount - 1], protocol);
-        }
-        var allZeroFields = fields.reduce(function (acc, field, index) {
-            if (!field || field === "0") {
-                var lastLongest = acc[acc.length - 1];
-                if (lastLongest && lastLongest.index + lastLongest.length === index) {
-                    lastLongest.length++;
-                } else {
-                    acc.push({ index: index, length: 1 });
-                }
-            }
-            return acc;
-        }, []);
-        var longestZeroFields = allZeroFields.sort(function (a, b) {
-            return b.length - a.length;
-        })[0];
-        var newHost = void 0;
-        if (longestZeroFields && longestZeroFields.length > 1) {
-            var newFirst = fields.slice(0, longestZeroFields.index);
-            var newLast = fields.slice(longestZeroFields.index + longestZeroFields.length);
-            newHost = newFirst.join(":") + "::" + newLast.join(":");
-        } else {
-            newHost = fields.join(":");
-        }
-        if (zone) {
-            newHost += "%" + zone;
-        }
-        return newHost;
-    } else {
-        return host;
-    }
-}
-var URI_PARSE = /^(?:([^:\/?#]+):)?(?:\/\/((?:([^\/?#@]*)@)?(\[[^\/?#\]]+\]|[^\/?#:]*)(?:\:(\d*))?))?([^?#]*)(?:\?([^#]*))?(?:#((?:.|\n|\r)*))?/i;
-var NO_MATCH_IS_UNDEFINED = "".match(/(){0}/)[1] === undefined;
-function parse(uriString) {
-    var options = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
-
-    var components = {};
-    var protocol = options.iri !== false ? IRI_PROTOCOL : URI_PROTOCOL;
-    if (options.reference === "suffix") uriString = (options.scheme ? options.scheme + ":" : "") + "//" + uriString;
-    var matches = uriString.match(URI_PARSE);
-    if (matches) {
-        if (NO_MATCH_IS_UNDEFINED) {
-            //store each component
-            components.scheme = matches[1];
-            components.userinfo = matches[3];
-            components.host = matches[4];
-            components.port = parseInt(matches[5], 10);
-            components.path = matches[6] || "";
-            components.query = matches[7];
-            components.fragment = matches[8];
-            //fix port number
-            if (isNaN(components.port)) {
-                components.port = matches[5];
-            }
-        } else {
-            //IE FIX for improper RegExp matching
-            //store each component
-            components.scheme = matches[1] || undefined;
-            components.userinfo = uriString.indexOf("@") !== -1 ? matches[3] : undefined;
-            components.host = uriString.indexOf("//") !== -1 ? matches[4] : undefined;
-            components.port = parseInt(matches[5], 10);
-            components.path = matches[6] || "";
-            components.query = uriString.indexOf("?") !== -1 ? matches[7] : undefined;
-            components.fragment = uriString.indexOf("#") !== -1 ? matches[8] : undefined;
-            //fix port number
-            if (isNaN(components.port)) {
-                components.port = uriString.match(/\/\/(?:.|\n)*\:(?:\/|\?|\#|$)/) ? matches[4] : undefined;
-            }
-        }
-        if (components.host) {
-            //normalize IP hosts
-            components.host = _normalizeIPv6(_normalizeIPv4(components.host, protocol), protocol);
-        }
-        //determine reference type
-        if (components.scheme === undefined && components.userinfo === undefined && components.host === undefined && components.port === undefined && !components.path && components.query === undefined) {
-            components.reference = "same-document";
-        } else if (components.scheme === undefined) {
-            components.reference = "relative";
-        } else if (components.fragment === undefined) {
-            components.reference = "absolute";
-        } else {
-            components.reference = "uri";
-        }
-        //check for reference errors
-        if (options.reference && options.reference !== "suffix" && options.reference !== components.reference) {
-            components.error = components.error || "URI is not a " + options.reference + " reference.";
-        }
-        //find scheme handler
-        var schemeHandler = SCHEMES[(options.scheme || components.scheme || "").toLowerCase()];
-        //check if scheme can't handle IRIs
-        if (!options.unicodeSupport && (!schemeHandler || !schemeHandler.unicodeSupport)) {
-            //if host component is a domain name
-            if (components.host && (options.domainHost || schemeHandler && schemeHandler.domainHost)) {
-                //convert Unicode IDN -> ASCII IDN
-                try {
-                    components.host = punycode.toASCII(components.host.replace(protocol.PCT_ENCODED, pctDecChars).toLowerCase());
-                } catch (e) {
-                    components.error = components.error || "Host's domain name can not be converted to ASCII via punycode: " + e;
-                }
-            }
-            //convert IRI -> URI
-            _normalizeComponentEncoding(components, URI_PROTOCOL);
-        } else {
-            //normalize encodings
-            _normalizeComponentEncoding(components, protocol);
-        }
-        //perform scheme specific parsing
-        if (schemeHandler && schemeHandler.parse) {
-            schemeHandler.parse(components, options);
-        }
-    } else {
-        components.error = components.error || "URI can not be parsed.";
-    }
-    return components;
-}
-
-function _recomposeAuthority(components, options) {
-    var protocol = options.iri !== false ? IRI_PROTOCOL : URI_PROTOCOL;
-    var uriTokens = [];
-    if (components.userinfo !== undefined) {
-        uriTokens.push(components.userinfo);
-        uriTokens.push("@");
-    }
-    if (components.host !== undefined) {
-        //normalize IP hosts, add brackets and escape zone separator for IPv6
-        uriTokens.push(_normalizeIPv6(_normalizeIPv4(String(components.host), protocol), protocol).replace(protocol.IPV6ADDRESS, function (_, $1, $2) {
-            return "[" + $1 + ($2 ? "%25" + $2 : "") + "]";
-        }));
-    }
-    if (typeof components.port === "number" || typeof components.port === "string") {
-        uriTokens.push(":");
-        uriTokens.push(String(components.port));
-    }
-    return uriTokens.length ? uriTokens.join("") : undefined;
-}
-
-var RDS1 = /^\.\.?\//;
-var RDS2 = /^\/\.(\/|$)/;
-var RDS3 = /^\/\.\.(\/|$)/;
-var RDS5 = /^\/?(?:.|\n)*?(?=\/|$)/;
-function removeDotSegments(input) {
-    var output = [];
-    while (input.length) {
-        if (input.match(RDS1)) {
-            input = input.replace(RDS1, "");
-        } else if (input.match(RDS2)) {
-            input = input.replace(RDS2, "/");
-        } else if (input.match(RDS3)) {
-            input = input.replace(RDS3, "/");
-            output.pop();
-        } else if (input === "." || input === "..") {
-            input = "";
-        } else {
-            var im = input.match(RDS5);
-            if (im) {
-                var s = im[0];
-                input = input.slice(s.length);
-                output.push(s);
-            } else {
-                throw new Error("Unexpected dot segment condition");
-            }
-        }
-    }
-    return output.join("");
-}
-
-function serialize(components) {
-    var options = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
-
-    var protocol = options.iri ? IRI_PROTOCOL : URI_PROTOCOL;
-    var uriTokens = [];
-    //find scheme handler
-    var schemeHandler = SCHEMES[(options.scheme || components.scheme || "").toLowerCase()];
-    //perform scheme specific serialization
-    if (schemeHandler && schemeHandler.serialize) schemeHandler.serialize(components, options);
-    if (components.host) {
-        //if host component is an IPv6 address
-        if (protocol.IPV6ADDRESS.test(components.host)) {}
-        //TODO: normalize IPv6 address as per RFC 5952
-
-        //if host component is a domain name
-        else if (options.domainHost || schemeHandler && schemeHandler.domainHost) {
-                //convert IDN via punycode
-                try {
-                    components.host = !options.iri ? punycode.toASCII(components.host.replace(protocol.PCT_ENCODED, pctDecChars).toLowerCase()) : punycode.toUnicode(components.host);
-                } catch (e) {
-                    components.error = components.error || "Host's domain name can not be converted to " + (!options.iri ? "ASCII" : "Unicode") + " via punycode: " + e;
-                }
-            }
-    }
-    //normalize encoding
-    _normalizeComponentEncoding(components, protocol);
-    if (options.reference !== "suffix" && components.scheme) {
-        uriTokens.push(components.scheme);
-        uriTokens.push(":");
-    }
-    var authority = _recomposeAuthority(components, options);
-    if (authority !== undefined) {
-        if (options.reference !== "suffix") {
-            uriTokens.push("//");
-        }
-        uriTokens.push(authority);
-        if (components.path && components.path.charAt(0) !== "/") {
-            uriTokens.push("/");
-        }
-    }
-    if (components.path !== undefined) {
-        var s = components.path;
-        if (!options.absolutePath && (!schemeHandler || !schemeHandler.absolutePath)) {
-            s = removeDotSegments(s);
-        }
-        if (authority === undefined) {
-            s = s.replace(/^\/\//, "/%2F"); //don't allow the path to start with "//"
-        }
-        uriTokens.push(s);
-    }
-    if (components.query !== undefined) {
-        uriTokens.push("?");
-        uriTokens.push(components.query);
-    }
-    if (components.fragment !== undefined) {
-        uriTokens.push("#");
-        uriTokens.push(components.fragment);
-    }
-    return uriTokens.join(""); //merge tokens into a string
-}
-
-function resolveComponents(base, relative) {
-    var options = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {};
-    var skipNormalization = arguments[3];
-
-    var target = {};
-    if (!skipNormalization) {
-        base = parse(serialize(base, options), options); //normalize base components
-        relative = parse(serialize(relative, options), options); //normalize relative components
-    }
-    options = options || {};
-    if (!options.tolerant && relative.scheme) {
-        target.scheme = relative.scheme;
-        //target.authority = relative.authority;
-        target.userinfo = relative.userinfo;
-        target.host = relative.host;
-        target.port = relative.port;
-        target.path = removeDotSegments(relative.path || "");
-        target.query = relative.query;
-    } else {
-        if (relative.userinfo !== undefined || relative.host !== undefined || relative.port !== undefined) {
-            //target.authority = relative.authority;
-            target.userinfo = relative.userinfo;
-            target.host = relative.host;
-            target.port = relative.port;
-            target.path = removeDotSegments(relative.path || "");
-            target.query = relative.query;
-        } else {
-            if (!relative.path) {
-                target.path = base.path;
-                if (relative.query !== undefined) {
-                    target.query = relative.query;
-                } else {
-                    target.query = base.query;
-                }
-            } else {
-                if (relative.path.charAt(0) === "/") {
-                    target.path = removeDotSegments(relative.path);
-                } else {
-                    if ((base.userinfo !== undefined || base.host !== undefined || base.port !== undefined) && !base.path) {
-                        target.path = "/" + relative.path;
-                    } else if (!base.path) {
-                        target.path = relative.path;
-                    } else {
-                        target.path = base.path.slice(0, base.path.lastIndexOf("/") + 1) + relative.path;
-                    }
-                    target.path = removeDotSegments(target.path);
-                }
-                target.query = relative.query;
-            }
-            //target.authority = base.authority;
-            target.userinfo = base.userinfo;
-            target.host = base.host;
-            target.port = base.port;
-        }
-        target.scheme = base.scheme;
-    }
-    target.fragment = relative.fragment;
-    return target;
-}
-
-function resolve(baseURI, relativeURI, options) {
-    var schemelessOptions = assign({ scheme: 'null' }, options);
-    return serialize(resolveComponents(parse(baseURI, schemelessOptions), parse(relativeURI, schemelessOptions), schemelessOptions, true), schemelessOptions);
-}
-
-function normalize(uri, options) {
-    if (typeof uri === "string") {
-        uri = serialize(parse(uri, options), options);
-    } else if (typeOf(uri) === "object") {
-        uri = parse(serialize(uri, options), options);
-    }
-    return uri;
-}
-
-function equal(uriA, uriB, options) {
-    if (typeof uriA === "string") {
-        uriA = serialize(parse(uriA, options), options);
-    } else if (typeOf(uriA) === "object") {
-        uriA = serialize(uriA, options);
-    }
-    if (typeof uriB === "string") {
-        uriB = serialize(parse(uriB, options), options);
-    } else if (typeOf(uriB) === "object") {
-        uriB = serialize(uriB, options);
-    }
-    return uriA === uriB;
-}
-
-function escapeComponent(str, options) {
-    return str && str.toString().replace(!options || !options.iri ? URI_PROTOCOL.ESCAPE : IRI_PROTOCOL.ESCAPE, pctEncChar);
-}
-
-function unescapeComponent(str, options) {
-    return str && str.toString().replace(!options || !options.iri ? URI_PROTOCOL.PCT_ENCODED : IRI_PROTOCOL.PCT_ENCODED, pctDecChars);
-}
-
-var handler = {
-    scheme: "http",
-    domainHost: true,
-    parse: function parse(components, options) {
-        //report missing host
-        if (!components.host) {
-            components.error = components.error || "HTTP URIs must have a host.";
-        }
-        return components;
-    },
-    serialize: function serialize(components, options) {
-        var secure = String(components.scheme).toLowerCase() === "https";
-        //normalize the default port
-        if (components.port === (secure ? 443 : 80) || components.port === "") {
-            components.port = undefined;
-        }
-        //normalize the empty path
-        if (!components.path) {
-            components.path = "/";
-        }
-        //NOTE: We do not parse query strings for HTTP URIs
-        //as WWW Form Url Encoded query strings are part of the HTML4+ spec,
-        //and not the HTTP spec.
-        return components;
-    }
-};
-
-var handler$1 = {
-    scheme: "https",
-    domainHost: handler.domainHost,
-    parse: handler.parse,
-    serialize: handler.serialize
-};
-
-function isSecure(wsComponents) {
-    return typeof wsComponents.secure === 'boolean' ? wsComponents.secure : String(wsComponents.scheme).toLowerCase() === "wss";
-}
-//RFC 6455
-var handler$2 = {
-    scheme: "ws",
-    domainHost: true,
-    parse: function parse(components, options) {
-        var wsComponents = components;
-        //indicate if the secure flag is set
-        wsComponents.secure = isSecure(wsComponents);
-        //construct resouce name
-        wsComponents.resourceName = (wsComponents.path || '/') + (wsComponents.query ? '?' + wsComponents.query : '');
-        wsComponents.path = undefined;
-        wsComponents.query = undefined;
-        return wsComponents;
-    },
-    serialize: function serialize(wsComponents, options) {
-        //normalize the default port
-        if (wsComponents.port === (isSecure(wsComponents) ? 443 : 80) || wsComponents.port === "") {
-            wsComponents.port = undefined;
-        }
-        //ensure scheme matches secure flag
-        if (typeof wsComponents.secure === 'boolean') {
-            wsComponents.scheme = wsComponents.secure ? 'wss' : 'ws';
-            wsComponents.secure = undefined;
-        }
-        //reconstruct path from resource name
-        if (wsComponents.resourceName) {
-            var _wsComponents$resourc = wsComponents.resourceName.split('?'),
-                _wsComponents$resourc2 = slicedToArray(_wsComponents$resourc, 2),
-                path = _wsComponents$resourc2[0],
-                query = _wsComponents$resourc2[1];
-
-            wsComponents.path = path && path !== '/' ? path : undefined;
-            wsComponents.query = query;
-            wsComponents.resourceName = undefined;
-        }
-        //forbid fragment component
-        wsComponents.fragment = undefined;
-        return wsComponents;
-    }
-};
-
-var handler$3 = {
-    scheme: "wss",
-    domainHost: handler$2.domainHost,
-    parse: handler$2.parse,
-    serialize: handler$2.serialize
-};
-
-var O = {};
-var isIRI = true;
-//RFC 3986
-var UNRESERVED$$ = "[A-Za-z0-9\\-\\.\\_\\~" + (isIRI ? "\\xA0-\\u200D\\u2010-\\u2029\\u202F-\\uD7FF\\uF900-\\uFDCF\\uFDF0-\\uFFEF" : "") + "]";
-var HEXDIG$$ = "[0-9A-Fa-f]"; //case-insensitive
-var PCT_ENCODED$ = subexp(subexp("%[EFef]" + HEXDIG$$ + "%" + HEXDIG$$ + HEXDIG$$ + "%" + HEXDIG$$ + HEXDIG$$) + "|" + subexp("%[89A-Fa-f]" + HEXDIG$$ + "%" + HEXDIG$$ + HEXDIG$$) + "|" + subexp("%" + HEXDIG$$ + HEXDIG$$)); //expanded
-//RFC 5322, except these symbols as per RFC 6068: @ : / ? # [ ] & ; =
-//const ATEXT$$ = "[A-Za-z0-9\\!\\#\\$\\%\\&\\'\\*\\+\\-\\/\\=\\?\\^\\_\\`\\{\\|\\}\\~]";
-//const WSP$$ = "[\\x20\\x09]";
-//const OBS_QTEXT$$ = "[\\x01-\\x08\\x0B\\x0C\\x0E-\\x1F\\x7F]";  //(%d1-8 / %d11-12 / %d14-31 / %d127)
-//const QTEXT$$ = merge("[\\x21\\x23-\\x5B\\x5D-\\x7E]", OBS_QTEXT$$);  //%d33 / %d35-91 / %d93-126 / obs-qtext
-//const VCHAR$$ = "[\\x21-\\x7E]";
-//const WSP$$ = "[\\x20\\x09]";
-//const OBS_QP$ = subexp("\\\\" + merge("[\\x00\\x0D\\x0A]", OBS_QTEXT$$));  //%d0 / CR / LF / obs-qtext
-//const FWS$ = subexp(subexp(WSP$$ + "*" + "\\x0D\\x0A") + "?" + WSP$$ + "+");
-//const QUOTED_PAIR$ = subexp(subexp("\\\\" + subexp(VCHAR$$ + "|" + WSP$$)) + "|" + OBS_QP$);
-//const QUOTED_STRING$ = subexp('\\"' + subexp(FWS$ + "?" + QCONTENT$) + "*" + FWS$ + "?" + '\\"');
-var ATEXT$$ = "[A-Za-z0-9\\!\\$\\%\\'\\*\\+\\-\\^\\_\\`\\{\\|\\}\\~]";
-var QTEXT$$ = "[\\!\\$\\%\\'\\(\\)\\*\\+\\,\\-\\.0-9\\<\\>A-Z\\x5E-\\x7E]";
-var VCHAR$$ = merge(QTEXT$$, "[\\\"\\\\]");
-var SOME_DELIMS$$ = "[\\!\\$\\'\\(\\)\\*\\+\\,\\;\\:\\@]";
-var UNRESERVED = new RegExp(UNRESERVED$$, "g");
-var PCT_ENCODED = new RegExp(PCT_ENCODED$, "g");
-var NOT_LOCAL_PART = new RegExp(merge("[^]", ATEXT$$, "[\\.]", '[\\"]', VCHAR$$), "g");
-var NOT_HFNAME = new RegExp(merge("[^]", UNRESERVED$$, SOME_DELIMS$$), "g");
-var NOT_HFVALUE = NOT_HFNAME;
-function decodeUnreserved(str) {
-    var decStr = pctDecChars(str);
-    return !decStr.match(UNRESERVED) ? str : decStr;
-}
-var handler$4 = {
-    scheme: "mailto",
-    parse: function parse$$1(components, options) {
-        var mailtoComponents = components;
-        var to = mailtoComponents.to = mailtoComponents.path ? mailtoComponents.path.split(",") : [];
-        mailtoComponents.path = undefined;
-        if (mailtoComponents.query) {
-            var unknownHeaders = false;
-            var headers = {};
-            var hfields = mailtoComponents.query.split("&");
-            for (var x = 0, xl = hfields.length; x < xl; ++x) {
-                var hfield = hfields[x].split("=");
-                switch (hfield[0]) {
-                    case "to":
-                        var toAddrs = hfield[1].split(",");
-                        for (var _x = 0, _xl = toAddrs.length; _x < _xl; ++_x) {
-                            to.push(toAddrs[_x]);
-                        }
-                        break;
-                    case "subject":
-                        mailtoComponents.subject = unescapeComponent(hfield[1], options);
-                        break;
-                    case "body":
-                        mailtoComponents.body = unescapeComponent(hfield[1], options);
-                        break;
-                    default:
-                        unknownHeaders = true;
-                        headers[unescapeComponent(hfield[0], options)] = unescapeComponent(hfield[1], options);
-                        break;
-                }
-            }
-            if (unknownHeaders) mailtoComponents.headers = headers;
-        }
-        mailtoComponents.query = undefined;
-        for (var _x2 = 0, _xl2 = to.length; _x2 < _xl2; ++_x2) {
-            var addr = to[_x2].split("@");
-            addr[0] = unescapeComponent(addr[0]);
-            if (!options.unicodeSupport) {
-                //convert Unicode IDN -> ASCII IDN
-                try {
-                    addr[1] = punycode.toASCII(unescapeComponent(addr[1], options).toLowerCase());
-                } catch (e) {
-                    mailtoComponents.error = mailtoComponents.error || "Email address's domain name can not be converted to ASCII via punycode: " + e;
-                }
-            } else {
-                addr[1] = unescapeComponent(addr[1], options).toLowerCase();
-            }
-            to[_x2] = addr.join("@");
-        }
-        return mailtoComponents;
-    },
-    serialize: function serialize$$1(mailtoComponents, options) {
-        var components = mailtoComponents;
-        var to = toArray(mailtoComponents.to);
-        if (to) {
-            for (var x = 0, xl = to.length; x < xl; ++x) {
-                var toAddr = String(to[x]);
-                var atIdx = toAddr.lastIndexOf("@");
-                var localPart = toAddr.slice(0, atIdx).replace(PCT_ENCODED, decodeUnreserved).replace(PCT_ENCODED, toUpperCase).replace(NOT_LOCAL_PART, pctEncChar);
-                var domain = toAddr.slice(atIdx + 1);
-                //convert IDN via punycode
-                try {
-                    domain = !options.iri ? punycode.toASCII(unescapeComponent(domain, options).toLowerCase()) : punycode.toUnicode(domain);
-                } catch (e) {
-                    components.error = components.error || "Email address's domain name can not be converted to " + (!options.iri ? "ASCII" : "Unicode") + " via punycode: " + e;
-                }
-                to[x] = localPart + "@" + domain;
-            }
-            components.path = to.join(",");
-        }
-        var headers = mailtoComponents.headers = mailtoComponents.headers || {};
-        if (mailtoComponents.subject) headers["subject"] = mailtoComponents.subject;
-        if (mailtoComponents.body) headers["body"] = mailtoComponents.body;
-        var fields = [];
-        for (var name in headers) {
-            if (headers[name] !== O[name]) {
-                fields.push(name.replace(PCT_ENCODED, decodeUnreserved).replace(PCT_ENCODED, toUpperCase).replace(NOT_HFNAME, pctEncChar) + "=" + headers[name].replace(PCT_ENCODED, decodeUnreserved).replace(PCT_ENCODED, toUpperCase).replace(NOT_HFVALUE, pctEncChar));
-            }
-        }
-        if (fields.length) {
-            components.query = fields.join("&");
-        }
-        return components;
-    }
-};
-
-var URN_PARSE = /^([^\:]+)\:(.*)/;
-//RFC 2141
-var handler$5 = {
-    scheme: "urn",
-    parse: function parse$$1(components, options) {
-        var matches = components.path && components.path.match(URN_PARSE);
-        var urnComponents = components;
-        if (matches) {
-            var scheme = options.scheme || urnComponents.scheme || "urn";
-            var nid = matches[1].toLowerCase();
-            var nss = matches[2];
-            var urnScheme = scheme + ":" + (options.nid || nid);
-            var schemeHandler = SCHEMES[urnScheme];
-            urnComponents.nid = nid;
-            urnComponents.nss = nss;
-            urnComponents.path = undefined;
-            if (schemeHandler) {
-                urnComponents = schemeHandler.parse(urnComponents, options);
-            }
-        } else {
-            urnComponents.error = urnComponents.error || "URN can not be parsed.";
-        }
-        return urnComponents;
-    },
-    serialize: function serialize$$1(urnComponents, options) {
-        var scheme = options.scheme || urnComponents.scheme || "urn";
-        var nid = urnComponents.nid;
-        var urnScheme = scheme + ":" + (options.nid || nid);
-        var schemeHandler = SCHEMES[urnScheme];
-        if (schemeHandler) {
-            urnComponents = schemeHandler.serialize(urnComponents, options);
-        }
-        var uriComponents = urnComponents;
-        var nss = urnComponents.nss;
-        uriComponents.path = (nid || options.nid) + ":" + nss;
-        return uriComponents;
-    }
-};
-
-var UUID = /^[0-9A-Fa-f]{8}(?:\-[0-9A-Fa-f]{4}){3}\-[0-9A-Fa-f]{12}$/;
-//RFC 4122
-var handler$6 = {
-    scheme: "urn:uuid",
-    parse: function parse(urnComponents, options) {
-        var uuidComponents = urnComponents;
-        uuidComponents.uuid = uuidComponents.nss;
-        uuidComponents.nss = undefined;
-        if (!options.tolerant && (!uuidComponents.uuid || !uuidComponents.uuid.match(UUID))) {
-            uuidComponents.error = uuidComponents.error || "UUID is not valid.";
-        }
-        return uuidComponents;
-    },
-    serialize: function serialize(uuidComponents, options) {
-        var urnComponents = uuidComponents;
-        //normalize UUID
-        urnComponents.nss = (uuidComponents.uuid || "").toLowerCase();
-        return urnComponents;
-    }
-};
-
-SCHEMES[handler.scheme] = handler;
-SCHEMES[handler$1.scheme] = handler$1;
-SCHEMES[handler$2.scheme] = handler$2;
-SCHEMES[handler$3.scheme] = handler$3;
-SCHEMES[handler$4.scheme] = handler$4;
-SCHEMES[handler$5.scheme] = handler$5;
-SCHEMES[handler$6.scheme] = handler$6;
-
-exports.SCHEMES = SCHEMES;
-exports.pctEncChar = pctEncChar;
-exports.pctDecChars = pctDecChars;
-exports.parse = parse;
-exports.removeDotSegments = removeDotSegments;
-exports.serialize = serialize;
-exports.resolveComponents = resolveComponents;
-exports.resolve = resolve;
-exports.normalize = normalize;
-exports.equal = equal;
-exports.escapeComponent = escapeComponent;
-exports.unescapeComponent = unescapeComponent;
-
-Object.defineProperty(exports, '__esModule', { value: true });
-
-})));
-//# sourceMappingURL=uri.all.js.map
-
-
-/***/ }),
-
 /***/ 5840:
 /***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
 
@@ -52337,6 +50928,807 @@ module.exports = parseParams
 
 /***/ }),
 
+/***/ 9688:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+"use strict";
+
+
+const { normalizeIPv6, normalizeIPv4, removeDotSegments, recomposeAuthority, normalizeComponentEncoding } = __nccwpck_require__(6743)
+const SCHEMES = __nccwpck_require__(4923)
+
+function normalize (uri, options) {
+  if (typeof uri === 'string') {
+    uri = serialize(parse(uri, options), options)
+  } else if (typeof uri === 'object') {
+    uri = parse(serialize(uri, options), options)
+  }
+  return uri
+}
+
+function resolve (baseURI, relativeURI, options) {
+  const schemelessOptions = Object.assign({ scheme: 'null' }, options)
+  const resolved = resolveComponents(parse(baseURI, schemelessOptions), parse(relativeURI, schemelessOptions), schemelessOptions, true)
+  return serialize(resolved, { ...schemelessOptions, skipEscape: true })
+}
+
+function resolveComponents (base, relative, options, skipNormalization) {
+  const target = {}
+  if (!skipNormalization) {
+    base = parse(serialize(base, options), options) // normalize base components
+    relative = parse(serialize(relative, options), options) // normalize relative components
+  }
+  options = options || {}
+
+  if (!options.tolerant && relative.scheme) {
+    target.scheme = relative.scheme
+    // target.authority = relative.authority;
+    target.userinfo = relative.userinfo
+    target.host = relative.host
+    target.port = relative.port
+    target.path = removeDotSegments(relative.path || '')
+    target.query = relative.query
+  } else {
+    if (relative.userinfo !== undefined || relative.host !== undefined || relative.port !== undefined) {
+      // target.authority = relative.authority;
+      target.userinfo = relative.userinfo
+      target.host = relative.host
+      target.port = relative.port
+      target.path = removeDotSegments(relative.path || '')
+      target.query = relative.query
+    } else {
+      if (!relative.path) {
+        target.path = base.path
+        if (relative.query !== undefined) {
+          target.query = relative.query
+        } else {
+          target.query = base.query
+        }
+      } else {
+        if (relative.path.charAt(0) === '/') {
+          target.path = removeDotSegments(relative.path)
+        } else {
+          if ((base.userinfo !== undefined || base.host !== undefined || base.port !== undefined) && !base.path) {
+            target.path = '/' + relative.path
+          } else if (!base.path) {
+            target.path = relative.path
+          } else {
+            target.path = base.path.slice(0, base.path.lastIndexOf('/') + 1) + relative.path
+          }
+          target.path = removeDotSegments(target.path)
+        }
+        target.query = relative.query
+      }
+      // target.authority = base.authority;
+      target.userinfo = base.userinfo
+      target.host = base.host
+      target.port = base.port
+    }
+    target.scheme = base.scheme
+  }
+
+  target.fragment = relative.fragment
+
+  return target
+}
+
+function equal (uriA, uriB, options) {
+  if (typeof uriA === 'string') {
+    uriA = unescape(uriA)
+    uriA = serialize(normalizeComponentEncoding(parse(uriA, options), true), { ...options, skipEscape: true })
+  } else if (typeof uriA === 'object') {
+    uriA = serialize(normalizeComponentEncoding(uriA, true), { ...options, skipEscape: true })
+  }
+
+  if (typeof uriB === 'string') {
+    uriB = unescape(uriB)
+    uriB = serialize(normalizeComponentEncoding(parse(uriB, options), true), { ...options, skipEscape: true })
+  } else if (typeof uriB === 'object') {
+    uriB = serialize(normalizeComponentEncoding(uriB, true), { ...options, skipEscape: true })
+  }
+
+  return uriA.toLowerCase() === uriB.toLowerCase()
+}
+
+function serialize (cmpts, opts) {
+  const components = {
+    host: cmpts.host,
+    scheme: cmpts.scheme,
+    userinfo: cmpts.userinfo,
+    port: cmpts.port,
+    path: cmpts.path,
+    query: cmpts.query,
+    nid: cmpts.nid,
+    nss: cmpts.nss,
+    uuid: cmpts.uuid,
+    fragment: cmpts.fragment,
+    reference: cmpts.reference,
+    resourceName: cmpts.resourceName,
+    secure: cmpts.secure,
+    error: ''
+  }
+  const options = Object.assign({}, opts)
+  const uriTokens = []
+
+  // find scheme handler
+  const schemeHandler = SCHEMES[(options.scheme || components.scheme || '').toLowerCase()]
+
+  // perform scheme specific serialization
+  if (schemeHandler && schemeHandler.serialize) schemeHandler.serialize(components, options)
+
+  if (components.path !== undefined) {
+    if (!options.skipEscape) {
+      components.path = escape(components.path)
+
+      if (components.scheme !== undefined) {
+        components.path = components.path.split('%3A').join(':')
+      }
+    } else {
+      components.path = unescape(components.path)
+    }
+  }
+
+  if (options.reference !== 'suffix' && components.scheme) {
+    uriTokens.push(components.scheme)
+    uriTokens.push(':')
+  }
+
+  const authority = recomposeAuthority(components, options)
+  if (authority !== undefined) {
+    if (options.reference !== 'suffix') {
+      uriTokens.push('//')
+    }
+
+    uriTokens.push(authority)
+
+    if (components.path && components.path.charAt(0) !== '/') {
+      uriTokens.push('/')
+    }
+  }
+  if (components.path !== undefined) {
+    let s = components.path
+
+    if (!options.absolutePath && (!schemeHandler || !schemeHandler.absolutePath)) {
+      s = removeDotSegments(s)
+    }
+
+    if (authority === undefined) {
+      s = s.replace(/^\/\//u, '/%2F') // don't allow the path to start with "//"
+    }
+
+    uriTokens.push(s)
+  }
+
+  if (components.query !== undefined) {
+    uriTokens.push('?')
+    uriTokens.push(components.query)
+  }
+
+  if (components.fragment !== undefined) {
+    uriTokens.push('#')
+    uriTokens.push(components.fragment)
+  }
+  return uriTokens.join('')
+}
+
+const hexLookUp = Array.from({ length: 127 }, (v, k) => /[^!"$&'()*+,\-.;=_`a-z{}~]/u.test(String.fromCharCode(k)))
+
+function nonSimpleDomain (value) {
+  let code = 0
+  for (let i = 0, len = value.length; i < len; ++i) {
+    code = value.charCodeAt(i)
+    if (code > 126 || hexLookUp[code]) {
+      return true
+    }
+  }
+  return false
+}
+
+const URI_PARSE = /^(?:([^#/:?]+):)?(?:\/\/((?:([^#/?@]*)@)?(\[[^#/?\]]+\]|[^#/:?]*)(?::(\d*))?))?([^#?]*)(?:\?([^#]*))?(?:#((?:.|[\n\r])*))?/u
+
+function parse (uri, opts) {
+  const options = Object.assign({}, opts)
+  const parsed = {
+    scheme: undefined,
+    userinfo: undefined,
+    host: '',
+    port: undefined,
+    path: '',
+    query: undefined,
+    fragment: undefined
+  }
+  const gotEncoding = uri.indexOf('%') !== -1
+  let isIP = false
+  if (options.reference === 'suffix') uri = (options.scheme ? options.scheme + ':' : '') + '//' + uri
+
+  const matches = uri.match(URI_PARSE)
+
+  if (matches) {
+    // store each component
+    parsed.scheme = matches[1]
+    parsed.userinfo = matches[3]
+    parsed.host = matches[4]
+    parsed.port = parseInt(matches[5], 10)
+    parsed.path = matches[6] || ''
+    parsed.query = matches[7]
+    parsed.fragment = matches[8]
+
+    // fix port number
+    if (isNaN(parsed.port)) {
+      parsed.port = matches[5]
+    }
+    if (parsed.host) {
+      const ipv4result = normalizeIPv4(parsed.host)
+      if (ipv4result.isIPV4 === false) {
+        const ipv6result = normalizeIPv6(ipv4result.host, { isIPV4: false })
+        parsed.host = ipv6result.host.toLowerCase()
+        isIP = ipv6result.isIPV6
+      } else {
+        parsed.host = ipv4result.host
+        isIP = true
+      }
+    }
+    if (parsed.scheme === undefined && parsed.userinfo === undefined && parsed.host === undefined && parsed.port === undefined && !parsed.path && parsed.query === undefined) {
+      parsed.reference = 'same-document'
+    } else if (parsed.scheme === undefined) {
+      parsed.reference = 'relative'
+    } else if (parsed.fragment === undefined) {
+      parsed.reference = 'absolute'
+    } else {
+      parsed.reference = 'uri'
+    }
+
+    // check for reference errors
+    if (options.reference && options.reference !== 'suffix' && options.reference !== parsed.reference) {
+      parsed.error = parsed.error || 'URI is not a ' + options.reference + ' reference.'
+    }
+
+    // find scheme handler
+    const schemeHandler = SCHEMES[(options.scheme || parsed.scheme || '').toLowerCase()]
+
+    // check if scheme can't handle IRIs
+    if (!options.unicodeSupport && (!schemeHandler || !schemeHandler.unicodeSupport)) {
+      // if host component is a domain name
+      if (parsed.host && (options.domainHost || (schemeHandler && schemeHandler.domainHost)) && isIP === false && nonSimpleDomain(parsed.host)) {
+        // convert Unicode IDN -> ASCII IDN
+        try {
+          parsed.host = URL.domainToASCII(parsed.host.toLowerCase())
+        } catch (e) {
+          parsed.error = parsed.error || "Host's domain name can not be converted to ASCII: " + e
+        }
+      }
+      // convert IRI -> URI
+    }
+
+    if (!schemeHandler || (schemeHandler && !schemeHandler.skipNormalize)) {
+      if (gotEncoding && parsed.scheme !== undefined) {
+        parsed.scheme = unescape(parsed.scheme)
+      }
+      if (gotEncoding && parsed.userinfo !== undefined) {
+        parsed.userinfo = unescape(parsed.userinfo)
+      }
+      if (gotEncoding && parsed.host !== undefined) {
+        parsed.host = unescape(parsed.host)
+      }
+      if (parsed.path !== undefined && parsed.path.length) {
+        parsed.path = escape(unescape(parsed.path))
+      }
+      if (parsed.fragment !== undefined && parsed.fragment.length) {
+        parsed.fragment = encodeURI(decodeURIComponent(parsed.fragment))
+      }
+    }
+
+    // perform scheme specific parsing
+    if (schemeHandler && schemeHandler.parse) {
+      schemeHandler.parse(parsed, options)
+    }
+  } else {
+    parsed.error = parsed.error || 'URI can not be parsed.'
+  }
+  return parsed
+}
+
+const fastUri = {
+  SCHEMES,
+  normalize,
+  resolve,
+  resolveComponents,
+  equal,
+  serialize,
+  parse
+}
+
+module.exports = fastUri
+module.exports["default"] = fastUri
+module.exports.fastUri = fastUri
+
+
+/***/ }),
+
+/***/ 4923:
+/***/ ((module) => {
+
+"use strict";
+
+
+const UUID_REG = /^[\da-f]{8}\b-[\da-f]{4}\b-[\da-f]{4}\b-[\da-f]{4}\b-[\da-f]{12}$/iu
+const URN_REG = /([\da-z][\d\-a-z]{0,31}):((?:[\w!$'()*+,\-.:;=@]|%[\da-f]{2})+)/iu
+
+function isSecure (wsComponents) {
+  return typeof wsComponents.secure === 'boolean' ? wsComponents.secure : String(wsComponents.scheme).toLowerCase() === 'wss'
+}
+
+function httpParse (components) {
+  if (!components.host) {
+    components.error = components.error || 'HTTP URIs must have a host.'
+  }
+
+  return components
+}
+
+function httpSerialize (components) {
+  const secure = String(components.scheme).toLowerCase() === 'https'
+
+  // normalize the default port
+  if (components.port === (secure ? 443 : 80) || components.port === '') {
+    components.port = undefined
+  }
+
+  // normalize the empty path
+  if (!components.path) {
+    components.path = '/'
+  }
+
+  // NOTE: We do not parse query strings for HTTP URIs
+  // as WWW Form Url Encoded query strings are part of the HTML4+ spec,
+  // and not the HTTP spec.
+
+  return components
+}
+
+function wsParse (wsComponents) {
+// indicate if the secure flag is set
+  wsComponents.secure = isSecure(wsComponents)
+
+  // construct resouce name
+  wsComponents.resourceName = (wsComponents.path || '/') + (wsComponents.query ? '?' + wsComponents.query : '')
+  wsComponents.path = undefined
+  wsComponents.query = undefined
+
+  return wsComponents
+}
+
+function wsSerialize (wsComponents) {
+// normalize the default port
+  if (wsComponents.port === (isSecure(wsComponents) ? 443 : 80) || wsComponents.port === '') {
+    wsComponents.port = undefined
+  }
+
+  // ensure scheme matches secure flag
+  if (typeof wsComponents.secure === 'boolean') {
+    wsComponents.scheme = (wsComponents.secure ? 'wss' : 'ws')
+    wsComponents.secure = undefined
+  }
+
+  // reconstruct path from resource name
+  if (wsComponents.resourceName) {
+    const [path, query] = wsComponents.resourceName.split('?')
+    wsComponents.path = (path && path !== '/' ? path : undefined)
+    wsComponents.query = query
+    wsComponents.resourceName = undefined
+  }
+
+  // forbid fragment component
+  wsComponents.fragment = undefined
+
+  return wsComponents
+}
+
+function urnParse (urnComponents, options) {
+  if (!urnComponents.path) {
+    urnComponents.error = 'URN can not be parsed'
+    return urnComponents
+  }
+  const matches = urnComponents.path.match(URN_REG)
+  if (matches) {
+    const scheme = options.scheme || urnComponents.scheme || 'urn'
+    urnComponents.nid = matches[1].toLowerCase()
+    urnComponents.nss = matches[2]
+    const urnScheme = `${scheme}:${options.nid || urnComponents.nid}`
+    const schemeHandler = SCHEMES[urnScheme]
+    urnComponents.path = undefined
+
+    if (schemeHandler) {
+      urnComponents = schemeHandler.parse(urnComponents, options)
+    }
+  } else {
+    urnComponents.error = urnComponents.error || 'URN can not be parsed.'
+  }
+
+  return urnComponents
+}
+
+function urnSerialize (urnComponents, options) {
+  const scheme = options.scheme || urnComponents.scheme || 'urn'
+  const nid = urnComponents.nid.toLowerCase()
+  const urnScheme = `${scheme}:${options.nid || nid}`
+  const schemeHandler = SCHEMES[urnScheme]
+
+  if (schemeHandler) {
+    urnComponents = schemeHandler.serialize(urnComponents, options)
+  }
+
+  const uriComponents = urnComponents
+  const nss = urnComponents.nss
+  uriComponents.path = `${nid || options.nid}:${nss}`
+
+  options.skipEscape = true
+  return uriComponents
+}
+
+function urnuuidParse (urnComponents, options) {
+  const uuidComponents = urnComponents
+  uuidComponents.uuid = uuidComponents.nss
+  uuidComponents.nss = undefined
+
+  if (!options.tolerant && (!uuidComponents.uuid || !UUID_REG.test(uuidComponents.uuid))) {
+    uuidComponents.error = uuidComponents.error || 'UUID is not valid.'
+  }
+
+  return uuidComponents
+}
+
+function urnuuidSerialize (uuidComponents) {
+  const urnComponents = uuidComponents
+  // normalize UUID
+  urnComponents.nss = (uuidComponents.uuid || '').toLowerCase()
+  return urnComponents
+}
+
+const http = {
+  scheme: 'http',
+  domainHost: true,
+  parse: httpParse,
+  serialize: httpSerialize
+}
+
+const https = {
+  scheme: 'https',
+  domainHost: http.domainHost,
+  parse: httpParse,
+  serialize: httpSerialize
+}
+
+const ws = {
+  scheme: 'ws',
+  domainHost: true,
+  parse: wsParse,
+  serialize: wsSerialize
+}
+
+const wss = {
+  scheme: 'wss',
+  domainHost: ws.domainHost,
+  parse: ws.parse,
+  serialize: ws.serialize
+}
+
+const urn = {
+  scheme: 'urn',
+  parse: urnParse,
+  serialize: urnSerialize,
+  skipNormalize: true
+}
+
+const urnuuid = {
+  scheme: 'urn:uuid',
+  parse: urnuuidParse,
+  serialize: urnuuidSerialize,
+  skipNormalize: true
+}
+
+const SCHEMES = {
+  http,
+  https,
+  ws,
+  wss,
+  urn,
+  'urn:uuid': urnuuid
+}
+
+module.exports = SCHEMES
+
+
+/***/ }),
+
+/***/ 3157:
+/***/ ((module) => {
+
+"use strict";
+
+
+const HEX = {
+  0: 0,
+  1: 1,
+  2: 2,
+  3: 3,
+  4: 4,
+  5: 5,
+  6: 6,
+  7: 7,
+  8: 8,
+  9: 9,
+  a: 10,
+  A: 10,
+  b: 11,
+  B: 11,
+  c: 12,
+  C: 12,
+  d: 13,
+  D: 13,
+  e: 14,
+  E: 14,
+  f: 15,
+  F: 15
+}
+
+module.exports = {
+  HEX
+}
+
+
+/***/ }),
+
+/***/ 6743:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+"use strict";
+
+
+const { HEX } = __nccwpck_require__(3157)
+
+function normalizeIPv4 (host) {
+  if (findToken(host, '.') < 3) { return { host, isIPV4: false } }
+  const matches = host.match(/^(?:(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9][0-9]|[0-9])\.){3}(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9][0-9]|[0-9])$/u) || []
+  const [address] = matches
+  if (address) {
+    return { host: stripLeadingZeros(address, '.'), isIPV4: true }
+  } else {
+    return { host, isIPV4: false }
+  }
+}
+
+/**
+ * @param {string[]} input
+ * @param {boolean} [keepZero=false]
+ * @returns {string|undefined}
+ */
+function stringArrayToHexStripped (input, keepZero = false) {
+  let acc = ''
+  let strip = true
+  for (const c of input) {
+    if (HEX[c] === undefined) return undefined
+    if (c !== '0' && strip === true) strip = false
+    if (!strip) acc += c
+  }
+  if (keepZero && acc.length === 0) acc = '0'
+  return acc
+}
+
+function getIPV6 (input) {
+  let tokenCount = 0
+  const output = { error: false, address: '', zone: '' }
+  const address = []
+  const buffer = []
+  let isZone = false
+  let endipv6Encountered = false
+  let endIpv6 = false
+
+  function consume () {
+    if (buffer.length) {
+      if (isZone === false) {
+        const hex = stringArrayToHexStripped(buffer)
+        if (hex !== undefined) {
+          address.push(hex)
+        } else {
+          output.error = true
+          return false
+        }
+      }
+      buffer.length = 0
+    }
+    return true
+  }
+
+  for (let i = 0; i < input.length; i++) {
+    const cursor = input[i]
+    if (cursor === '[' || cursor === ']') { continue }
+    if (cursor === ':') {
+      if (endipv6Encountered === true) {
+        endIpv6 = true
+      }
+      if (!consume()) { break }
+      tokenCount++
+      address.push(':')
+      if (tokenCount > 7) {
+        // not valid
+        output.error = true
+        break
+      }
+      if (i - 1 >= 0 && input[i - 1] === ':') {
+        endipv6Encountered = true
+      }
+      continue
+    } else if (cursor === '%') {
+      if (!consume()) { break }
+      // switch to zone detection
+      isZone = true
+    } else {
+      buffer.push(cursor)
+      continue
+    }
+  }
+  if (buffer.length) {
+    if (isZone) {
+      output.zone = buffer.join('')
+    } else if (endIpv6) {
+      address.push(buffer.join(''))
+    } else {
+      address.push(stringArrayToHexStripped(buffer))
+    }
+  }
+  output.address = address.join('')
+  return output
+}
+
+function normalizeIPv6 (host, opts = {}) {
+  if (findToken(host, ':') < 2) { return { host, isIPV6: false } }
+  const ipv6 = getIPV6(host)
+
+  if (!ipv6.error) {
+    let newHost = ipv6.address
+    let escapedHost = ipv6.address
+    if (ipv6.zone) {
+      newHost += '%' + ipv6.zone
+      escapedHost += '%25' + ipv6.zone
+    }
+    return { host: newHost, escapedHost, isIPV6: true }
+  } else {
+    return { host, isIPV6: false }
+  }
+}
+
+function stripLeadingZeros (str, token) {
+  let out = ''
+  let skip = true
+  const l = str.length
+  for (let i = 0; i < l; i++) {
+    const c = str[i]
+    if (c === '0' && skip) {
+      if ((i + 1 <= l && str[i + 1] === token) || i + 1 === l) {
+        out += c
+        skip = false
+      }
+    } else {
+      if (c === token) {
+        skip = true
+      } else {
+        skip = false
+      }
+      out += c
+    }
+  }
+  return out
+}
+
+function findToken (str, token) {
+  let ind = 0
+  for (let i = 0; i < str.length; i++) {
+    if (str[i] === token) ind++
+  }
+  return ind
+}
+
+const RDS1 = /^\.\.?\//u
+const RDS2 = /^\/\.(?:\/|$)/u
+const RDS3 = /^\/\.\.(?:\/|$)/u
+const RDS5 = /^\/?(?:.|\n)*?(?=\/|$)/u
+
+function removeDotSegments (input) {
+  const output = []
+
+  while (input.length) {
+    if (input.match(RDS1)) {
+      input = input.replace(RDS1, '')
+    } else if (input.match(RDS2)) {
+      input = input.replace(RDS2, '/')
+    } else if (input.match(RDS3)) {
+      input = input.replace(RDS3, '/')
+      output.pop()
+    } else if (input === '.' || input === '..') {
+      input = ''
+    } else {
+      const im = input.match(RDS5)
+      if (im) {
+        const s = im[0]
+        input = input.slice(s.length)
+        output.push(s)
+      } else {
+        throw new Error('Unexpected dot segment condition')
+      }
+    }
+  }
+  return output.join('')
+}
+
+function normalizeComponentEncoding (components, esc) {
+  const func = esc !== true ? escape : unescape
+  if (components.scheme !== undefined) {
+    components.scheme = func(components.scheme)
+  }
+  if (components.userinfo !== undefined) {
+    components.userinfo = func(components.userinfo)
+  }
+  if (components.host !== undefined) {
+    components.host = func(components.host)
+  }
+  if (components.path !== undefined) {
+    components.path = func(components.path)
+  }
+  if (components.query !== undefined) {
+    components.query = func(components.query)
+  }
+  if (components.fragment !== undefined) {
+    components.fragment = func(components.fragment)
+  }
+  return components
+}
+
+function recomposeAuthority (components, options) {
+  const uriTokens = []
+
+  if (components.userinfo !== undefined) {
+    uriTokens.push(components.userinfo)
+    uriTokens.push('@')
+  }
+
+  if (components.host !== undefined) {
+    let host = unescape(components.host)
+    const ipV4res = normalizeIPv4(host)
+
+    if (ipV4res.isIPV4) {
+      host = ipV4res.host
+    } else {
+      const ipV6res = normalizeIPv6(ipV4res.host, { isIPV4: false })
+      if (ipV6res.isIPV6 === true) {
+        host = `[${ipV6res.escapedHost}]`
+      } else {
+        host = components.host
+      }
+    }
+    uriTokens.push(host)
+  }
+
+  if (typeof components.port === 'number' || typeof components.port === 'string') {
+    uriTokens.push(':')
+    uriTokens.push(String(components.port))
+  }
+
+  return uriTokens.length ? uriTokens.join('') : undefined
+};
+
+module.exports = {
+  recomposeAuthority,
+  normalizeComponentEncoding,
+  removeDotSegments,
+  normalizeIPv4,
+  normalizeIPv6,
+  stringArrayToHexStripped
+}
+
+
+/***/ }),
+
 /***/ 8109:
 /***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
 
@@ -52368,10 +51760,23 @@ function resolveCollection(CN, ctx, token, onError, tagName, tag) {
         coll.tag = tagName;
     return coll;
 }
-function composeCollection(CN, ctx, token, tagToken, onError) {
+function composeCollection(CN, ctx, token, props, onError) {
+    const tagToken = props.tag;
     const tagName = !tagToken
         ? null
         : ctx.directives.tagName(tagToken.source, msg => onError(tagToken, 'TAG_RESOLVE_FAILED', msg));
+    if (token.type === 'block-seq') {
+        const { anchor, newlineAfterProp: nl } = props;
+        const lastProp = anchor && tagToken
+            ? anchor.offset > tagToken.offset
+                ? anchor
+                : tagToken
+            : (anchor ?? tagToken);
+        if (lastProp && (!nl || nl.offset < lastProp.offset)) {
+            const message = 'Missing newline after block sequence props';
+            onError(lastProp, 'MISSING_CHAR', message);
+        }
+    }
     const expType = token.type === 'block-map'
         ? 'map'
         : token.type === 'block-seq'
@@ -52385,8 +51790,7 @@ function composeCollection(CN, ctx, token, tagToken, onError) {
         !tagName ||
         tagName === '!' ||
         (tagName === YAMLMap.YAMLMap.tagName && expType === 'map') ||
-        (tagName === YAMLSeq.YAMLSeq.tagName && expType === 'seq') ||
-        !expType) {
+        (tagName === YAMLSeq.YAMLSeq.tagName && expType === 'seq')) {
         return resolveCollection(CN, ctx, token, onError, tagName);
     }
     let tag = ctx.schema.tags.find(t => t.tag === tagName && t.collection === expType);
@@ -52448,6 +51852,7 @@ function composeDoc(options, directives, { offset, start, value, end }, onError)
         next: value ?? end?.[0],
         offset,
         onError,
+        parentIndent: 0,
         startOnNewline: true
     });
     if (props.found) {
@@ -52508,7 +51913,7 @@ function composeNode(ctx, token, props, onError) {
         case 'block-map':
         case 'block-seq':
         case 'flow-collection':
-            node = composeCollection.composeCollection(CN, ctx, token, tag, onError);
+            node = composeCollection.composeCollection(CN, ctx, token, props, onError);
             if (anchor)
                 node.anchor = anchor.source.substring(1);
             break;
@@ -52590,7 +51995,7 @@ var resolveFlowScalar = __nccwpck_require__(261);
 
 function composeScalar(ctx, token, tagToken, onError) {
     const { value, type, comment, range } = token.type === 'block-scalar'
-        ? resolveBlockScalar.resolveBlockScalar(token, ctx.options.strict, onError)
+        ? resolveBlockScalar.resolveBlockScalar(ctx, token, onError)
         : resolveFlowScalar.resolveFlowScalar(token, ctx.options.strict, onError);
     const tagName = tagToken
         ? ctx.directives.tagName(tagToken.source, msg => onError(tagToken, 'TAG_RESOLVE_FAILED', msg))
@@ -52925,6 +52330,7 @@ function resolveBlockMap({ composeNode, composeEmptyNode }, ctx, bm, onError, ta
             next: key ?? sep?.[0],
             offset,
             onError,
+            parentIndent: bm.indent,
             startOnNewline: true
         });
         const implicitKey = !keyProps.found;
@@ -52945,7 +52351,7 @@ function resolveBlockMap({ composeNode, composeEmptyNode }, ctx, bm, onError, ta
                 }
                 continue;
             }
-            if (keyProps.hasNewlineAfterProp || utilContainsNewline.containsNewline(key)) {
+            if (keyProps.newlineAfterProp || utilContainsNewline.containsNewline(key)) {
                 onError(key ?? start[start.length - 1], 'MULTILINE_IMPLICIT_KEY', 'Implicit keys need to be on a single line');
             }
         }
@@ -52967,6 +52373,7 @@ function resolveBlockMap({ composeNode, composeEmptyNode }, ctx, bm, onError, ta
             next: value,
             offset: keyNode.range[2],
             onError,
+            parentIndent: bm.indent,
             startOnNewline: !key || key.type === 'block-scalar'
         });
         offset = valueProps.end;
@@ -53025,9 +52432,9 @@ exports.resolveBlockMap = resolveBlockMap;
 
 var Scalar = __nccwpck_require__(9338);
 
-function resolveBlockScalar(scalar, strict, onError) {
+function resolveBlockScalar(ctx, scalar, onError) {
     const start = scalar.offset;
-    const header = parseBlockScalarHeader(scalar, strict, onError);
+    const header = parseBlockScalarHeader(scalar, ctx.options.strict, onError);
     if (!header)
         return { value: '', type: null, comment: '', range: [start, start, start] };
     const type = header.mode === '>' ? Scalar.Scalar.BLOCK_FOLDED : Scalar.Scalar.BLOCK_LITERAL;
@@ -53069,6 +52476,10 @@ function resolveBlockScalar(scalar, strict, onError) {
             if (header.indent === 0)
                 trimIndent = indent.length;
             contentStart = i;
+            if (trimIndent === 0 && !ctx.atRoot) {
+                const message = 'Block scalar values in collections must be indented';
+                onError(offset, 'BAD_INDENT', message);
+            }
             break;
         }
         offset += indent.length + content.length + 1;
@@ -53244,6 +52655,7 @@ function resolveBlockSeq({ composeNode, composeEmptyNode }, ctx, bs, onError, ta
             next: value,
             offset,
             onError,
+            parentIndent: bs.indent,
             startOnNewline: true
         });
         if (!props.found) {
@@ -53360,6 +52772,7 @@ function resolveFlowCollection({ composeNode, composeEmptyNode }, ctx, fc, onErr
             next: key ?? sep?.[0],
             offset,
             onError,
+            parentIndent: fc.indent,
             startOnNewline: false
         });
         if (!props.found) {
@@ -53441,6 +52854,7 @@ function resolveFlowCollection({ composeNode, composeEmptyNode }, ctx, fc, onErr
                 next: value,
                 offset: keyNode.range[2],
                 onError,
+                parentIndent: fc.indent,
                 startOnNewline: false
             });
             if (valueProps.found) {
@@ -53772,17 +53186,18 @@ exports.resolveFlowScalar = resolveFlowScalar;
 "use strict";
 
 
-function resolveProps(tokens, { flow, indicator, next, offset, onError, startOnNewline }) {
+function resolveProps(tokens, { flow, indicator, next, offset, onError, parentIndent, startOnNewline }) {
     let spaceBefore = false;
     let atNewline = startOnNewline;
     let hasSpace = startOnNewline;
     let comment = '';
     let commentSep = '';
     let hasNewline = false;
-    let hasNewlineAfterProp = false;
     let reqSpace = false;
+    let tab = null;
     let anchor = null;
     let tag = null;
+    let newlineAfterProp = null;
     let comma = null;
     let found = null;
     let start = null;
@@ -53794,16 +53209,22 @@ function resolveProps(tokens, { flow, indicator, next, offset, onError, startOnN
                 onError(token.offset, 'MISSING_CHAR', 'Tags and anchors must be separated from the next token by white space');
             reqSpace = false;
         }
+        if (tab) {
+            if (atNewline && token.type !== 'comment' && token.type !== 'newline') {
+                onError(tab, 'TAB_AS_INDENT', 'Tabs are not allowed as indentation');
+            }
+            tab = null;
+        }
         switch (token.type) {
             case 'space':
                 // At the doc level, tabs at line start may be parsed
                 // as leading white space rather than indentation.
                 // In a flow collection, only the parser handles indent.
                 if (!flow &&
-                    atNewline &&
-                    indicator !== 'doc-start' &&
-                    token.source[0] === '\t')
-                    onError(token, 'TAB_AS_INDENT', 'Tabs are not allowed as indentation');
+                    (indicator !== 'doc-start' || next?.type !== 'flow-collection') &&
+                    token.source.includes('\t')) {
+                    tab = token;
+                }
                 hasSpace = true;
                 break;
             case 'comment': {
@@ -53830,7 +53251,7 @@ function resolveProps(tokens, { flow, indicator, next, offset, onError, startOnN
                 atNewline = true;
                 hasNewline = true;
                 if (anchor || tag)
-                    hasNewlineAfterProp = true;
+                    newlineAfterProp = token;
                 hasSpace = true;
                 break;
             case 'anchor':
@@ -53863,7 +53284,8 @@ function resolveProps(tokens, { flow, indicator, next, offset, onError, startOnN
                 if (found)
                     onError(token, 'UNEXPECTED_TOKEN', `Unexpected ${token.source} in ${flow ?? 'collection'}`);
                 found = token;
-                atNewline = false;
+                atNewline =
+                    indicator === 'seq-item-ind' || indicator === 'explicit-key-ind';
                 hasSpace = false;
                 break;
             case 'comma':
@@ -53889,17 +53311,23 @@ function resolveProps(tokens, { flow, indicator, next, offset, onError, startOnN
         next.type !== 'space' &&
         next.type !== 'newline' &&
         next.type !== 'comma' &&
-        (next.type !== 'scalar' || next.source !== ''))
+        (next.type !== 'scalar' || next.source !== '')) {
         onError(next.offset, 'MISSING_CHAR', 'Tags and anchors must be separated from the next token by white space');
+    }
+    if (tab &&
+        ((atNewline && tab.indent <= parentIndent) ||
+            next?.type === 'block-map' ||
+            next?.type === 'block-seq'))
+        onError(tab, 'TAB_AS_INDENT', 'Tabs are not allowed as indentation');
     return {
         comma,
         found,
         spaceBefore,
         comment,
         hasNewline,
-        hasNewlineAfterProp,
         anchor,
         tag,
+        newlineAfterProp,
         end,
         start: start ?? end
     };
@@ -55239,7 +54667,6 @@ class Collection extends Node.NodeBase {
         }
     }
 }
-Collection.maxFlowStringSingleLineLength = 60;
 
 exports.Collection = Collection;
 exports.collectionFromPath = collectionFromPath;
@@ -55904,7 +55331,7 @@ function resolveAsScalar(token, strict = true, onError) {
             case 'double-quoted-scalar':
                 return resolveFlowScalar.resolveFlowScalar(token, strict, _onError);
             case 'block-scalar':
-                return resolveBlockScalar.resolveBlockScalar(token, strict, _onError);
+                return resolveBlockScalar.resolveBlockScalar({ options: { strict } }, token, _onError);
         }
     }
     return null;
@@ -56489,11 +55916,11 @@ function isEmpty(ch) {
             return false;
     }
 }
-const hexDigits = '0123456789ABCDEFabcdef'.split('');
-const tagChars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-#;/?:@&=+$_.!~*'()".split('');
-const invalidFlowScalarChars = ',[]{}'.split('');
-const invalidAnchorChars = ' ,[]{}\n\r\t'.split('');
-const isNotAnchorChar = (ch) => !ch || invalidAnchorChars.includes(ch);
+const hexDigits = new Set('0123456789ABCDEFabcdef');
+const tagChars = new Set("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-#;/?:@&=+$_.!~*'()");
+const flowIndicatorChars = new Set(',[]{}');
+const invalidAnchorChars = new Set(' ,[]{}\n\r\t');
+const isNotAnchorChar = (ch) => !ch || invalidAnchorChars.has(ch);
 /**
  * Splits an input string into lexical tokens, i.e. smaller strings that are
  * easily identifiable by `tokens.tokenType()`.
@@ -56559,6 +55986,8 @@ class Lexer {
      */
     *lex(source, incomplete = false) {
         if (source) {
+            if (typeof source !== 'string')
+                throw TypeError('source is not a string');
             this.buffer = this.buffer ? this.buffer + source : source;
             this.lineEndPos = null;
         }
@@ -56658,11 +56087,16 @@ class Lexer {
         }
         if (line[0] === '%') {
             let dirEnd = line.length;
-            const cs = line.indexOf('#');
-            if (cs !== -1) {
+            let cs = line.indexOf('#');
+            while (cs !== -1) {
                 const ch = line[cs - 1];
-                if (ch === ' ' || ch === '\t')
+                if (ch === ' ' || ch === '\t') {
                     dirEnd = cs - 1;
+                    break;
+                }
+                else {
+                    cs = line.indexOf('#', cs + 1);
+                }
             }
             while (true) {
                 const ch = line[dirEnd - 1];
@@ -56693,15 +56127,11 @@ class Lexer {
             if (!this.atEnd && !this.hasChars(4))
                 return this.setNext('line-start');
             const s = this.peek(3);
-            if (s === '---' && isEmpty(this.charAt(3))) {
+            if ((s === '---' || s === '...') && isEmpty(this.charAt(3))) {
                 yield* this.pushCount(3);
                 this.indentValue = 0;
                 this.indentNext = 0;
-                return 'doc';
-            }
-            else if (s === '...' && isEmpty(this.charAt(3))) {
-                yield* this.pushCount(3);
-                return 'stream';
+                return s === '---' ? 'doc' : 'stream';
             }
         }
         this.indentValue = yield* this.pushSpaces(false);
@@ -56928,8 +56358,10 @@ class Lexer {
         if (indent >= this.indentNext) {
             if (this.blockScalarIndent === -1)
                 this.indentNext = indent;
-            else
-                this.indentNext += this.blockScalarIndent;
+            else {
+                this.indentNext =
+                    this.blockScalarIndent + (this.indentNext === 0 ? 1 : this.indentNext);
+            }
             do {
                 const cs = this.continueScalar(nl + 1);
                 if (cs === -1)
@@ -56942,14 +56374,25 @@ class Lexer {
                 nl = this.buffer.length;
             }
         }
-        if (!this.blockScalarKeep) {
+        // Trailing insufficiently indented tabs are invalid.
+        // To catch that during parsing, we include them in the block scalar value.
+        let i = nl + 1;
+        ch = this.buffer[i];
+        while (ch === ' ')
+            ch = this.buffer[++i];
+        if (ch === '\t') {
+            while (ch === '\t' || ch === ' ' || ch === '\r' || ch === '\n')
+                ch = this.buffer[++i];
+            nl = i - 1;
+        }
+        else if (!this.blockScalarKeep) {
             do {
                 let i = nl - 1;
                 let ch = this.buffer[i];
                 if (ch === '\r')
                     ch = this.buffer[--i];
                 const lastChar = i; // Drop the line if last char not more indented
-                while (ch === ' ' || ch === '\t')
+                while (ch === ' ')
                     ch = this.buffer[--i];
                 if (ch === '\n' && i >= this.pos && i + 1 + indent > lastChar)
                     nl = i;
@@ -56969,7 +56412,7 @@ class Lexer {
         while ((ch = this.buffer[++i])) {
             if (ch === ':') {
                 const next = this.buffer[i + 1];
-                if (isEmpty(next) || (inFlow && next === ','))
+                if (isEmpty(next) || (inFlow && flowIndicatorChars.has(next)))
                     break;
                 end = i;
             }
@@ -56984,7 +56427,7 @@ class Lexer {
                     else
                         end = i;
                 }
-                if (next === '#' || (inFlow && invalidFlowScalarChars.includes(next)))
+                if (next === '#' || (inFlow && flowIndicatorChars.has(next)))
                     break;
                 if (ch === '\n') {
                     const cs = this.continueScalar(i + 1);
@@ -56994,7 +56437,7 @@ class Lexer {
                 }
             }
             else {
-                if (inFlow && invalidFlowScalarChars.includes(ch))
+                if (inFlow && flowIndicatorChars.has(ch))
                     break;
                 end = i;
             }
@@ -57039,7 +56482,7 @@ class Lexer {
             case ':': {
                 const inFlow = this.flowLevel > 0;
                 const ch1 = this.charAt(1);
-                if (isEmpty(ch1) || (inFlow && invalidFlowScalarChars.includes(ch1))) {
+                if (isEmpty(ch1) || (inFlow && flowIndicatorChars.has(ch1))) {
                     if (!inFlow)
                         this.indentNext = this.indentValue + 1;
                     else if (this.flowKey)
@@ -57064,11 +56507,11 @@ class Lexer {
             let i = this.pos + 1;
             let ch = this.buffer[i];
             while (ch) {
-                if (tagChars.includes(ch))
+                if (tagChars.has(ch))
                     ch = this.buffer[++i];
                 else if (ch === '%' &&
-                    hexDigits.includes(this.buffer[i + 1]) &&
-                    hexDigits.includes(this.buffer[i + 2])) {
+                    hexDigits.has(this.buffer[i + 1]) &&
+                    hexDigits.has(this.buffer[i + 2])) {
                     ch = this.buffer[(i += 3)];
                 }
                 else
@@ -57476,7 +56919,7 @@ class Parser {
                     }
                     else {
                         Object.assign(it, { key: token, sep: [] });
-                        this.onKeyLine = !includesToken(it.start, 'explicit-key-ind');
+                        this.onKeyLine = !it.explicitKey;
                         return;
                     }
                     break;
@@ -57685,9 +57128,9 @@ class Parser {
                 return;
         }
         if (this.indent >= map.indent) {
-            const atNextItem = !this.onKeyLine &&
-                this.indent === map.indent &&
-                it.sep &&
+            const atMapIndent = !this.onKeyLine && this.indent === map.indent;
+            const atNextItem = atMapIndent &&
+                (it.sep || it.explicitKey) &&
                 this.type !== 'seq-item-ind';
             // For empty nodes, assign newline-separated not indented empty tokens to following node
             let start = [];
@@ -57728,25 +57171,26 @@ class Parser {
                     }
                     return;
                 case 'explicit-key-ind':
-                    if (!it.sep && !includesToken(it.start, 'explicit-key-ind')) {
+                    if (!it.sep && !it.explicitKey) {
                         it.start.push(this.sourceToken);
+                        it.explicitKey = true;
                     }
                     else if (atNextItem || it.value) {
                         start.push(this.sourceToken);
-                        map.items.push({ start });
+                        map.items.push({ start, explicitKey: true });
                     }
                     else {
                         this.stack.push({
                             type: 'block-map',
                             offset: this.offset,
                             indent: this.indent,
-                            items: [{ start: [this.sourceToken] }]
+                            items: [{ start: [this.sourceToken], explicitKey: true }]
                         });
                     }
                     this.onKeyLine = true;
                     return;
                 case 'map-value-ind':
-                    if (includesToken(it.start, 'explicit-key-ind')) {
+                    if (it.explicitKey) {
                         if (!it.sep) {
                             if (includesToken(it.start, 'newline')) {
                                 Object.assign(it, { key: null, sep: [this.sourceToken] });
@@ -57837,9 +57281,7 @@ class Parser {
                 default: {
                     const bv = this.startBlockValue(map);
                     if (bv) {
-                        if (atNextItem &&
-                            bv.type !== 'block-seq' &&
-                            includesToken(it.start, 'explicit-key-ind')) {
+                        if (atMapIndent && bv.type !== 'block-seq') {
                             map.items.push({ start });
                         }
                         this.stack.push(bv);
@@ -58060,7 +57502,7 @@ class Parser {
                     type: 'block-map',
                     offset: this.offset,
                     indent: this.indent,
-                    items: [{ start }]
+                    items: [{ start, explicitKey: true }]
                 };
             }
             case 'map-value-ind': {
@@ -58432,7 +57874,7 @@ const floatNaN = {
     identify: value => typeof value === 'number',
     default: true,
     tag: 'tag:yaml.org,2002:float',
-    test: /^(?:[-+]?\.(?:inf|Inf|INF|nan|NaN|NAN))$/,
+    test: /^(?:[-+]?\.(?:inf|Inf|INF)|\.nan|\.NaN|\.NAN)$/,
     resolve: str => str.slice(-3).toLowerCase() === 'nan'
         ? NaN
         : str[0] === '-'
@@ -58825,7 +58267,7 @@ const falseTag = {
     identify: value => value === false,
     default: true,
     tag: 'tag:yaml.org,2002:bool',
-    test: /^(?:N|n|[Nn]o|NO|[Ff]alse|FALSE|[Oo]ff|OFF)$/i,
+    test: /^(?:N|n|[Nn]o|NO|[Ff]alse|FALSE|[Oo]ff|OFF)$/,
     resolve: () => new Scalar.Scalar(false),
     stringify: boolStringify
 };
@@ -58849,7 +58291,7 @@ const floatNaN = {
     identify: value => typeof value === 'number',
     default: true,
     tag: 'tag:yaml.org,2002:float',
-    test: /^[-+]?\.(?:inf|Inf|INF|nan|NaN|NAN)$/,
+    test: /^(?:[-+]?\.(?:inf|Inf|INF)|\.nan|\.NaN|\.NAN)$/,
     resolve: (str) => str.slice(-3).toLowerCase() === 'nan'
         ? NaN
         : str[0] === '-'
@@ -59434,6 +58876,8 @@ const FOLD_QUOTED = 'quoted';
 function foldFlowLines(text, indent, mode = 'flow', { indentAtStart, lineWidth = 80, minContentWidth = 20, onFold, onOverflow } = {}) {
     if (!lineWidth || lineWidth < 0)
         return text;
+    if (lineWidth < minContentWidth)
+        minContentWidth = 0;
     const endStep = Math.max(1 + minContentWidth, 1 + lineWidth - indent.length);
     if (text.length <= endStep)
         return text;
@@ -60041,7 +59485,7 @@ function stringifyPair({ key, value }, ctx, onComment, onChompKeep) {
         if (keyComment) {
             throw new Error('With simple keys, key nodes cannot have comments');
         }
-        if (identity.isCollection(key)) {
+        if (identity.isCollection(key) || (!identity.isNode(key) && typeof key === 'object')) {
             const msg = 'With simple keys, collection cannot be used as a key value';
             throw new Error(msg);
         }
@@ -61057,7 +60501,6 @@ var dist = __nccwpck_require__(567);
 var dist_default = /*#__PURE__*/__nccwpck_require__.n(dist);
 // EXTERNAL MODULE: external "fs"
 var external_fs_ = __nccwpck_require__(7147);
-var external_fs_namespaceObject = /*#__PURE__*/__nccwpck_require__.t(external_fs_, 2);
 // EXTERNAL MODULE: ./node_modules/fdir/dist/index.js
 var fdir_dist = __nccwpck_require__(5536);
 // EXTERNAL MODULE: ./node_modules/yaml/dist/index.js
@@ -62375,10 +61818,11 @@ class Minimatch {
         for (let i = 0; i < globParts.length - 1; i++) {
             for (let j = i + 1; j < globParts.length; j++) {
                 const matched = this.partsMatch(globParts[i], globParts[j], !this.preserveMultipleSlashes);
-                if (!matched)
-                    continue;
-                globParts[i] = matched;
-                globParts[j] = [];
+                if (matched) {
+                    globParts[i] = [];
+                    globParts[j] = matched;
+                    break;
+                }
             }
         }
         return globParts.filter(gs => gs.length);
@@ -62854,6 +62298,8 @@ minimatch.Minimatch = Minimatch;
 minimatch.escape = escape_escape;
 minimatch.unescape = unescape_unescape;
 //# sourceMappingURL=index.js.map
+;// CONCATENATED MODULE: external "node:url"
+const external_node_url_namespaceObject = require("node:url");
 ;// CONCATENATED MODULE: ./node_modules/path-scurry/node_modules/lru-cache/dist/esm/index.js
 /**
  * @module LRUCache
@@ -62984,21 +62430,26 @@ class Stack {
 /**
  * Default export, the thing you're using this module to get.
  *
- * All properties from the options object (with the exception of
- * {@link OptionsBase.max} and {@link OptionsBase.maxSize}) are added as
- * normal public members. (`max` and `maxBase` are read-only getters.)
- * Changing any of these will alter the defaults for subsequent method calls,
- * but is otherwise safe.
+ * The `K` and `V` types define the key and value types, respectively. The
+ * optional `FC` type defines the type of the `context` object passed to
+ * `cache.fetch()` and `cache.memo()`.
+ *
+ * Keys and values **must not** be `null` or `undefined`.
+ *
+ * All properties from the options object (with the exception of `max`,
+ * `maxSize`, `fetchMethod`, `memoMethod`, `dispose` and `disposeAfter`) are
+ * added as normal public members. (The listed options are read-only getters.)
+ *
+ * Changing any of these will alter the defaults for subsequent method calls.
  */
 class LRUCache {
-    // properties coming in from the options of these, only max and maxSize
-    // really *need* to be protected. The rest can be modified, as they just
-    // set defaults for various methods.
+    // options that cannot be changed without disaster
     #max;
     #maxSize;
     #dispose;
     #disposeAfter;
     #fetchMethod;
+    #memoMethod;
     /**
      * {@link LRUCache.OptionsBase.ttl}
      */
@@ -63144,6 +62595,9 @@ class LRUCache {
     get fetchMethod() {
         return this.#fetchMethod;
     }
+    get memoMethod() {
+        return this.#memoMethod;
+    }
     /**
      * {@link LRUCache.OptionsBase.dispose} (read-only)
      */
@@ -63157,7 +62611,7 @@ class LRUCache {
         return this.#disposeAfter;
     }
     constructor(options) {
-        const { max = 0, ttl, ttlResolution = 1, ttlAutopurge, updateAgeOnGet, updateAgeOnHas, allowStale, dispose, disposeAfter, noDisposeOnSet, noUpdateTTL, maxSize = 0, maxEntrySize = 0, sizeCalculation, fetchMethod, noDeleteOnFetchRejection, noDeleteOnStaleGet, allowStaleOnFetchRejection, allowStaleOnFetchAbort, ignoreFetchAbort, } = options;
+        const { max = 0, ttl, ttlResolution = 1, ttlAutopurge, updateAgeOnGet, updateAgeOnHas, allowStale, dispose, disposeAfter, noDisposeOnSet, noUpdateTTL, maxSize = 0, maxEntrySize = 0, sizeCalculation, fetchMethod, memoMethod, noDeleteOnFetchRejection, noDeleteOnStaleGet, allowStaleOnFetchRejection, allowStaleOnFetchAbort, ignoreFetchAbort, } = options;
         if (max !== 0 && !isPosInt(max)) {
             throw new TypeError('max option must be a nonnegative integer');
         }
@@ -63177,6 +62631,11 @@ class LRUCache {
                 throw new TypeError('sizeCalculation set to non-function');
             }
         }
+        if (memoMethod !== undefined &&
+            typeof memoMethod !== 'function') {
+            throw new TypeError('memoMethod must be a function if defined');
+        }
+        this.#memoMethod = memoMethod;
         if (fetchMethod !== undefined &&
             typeof fetchMethod !== 'function') {
             throw new TypeError('fetchMethod must be a function if specified');
@@ -63255,7 +62714,8 @@ class LRUCache {
         }
     }
     /**
-     * Return the remaining TTL time for a given entry key
+     * Return the number of ms left in the item's TTL. If item is not in cache,
+     * returns `0`. Returns `Infinity` if item is in cache without a defined TTL.
      */
     getRemainingTTL(key) {
         return this.#keyMap.has(key) ? Infinity : 0;
@@ -63271,7 +62731,7 @@ class LRUCache {
             if (ttl !== 0 && this.ttlAutopurge) {
                 const t = setTimeout(() => {
                     if (this.#isStale(index)) {
-                        this.delete(this.#keyList[index]);
+                        this.#delete(this.#keyList[index], 'expire');
                     }
                 }, ttl + 1);
                 // unref() not supported on all platforms
@@ -63528,13 +62988,14 @@ class LRUCache {
         return this.entries();
     }
     /**
-     * A String value that is used in the creation of the default string description of an object.
-     * Called by the built-in method Object.prototype.toString.
+     * A String value that is used in the creation of the default string
+     * description of an object. Called by the built-in method
+     * `Object.prototype.toString`.
      */
     [Symbol.toStringTag] = 'LRUCache';
     /**
      * Find a value for which the supplied fn method returns a truthy value,
-     * similar to Array.find().  fn is called as fn(value, key, cache).
+     * similar to `Array.find()`. fn is called as `fn(value, key, cache)`.
      */
     find(fn, getOptions = {}) {
         for (const i of this.#indexes()) {
@@ -63550,10 +63011,15 @@ class LRUCache {
         }
     }
     /**
-     * Call the supplied function on each item in the cache, in order from
-     * most recently used to least recently used.  fn is called as
-     * fn(value, key, cache).  Does not update age or recenty of use.
-     * Does not iterate over stale values.
+     * Call the supplied function on each item in the cache, in order from most
+     * recently used to least recently used.
+     *
+     * `fn` is called as `fn(value, key, cache)`.
+     *
+     * If `thisp` is provided, function will be called in the `this`-context of
+     * the provided object, or the cache if no `thisp` object is provided.
+     *
+     * Does not update age or recenty of use, or iterate over stale values.
      */
     forEach(fn, thisp = this) {
         for (const i of this.#indexes()) {
@@ -63589,7 +63055,7 @@ class LRUCache {
         let deleted = false;
         for (const i of this.#rindexes({ allowStale: true })) {
             if (this.#isStale(i)) {
-                this.delete(this.#keyList[i]);
+                this.#delete(this.#keyList[i], 'expire');
                 deleted = true;
             }
         }
@@ -63597,9 +63063,15 @@ class LRUCache {
     }
     /**
      * Get the extended info about a given entry, to get its value, size, and
-     * TTL info simultaneously. Like {@link LRUCache#dump}, but just for a
-     * single key. Always returns stale values, if their info is found in the
-     * cache, so be sure to check for expired TTLs if relevant.
+     * TTL info simultaneously. Returns `undefined` if the key is not present.
+     *
+     * Unlike {@link LRUCache#dump}, which is designed to be portable and survive
+     * serialization, the `start` value is always the current timestamp, and the
+     * `ttl` is a calculated remaining time to live (negative if expired).
+     *
+     * Always returns stale values, if their info is found in the cache, so be
+     * sure to check for expirations (ie, a negative {@link LRUCache.Entry#ttl})
+     * if relevant.
      */
     info(key) {
         const i = this.#keyMap.get(key);
@@ -63628,7 +63100,16 @@ class LRUCache {
     }
     /**
      * Return an array of [key, {@link LRUCache.Entry}] tuples which can be
-     * passed to cache.load()
+     * passed to {@link LRLUCache#load}.
+     *
+     * The `start` fields are calculated relative to a portable `Date.now()`
+     * timestamp, even if `performance.now()` is available.
+     *
+     * Stale entries are always included in the `dump`, even if
+     * {@link LRUCache.OptionsBase.allowStale} is false.
+     *
+     * Note: this returns an actual array, not a generator, so it can be more
+     * easily passed around.
      */
     dump() {
         const arr = [];
@@ -63657,8 +63138,12 @@ class LRUCache {
     }
     /**
      * Reset the cache and load in the items in entries in the order listed.
-     * Note that the shape of the resulting cache may be different if the
-     * same options are not used in both caches.
+     *
+     * The shape of the resulting cache may be different if the same options are
+     * not used in both caches.
+     *
+     * The `start` fields are assumed to be calculated relative to a portable
+     * `Date.now()` timestamp, even if `performance.now()` is available.
      */
     load(arr) {
         this.clear();
@@ -63681,6 +63166,30 @@ class LRUCache {
      *
      * Note: if `undefined` is specified as a value, this is an alias for
      * {@link LRUCache#delete}
+     *
+     * Fields on the {@link LRUCache.SetOptions} options param will override
+     * their corresponding values in the constructor options for the scope
+     * of this single `set()` operation.
+     *
+     * If `start` is provided, then that will set the effective start
+     * time for the TTL calculation. Note that this must be a previous
+     * value of `performance.now()` if supported, or a previous value of
+     * `Date.now()` if not.
+     *
+     * Options object may also include `size`, which will prevent
+     * calling the `sizeCalculation` function and just use the specified
+     * number if it is a positive integer, and `noDisposeOnSet` which
+     * will prevent calling a `dispose` function in the case of
+     * overwrites.
+     *
+     * If the `size` (or return value of `sizeCalculation`) for a given
+     * entry is greater than `maxEntrySize`, then the item will not be
+     * added to the cache.
+     *
+     * Will update the recency of the entry.
+     *
+     * If the value is `undefined`, then this is an alias for
+     * `cache.delete(key)`. `undefined` is never stored in the cache.
      */
     set(k, v, setOptions = {}) {
         if (v === undefined) {
@@ -63698,7 +63207,7 @@ class LRUCache {
                 status.maxEntrySizeExceeded = true;
             }
             // have to delete, in case something is there already.
-            this.delete(k);
+            this.#delete(k, 'set');
             return this;
         }
         let index = this.#size === 0 ? undefined : this.#keyMap.get(k);
@@ -63850,6 +63359,14 @@ class LRUCache {
      * Will return false if the item is stale, even though it is technically
      * in the cache.
      *
+     * Check if a key is in the cache, without updating the recency of
+     * use. Age is updated if {@link LRUCache.OptionsBase.updateAgeOnHas} is set
+     * to `true` in either the options or the constructor.
+     *
+     * Will return `false` if the item is stale, even though it is technically in
+     * the cache. The difference can be determined (if it matters) by using a
+     * `status` argument, and inspecting the `has` field.
+     *
      * Will not update item age unless
      * {@link LRUCache.OptionsBase.updateAgeOnHas} is set.
      */
@@ -63941,7 +63458,7 @@ class LRUCache {
                         this.#valList[index] = bf.__staleWhileFetching;
                     }
                     else {
-                        this.delete(k);
+                        this.#delete(k, 'fetch');
                     }
                 }
                 else {
@@ -63970,7 +63487,7 @@ class LRUCache {
                 // the stale value is not removed from the cache when the fetch fails.
                 const del = !noDelete || bf.__staleWhileFetching === undefined;
                 if (del) {
-                    this.delete(k);
+                    this.#delete(k, 'fetch');
                 }
                 else if (!allowStaleAborted) {
                     // still replace the *promise* with the stale value,
@@ -64116,6 +63633,28 @@ class LRUCache {
             return staleVal ? p.__staleWhileFetching : (p.__returned = p);
         }
     }
+    async forceFetch(k, fetchOptions = {}) {
+        const v = await this.fetch(k, fetchOptions);
+        if (v === undefined)
+            throw new Error('fetch() returned undefined');
+        return v;
+    }
+    memo(k, memoOptions = {}) {
+        const memoMethod = this.#memoMethod;
+        if (!memoMethod) {
+            throw new Error('no memoMethod provided to constructor');
+        }
+        const { context, forceRefresh, ...options } = memoOptions;
+        const v = this.get(k, options);
+        if (!forceRefresh && v !== undefined)
+            return v;
+        const vv = memoMethod(k, v, {
+            options,
+            context,
+        });
+        this.set(k, vv, options);
+        return vv;
+    }
     /**
      * Return a value from the cache. Will update the recency of the cache
      * entry found.
@@ -64136,7 +63675,7 @@ class LRUCache {
                 // delete only if not an in-flight background fetch
                 if (!fetching) {
                     if (!noDeleteOnStaleGet) {
-                        this.delete(k);
+                        this.#delete(k, 'expire');
                     }
                     if (status && allowStale)
                         status.returnedStale = true;
@@ -64199,16 +63738,20 @@ class LRUCache {
     }
     /**
      * Deletes a key out of the cache.
+     *
      * Returns true if the key was deleted, false otherwise.
      */
     delete(k) {
+        return this.#delete(k, 'delete');
+    }
+    #delete(k, reason) {
         let deleted = false;
         if (this.#size !== 0) {
             const index = this.#keyMap.get(k);
             if (index !== undefined) {
                 deleted = true;
                 if (this.#size === 1) {
-                    this.clear();
+                    this.#clear(reason);
                 }
                 else {
                     this.#removeItemSize(index);
@@ -64218,10 +63761,10 @@ class LRUCache {
                     }
                     else if (this.#hasDispose || this.#hasDisposeAfter) {
                         if (this.#hasDispose) {
-                            this.#dispose?.(v, k, 'delete');
+                            this.#dispose?.(v, k, reason);
                         }
                         if (this.#hasDisposeAfter) {
-                            this.#disposed?.push([v, k, 'delete']);
+                            this.#disposed?.push([v, k, reason]);
                         }
                     }
                     this.#keyMap.delete(k);
@@ -64257,6 +63800,9 @@ class LRUCache {
      * Clear the cache entirely, throwing away all values.
      */
     clear() {
+        return this.#clear('delete');
+    }
+    #clear(reason) {
         for (const index of this.#rindexes({ allowStale: true })) {
             const v = this.#valList[index];
             if (this.#isBackgroundFetch(v)) {
@@ -64265,10 +63811,10 @@ class LRUCache {
             else {
                 const k = this.#keyList[index];
                 if (this.#hasDispose) {
-                    this.#dispose?.(v, k, 'delete');
+                    this.#dispose?.(v, k, reason);
                 }
                 if (this.#hasDisposeAfter) {
-                    this.#disposed?.push([v, k, 'delete']);
+                    this.#disposed?.push([v, k, reason]);
                 }
             }
         }
@@ -64297,18 +63843,19 @@ class LRUCache {
     }
 }
 //# sourceMappingURL=index.js.map
-// EXTERNAL MODULE: external "path"
-var external_path_ = __nccwpck_require__(1017);
-// EXTERNAL MODULE: external "url"
-var external_url_ = __nccwpck_require__(7310);
-;// CONCATENATED MODULE: external "fs/promises"
-const promises_namespaceObject = require("fs/promises");
-// EXTERNAL MODULE: external "events"
-var external_events_ = __nccwpck_require__(2361);
-// EXTERNAL MODULE: external "stream"
-var external_stream_ = __nccwpck_require__(2781);
-// EXTERNAL MODULE: external "string_decoder"
-var external_string_decoder_ = __nccwpck_require__(1576);
+;// CONCATENATED MODULE: external "node:path"
+const external_node_path_namespaceObject = require("node:path");
+;// CONCATENATED MODULE: external "node:fs"
+const external_node_fs_namespaceObject = require("node:fs");
+var external_node_fs_namespaceObject_0 = /*#__PURE__*/__nccwpck_require__.t(external_node_fs_namespaceObject, 2);
+;// CONCATENATED MODULE: external "node:fs/promises"
+const promises_namespaceObject = require("node:fs/promises");
+// EXTERNAL MODULE: external "node:events"
+var external_node_events_ = __nccwpck_require__(5673);
+// EXTERNAL MODULE: external "node:stream"
+var external_node_stream_ = __nccwpck_require__(4492);
+;// CONCATENATED MODULE: external "node:string_decoder"
+const external_node_string_decoder_namespaceObject = require("node:string_decoder");
 ;// CONCATENATED MODULE: ./node_modules/minipass/dist/esm/index.js
 const proc = typeof process === 'object' && process
     ? process
@@ -64326,7 +63873,7 @@ const proc = typeof process === 'object' && process
 const isStream = (s) => !!s &&
     typeof s === 'object' &&
     (s instanceof Minipass ||
-        s instanceof external_stream_ ||
+        s instanceof external_node_stream_ ||
         isReadable(s) ||
         isWritable(s));
 /**
@@ -64334,16 +63881,16 @@ const isStream = (s) => !!s &&
  */
 const isReadable = (s) => !!s &&
     typeof s === 'object' &&
-    s instanceof external_events_.EventEmitter &&
+    s instanceof external_node_events_.EventEmitter &&
     typeof s.pipe === 'function' &&
     // node core Writable streams have a pipe() method, but it throws
-    s.pipe !== external_stream_.Writable.prototype.pipe;
+    s.pipe !== external_node_stream_.Writable.prototype.pipe;
 /**
  * Return true if the argument is a valid {@link Minipass.Writable}
  */
 const isWritable = (s) => !!s &&
     typeof s === 'object' &&
-    s instanceof external_events_.EventEmitter &&
+    s instanceof external_node_events_.EventEmitter &&
     typeof s.write === 'function' &&
     typeof s.end === 'function';
 const EOF = Symbol('EOF');
@@ -64449,7 +63996,7 @@ const isEncodingOptions = (o) => !o.objectMode && !!o.encoding && o.encoding !==
  * `Events` is the set of event handler signatures that this object
  * will emit, see {@link Minipass.Events}
  */
-class Minipass extends external_events_.EventEmitter {
+class Minipass extends external_node_events_.EventEmitter {
     [FLOWING] = false;
     [PAUSED] = false;
     [PIPES] = [];
@@ -64504,7 +64051,7 @@ class Minipass extends external_events_.EventEmitter {
         }
         this[ASYNC] = !!options.async;
         this[DECODER] = this[ENCODING]
-            ? new external_string_decoder_.StringDecoder(this[ENCODING])
+            ? new external_node_string_decoder_namespaceObject.StringDecoder(this[ENCODING])
             : null;
         //@ts-ignore - private option for debugging and testing
         if (options && options.debugExposeBuffer === true) {
@@ -65353,8 +64900,8 @@ const defaultFS = {
     },
 };
 // if they just gave us require('fs') then use our default
-const fsFromOption = (fsOption) => !fsOption || fsOption === defaultFS || fsOption === external_fs_namespaceObject
-    ? defaultFS
+const fsFromOption = (fsOption) => !fsOption || fsOption === defaultFS || fsOption === external_node_fs_namespaceObject_0 ?
+    defaultFS
     : {
         ...defaultFS,
         ...fsOption,
@@ -65395,20 +64942,13 @@ const ENOREADLINK = 0b0001_0000_0000;
 const ENOREALPATH = 0b0010_0000_0000;
 const ENOCHILD = ENOTDIR | ENOENT | ENOREALPATH;
 const TYPEMASK = 0b0011_1111_1111;
-const entToType = (s) => s.isFile()
-    ? IFREG
-    : s.isDirectory()
-        ? IFDIR
-        : s.isSymbolicLink()
-            ? IFLNK
-            : s.isCharacterDevice()
-                ? IFCHR
-                : s.isBlockDevice()
-                    ? IFBLK
-                    : s.isSocket()
-                        ? IFSOCK
-                        : s.isFIFO()
-                            ? IFIFO
+const entToType = (s) => s.isFile() ? IFREG
+    : s.isDirectory() ? IFDIR
+        : s.isSymbolicLink() ? IFLNK
+            : s.isCharacterDevice() ? IFCHR
+                : s.isBlockDevice() ? IFBLK
+                    : s.isSocket() ? IFSOCK
+                        : s.isFIFO() ? IFIFO
                             : UNKNOWN;
 // normalize unicode path names
 const normalizeCache = new Map();
@@ -65510,6 +65050,11 @@ class PathBase {
      * @internal
      */
     nocase;
+    /**
+     * boolean indicating that this path is the current working directory
+     * of the PathScurry collection that contains it.
+     */
+    isCWD = false;
     // potential default fs override
     #fs;
     // Stats fields
@@ -65597,13 +65142,19 @@ class PathBase {
     #realpath;
     /**
      * This property is for compatibility with the Dirent class as of
-     * Node v20, where Dirent['path'] refers to the path of the directory
-     * that was passed to readdir.  So, somewhat counterintuitively, this
-     * property refers to the *parent* path, not the path object itself.
-     * For root entries, it's the path to the entry itself.
+     * Node v20, where Dirent['parentPath'] refers to the path of the
+     * directory that was passed to readdir. For root entries, it's the path
+     * to the entry itself.
+     */
+    get parentPath() {
+        return (this.parent || this).fullpath();
+    }
+    /**
+     * Deprecated alias for Dirent['parentPath'] Somewhat counterintuitively,
+     * this property refers to the *parent* path, not the path object itself.
      */
     get path() {
-        return (this.parent || this).fullpath();
+        return this.parentPath;
     }
     /**
      * Do not create new Path objects directly.  They should always be accessed
@@ -65658,8 +65209,8 @@ class PathBase {
         const rootPath = this.getRootString(path);
         const dir = path.substring(rootPath.length);
         const dirParts = dir.split(this.splitSep);
-        const result = rootPath
-            ? this.getRoot(rootPath).#resolveParts(dirParts)
+        const result = rootPath ?
+            this.getRoot(rootPath).#resolveParts(dirParts)
             : this.#resolveParts(dirParts);
         return result;
     }
@@ -65710,9 +65261,7 @@ class PathBase {
         }
         // find the child
         const children = this.children();
-        const name = this.nocase
-            ? normalizeNocase(pathPart)
-            : normalize(pathPart);
+        const name = this.nocase ? normalizeNocase(pathPart) : normalize(pathPart);
         for (const p of children) {
             if (p.#matchName === name) {
                 return p;
@@ -65722,9 +65271,7 @@ class PathBase {
         // actually exist.  If we know the parent isn't a dir, then
         // in fact it CAN'T exist.
         const s = this.parent ? this.sep : '';
-        const fullpath = this.#fullpath
-            ? this.#fullpath + s + pathPart
-            : undefined;
+        const fullpath = this.#fullpath ? this.#fullpath + s + pathPart : undefined;
         const pchild = this.newChild(pathPart, UNKNOWN, {
             ...opts,
             parent: this,
@@ -65743,6 +65290,8 @@ class PathBase {
      * the cwd, then this ends up being equivalent to the fullpath()
      */
     relative() {
+        if (this.isCWD)
+            return '';
         if (this.#relative !== undefined) {
             return this.#relative;
         }
@@ -65763,6 +65312,8 @@ class PathBase {
     relativePosix() {
         if (this.sep === '/')
             return this.relative();
+        if (this.isCWD)
+            return '';
         if (this.#relativePosix !== undefined)
             return this.#relativePosix;
         const name = this.name;
@@ -65828,23 +65379,15 @@ class PathBase {
         return this[`is${type}`]();
     }
     getType() {
-        return this.isUnknown()
-            ? 'Unknown'
-            : this.isDirectory()
-                ? 'Directory'
-                : this.isFile()
-                    ? 'File'
-                    : this.isSymbolicLink()
-                        ? 'SymbolicLink'
-                        : this.isFIFO()
-                            ? 'FIFO'
-                            : this.isCharacterDevice()
-                                ? 'CharacterDevice'
-                                : this.isBlockDevice()
-                                    ? 'BlockDevice'
-                                    : /* c8 ignore start */ this.isSocket()
-                                        ? 'Socket'
-                                        : 'Unknown';
+        return (this.isUnknown() ? 'Unknown'
+            : this.isDirectory() ? 'Directory'
+                : this.isFile() ? 'File'
+                    : this.isSymbolicLink() ? 'SymbolicLink'
+                        : this.isFIFO() ? 'FIFO'
+                            : this.isCharacterDevice() ? 'CharacterDevice'
+                                : this.isBlockDevice() ? 'BlockDevice'
+                                    : /* c8 ignore start */ this.isSocket() ? 'Socket'
+                                        : 'Unknown');
         /* c8 ignore stop */
     }
     /**
@@ -65978,8 +65521,8 @@ class PathBase {
      * directly.
      */
     isNamed(n) {
-        return !this.nocase
-            ? this.#matchName === normalize(n)
+        return !this.nocase ?
+            this.#matchName === normalize(n)
             : this.#matchName === normalizeNocase(n);
     }
     /**
@@ -66035,7 +65578,7 @@ class PathBase {
         /* c8 ignore stop */
         try {
             const read = this.#fs.readlinkSync(this.fullpath());
-            const linkTarget = (this.parent.realpathSync())?.resolve(read);
+            const linkTarget = this.parent.realpathSync()?.resolve(read);
             if (linkTarget) {
                 return (this.#linkTarget = linkTarget);
             }
@@ -66156,9 +65699,7 @@ class PathBase {
     #readdirMaybePromoteChild(e, c) {
         for (let p = c.provisional; p < c.length; p++) {
             const pchild = c[p];
-            const name = this.nocase
-                ? normalizeNocase(e.name)
-                : normalize(e.name);
+            const name = this.nocase ? normalizeNocase(e.name) : normalize(e.name);
             if (name !== pchild.#matchName) {
                 continue;
             }
@@ -66457,6 +65998,8 @@ class PathBase {
     [setAsCwd](oldCwd) {
         if (oldCwd === this)
             return;
+        oldCwd.isCWD = false;
+        this.isCWD = true;
         const changed = new Set([]);
         let rp = [];
         let p = this;
@@ -66510,7 +66053,7 @@ class PathWin32 extends PathBase {
      * @internal
      */
     getRootString(path) {
-        return external_path_.win32.parse(path).root;
+        return external_node_path_namespaceObject.win32.parse(path).root;
     }
     /**
      * @internal
@@ -66630,7 +66173,7 @@ class PathScurryBase {
     constructor(cwd = process.cwd(), pathImpl, sep, { nocase, childrenCacheSize = 16 * 1024, fs = defaultFS, } = {}) {
         this.#fs = fsFromOption(fs);
         if (cwd instanceof URL || cwd.startsWith('file://')) {
-            cwd = (0,external_url_.fileURLToPath)(cwd);
+            cwd = (0,external_node_url_namespaceObject.fileURLToPath)(cwd);
         }
         // resolve and split root, and then add to the store.
         // this is the only time we call path.resolve()
@@ -67218,7 +66761,7 @@ class PathScurryWin32 extends PathScurryBase {
     sep = '\\';
     constructor(cwd = process.cwd(), opts = {}) {
         const { nocase = true } = opts;
-        super(cwd, external_path_.win32, '\\', { ...opts, nocase });
+        super(cwd, external_node_path_namespaceObject.win32, '\\', { ...opts, nocase });
         this.nocase = nocase;
         for (let p = this.cwd; p; p = p.parent) {
             p.nocase = this.nocase;
@@ -67231,7 +66774,7 @@ class PathScurryWin32 extends PathScurryBase {
         // if the path starts with a single separator, it's not a UNC, and we'll
         // just get separator as the root, and driveFromUNC will return \
         // In that case, mount \ on the root from the cwd.
-        return external_path_.win32.parse(dir).root.toUpperCase();
+        return external_node_path_namespaceObject.win32.parse(dir).root.toUpperCase();
     }
     /**
      * @internal
@@ -67260,7 +66803,7 @@ class PathScurryPosix extends PathScurryBase {
     sep = '/';
     constructor(cwd = process.cwd(), opts = {}) {
         const { nocase = false } = opts;
-        super(cwd, external_path_.posix, '/', { ...opts, nocase });
+        super(cwd, external_node_path_namespaceObject.posix, '/', { ...opts, nocase });
         this.nocase = nocase;
     }
     /**
@@ -67308,10 +66851,8 @@ const Path = process.platform === 'win32' ? PathWin32 : PathPosix;
  * {@link PathScurryWin32} on Windows systems, {@link PathScurryDarwin} on
  * Darwin (macOS) systems, {@link PathScurryPosix} on all others.
  */
-const PathScurry = process.platform === 'win32'
-    ? PathScurryWin32
-    : process.platform === 'darwin'
-        ? PathScurryDarwin
+const PathScurry = process.platform === 'win32' ? PathScurryWin32
+    : process.platform === 'darwin' ? PathScurryDarwin
         : PathScurryPosix;
 //# sourceMappingURL=index.js.map
 ;// CONCATENATED MODULE: ./node_modules/glob/dist/esm/pattern.js
@@ -67424,9 +66965,9 @@ class Pattern {
     globString() {
         return (this.#globString =
             this.#globString ||
-                (this.#index === 0
-                    ? this.isAbsolute()
-                        ? this.#globList[0] + this.#globList.slice(1).join('/')
+                (this.#index === 0 ?
+                    this.isAbsolute() ?
+                        this.#globList[0] + this.#globList.slice(1).join('/')
                         : this.#globList.join('/')
                     : this.#globList.slice(this.#index).join('/')));
     }
@@ -67455,8 +66996,8 @@ class Pattern {
      */
     isUNC() {
         const pl = this.#patternList;
-        return this.#isUNC !== undefined
-            ? this.#isUNC
+        return this.#isUNC !== undefined ?
+            this.#isUNC
             : (this.#isUNC =
                 this.#platform === 'win32' &&
                     this.#index === 0 &&
@@ -67477,8 +67018,8 @@ class Pattern {
      */
     isDrive() {
         const pl = this.#patternList;
-        return this.#isDrive !== undefined
-            ? this.#isDrive
+        return this.#isDrive !== undefined ?
+            this.#isDrive
             : (this.#isDrive =
                 this.#platform === 'win32' &&
                     this.#index === 0 &&
@@ -67494,8 +67035,8 @@ class Pattern {
      */
     isAbsolute() {
         const pl = this.#patternList;
-        return this.#isAbsolute !== undefined
-            ? this.#isAbsolute
+        return this.#isAbsolute !== undefined ?
+            this.#isAbsolute
             : (this.#isAbsolute =
                 (pl[0] === '' && pl.length > 1) ||
                     this.isDrive() ||
@@ -67506,8 +67047,8 @@ class Pattern {
      */
     root() {
         const p = this.#patternList[0];
-        return typeof p === 'string' && this.isAbsolute() && this.#index === 0
-            ? p
+        return (typeof p === 'string' && this.isAbsolute() && this.#index === 0) ?
+            p
             : '';
     }
     /**
@@ -67537,10 +67078,10 @@ class Pattern {
 // Ignores are always parsed in dot:true mode
 
 
-const ignore_defaultPlatform = typeof process === 'object' &&
+const ignore_defaultPlatform = (typeof process === 'object' &&
     process &&
-    typeof process.platform === 'string'
-    ? process.platform
+    typeof process.platform === 'string') ?
+    process.platform
     : 'linux';
 /**
  * Class used to process ignored patterns
@@ -67550,12 +67091,15 @@ class Ignore {
     relativeChildren;
     absolute;
     absoluteChildren;
+    platform;
+    mmopts;
     constructor(ignored, { nobrace, nocase, noext, noglobstar, platform = ignore_defaultPlatform, }) {
         this.relative = [];
         this.absolute = [];
         this.relativeChildren = [];
         this.absoluteChildren = [];
-        const mmopts = {
+        this.platform = platform;
+        this.mmopts = {
             dot: true,
             nobrace,
             nocase,
@@ -67566,6 +67110,10 @@ class Ignore {
             nocomment: true,
             nonegate: true,
         };
+        for (const ign of ignored)
+            this.add(ign);
+    }
+    add(ign) {
         // this is a little weird, but it gives us a clean set of optimized
         // minimatch matchers, without getting tripped up if one of them
         // ends in /** inside a brace section, and it's only inefficient at
@@ -67578,36 +67126,34 @@ class Ignore {
         // for absolute-ness.
         // Yet another way, Minimatch could take an array of glob strings, and
         // a cwd option, and do the right thing.
-        for (const ign of ignored) {
-            const mm = new Minimatch(ign, mmopts);
-            for (let i = 0; i < mm.set.length; i++) {
-                const parsed = mm.set[i];
-                const globParts = mm.globParts[i];
-                /* c8 ignore start */
-                if (!parsed || !globParts) {
-                    throw new Error('invalid pattern object');
-                }
-                // strip off leading ./ portions
-                // https://github.com/isaacs/node-glob/issues/570
-                while (parsed[0] === '.' && globParts[0] === '.') {
-                    parsed.shift();
-                    globParts.shift();
-                }
-                /* c8 ignore stop */
-                const p = new Pattern(parsed, globParts, 0, platform);
-                const m = new Minimatch(p.globString(), mmopts);
-                const children = globParts[globParts.length - 1] === '**';
-                const absolute = p.isAbsolute();
+        const mm = new Minimatch(ign, this.mmopts);
+        for (let i = 0; i < mm.set.length; i++) {
+            const parsed = mm.set[i];
+            const globParts = mm.globParts[i];
+            /* c8 ignore start */
+            if (!parsed || !globParts) {
+                throw new Error('invalid pattern object');
+            }
+            // strip off leading ./ portions
+            // https://github.com/isaacs/node-glob/issues/570
+            while (parsed[0] === '.' && globParts[0] === '.') {
+                parsed.shift();
+                globParts.shift();
+            }
+            /* c8 ignore stop */
+            const p = new Pattern(parsed, globParts, 0, this.platform);
+            const m = new Minimatch(p.globString(), this.mmopts);
+            const children = globParts[globParts.length - 1] === '**';
+            const absolute = p.isAbsolute();
+            if (absolute)
+                this.absolute.push(m);
+            else
+                this.relative.push(m);
+            if (children) {
                 if (absolute)
-                    this.absolute.push(m);
+                    this.absoluteChildren.push(m);
                 else
-                    this.relative.push(m);
-                if (children) {
-                    if (absolute)
-                        this.absoluteChildren.push(m);
-                    else
-                        this.relativeChildren.push(m);
-                }
+                    this.relativeChildren.push(m);
             }
         }
     }
@@ -67741,9 +67287,8 @@ class Processor {
         this.opts = opts;
         this.follow = !!opts.follow;
         this.dot = !!opts.dot;
-        this.hasWalkedCache = hasWalkedCache
-            ? hasWalkedCache.copy()
-            : new HasWalkedCache();
+        this.hasWalkedCache =
+            hasWalkedCache ? hasWalkedCache.copy() : new HasWalkedCache();
     }
     processPatterns(target, patterns) {
         this.patterns = patterns;
@@ -67756,8 +67301,8 @@ class Processor {
             const absolute = pattern.isAbsolute() && this.opts.absolute !== false;
             // start absolute patterns at root
             if (root) {
-                t = t.resolve(root === '/' && this.opts.root !== undefined
-                    ? this.opts.root
+                t = t.resolve(root === '/' && this.opts.root !== undefined ?
+                    this.opts.root
                     : root);
                 const rest = pattern.rest();
                 if (!rest) {
@@ -67947,10 +67492,8 @@ class Processor {
 
 
 
-const makeIgnore = (ignore, opts) => typeof ignore === 'string'
-    ? new Ignore([ignore], opts)
-    : Array.isArray(ignore)
-        ? new Ignore(ignore, opts)
+const makeIgnore = (ignore, opts) => typeof ignore === 'string' ? new Ignore([ignore], opts)
+    : Array.isArray(ignore) ? new Ignore(ignore, opts)
         : ignore;
 /**
  * basic walking utilities that all the glob walker types use
@@ -67967,13 +67510,20 @@ class GlobUtil {
     #sep;
     signal;
     maxDepth;
+    includeChildMatches;
     constructor(patterns, path, opts) {
         this.patterns = patterns;
         this.path = path;
         this.opts = opts;
         this.#sep = !opts.posix && opts.platform === 'win32' ? '\\' : '/';
-        if (opts.ignore) {
-            this.#ignore = makeIgnore(opts.ignore, opts);
+        this.includeChildMatches = opts.includeChildMatches !== false;
+        if (opts.ignore || !this.includeChildMatches) {
+            this.#ignore = makeIgnore(opts.ignore ?? [], opts);
+            if (!this.includeChildMatches &&
+                typeof this.#ignore.add !== 'function') {
+                const m = 'cannot ignore child matches, ignore lacks add() method.';
+                throw new Error(m);
+            }
         }
         // ignore, always set with maxDepth, but it's optional on the
         // GlobOptions type
@@ -68045,7 +67595,7 @@ class GlobUtil {
         return this.matchCheckTest(s, ifDir);
     }
     matchCheckTest(e, ifDir) {
-        return e &&
+        return (e &&
             (this.maxDepth === Infinity || e.depth() <= this.maxDepth) &&
             (!ifDir || e.canReaddir()) &&
             (!this.opts.nodir || !e.isDirectory()) &&
@@ -68053,8 +67603,8 @@ class GlobUtil {
                 !this.opts.follow ||
                 !e.isSymbolicLink() ||
                 !e.realpathCached()?.isDirectory()) &&
-            !this.#ignored(e)
-            ? e
+            !this.#ignored(e)) ?
+            e
             : undefined;
     }
     matchCheckSync(e, ifDir) {
@@ -68080,6 +67630,11 @@ class GlobUtil {
     matchFinish(e, absolute) {
         if (this.#ignored(e))
             return;
+        // we know we have an ignore if this is false, but TS doesn't
+        if (!this.includeChildMatches && this.#ignore?.add) {
+            const ign = `${e.relativePosix()}/**`;
+            this.#ignore.add(ign);
+        }
         const abs = this.opts.absolute === undefined ? absolute : this.opts.absolute;
         this.seen.add(e);
         const mark = this.opts.mark && e.isDirectory() ? this.#sep : '';
@@ -68093,8 +67648,8 @@ class GlobUtil {
         }
         else {
             const rel = this.opts.posix ? e.relativePosix() : e.relative();
-            const pre = this.opts.dotRelative && !rel.startsWith('..' + this.#sep)
-                ? '.' + this.#sep
+            const pre = this.opts.dotRelative && !rel.startsWith('..' + this.#sep) ?
+                '.' + this.#sep
                 : '';
             this.matchEmit(!rel ? '.' + mark : pre + rel + mark);
         }
@@ -68233,10 +67788,9 @@ class GlobUtil {
     }
 }
 class GlobWalker extends GlobUtil {
-    matches;
+    matches = new Set();
     constructor(patterns, path, opts) {
         super(patterns, path, opts);
-        this.matches = new Set();
     }
     matchEmit(e) {
         this.matches.add(e);
@@ -68318,10 +67872,10 @@ class GlobStream extends GlobUtil {
 
 // if no process global, just call it linux.
 // so we default to case-sensitive, / separators
-const glob_defaultPlatform = typeof process === 'object' &&
+const glob_defaultPlatform = (typeof process === 'object' &&
     process &&
-    typeof process.platform === 'string'
-    ? process.platform
+    typeof process.platform === 'string') ?
+    process.platform
     : 'linux';
 /**
  * An object that can perform glob pattern traversals.
@@ -68351,6 +67905,7 @@ class Glob {
     signal;
     windowsPathsNoEscape;
     withFileTypes;
+    includeChildMatches;
     /**
      * The options provided to the constructor.
      */
@@ -68387,7 +67942,7 @@ class Glob {
             this.cwd = '';
         }
         else if (opts.cwd instanceof URL || opts.cwd.startsWith('file://')) {
-            opts.cwd = (0,external_url_.fileURLToPath)(opts.cwd);
+            opts.cwd = (0,external_node_url_namespaceObject.fileURLToPath)(opts.cwd);
         }
         this.cwd = opts.cwd || '';
         this.root = opts.root;
@@ -68396,6 +67951,7 @@ class Glob {
         this.noext = !!opts.noext;
         this.realpath = !!opts.realpath;
         this.absolute = opts.absolute;
+        this.includeChildMatches = opts.includeChildMatches !== false;
         this.noglobstar = !!opts.noglobstar;
         this.matchBase = !!opts.matchBase;
         this.maxDepth =
@@ -68410,7 +67966,8 @@ class Glob {
         }
         this.windowsPathsNoEscape =
             !!opts.windowsPathsNoEscape ||
-                opts.allowWindowsEscape === false;
+                opts.allowWindowsEscape ===
+                    false;
         if (this.windowsPathsNoEscape) {
             pattern = pattern.map(p => p.replace(/\\/g, '/'));
         }
@@ -68431,12 +67988,9 @@ class Glob {
             }
         }
         else {
-            const Scurry = opts.platform === 'win32'
-                ? PathScurryWin32
-                : opts.platform === 'darwin'
-                    ? PathScurryDarwin
-                    : opts.platform
-                        ? PathScurryPosix
+            const Scurry = opts.platform === 'win32' ? PathScurryWin32
+                : opts.platform === 'darwin' ? PathScurryDarwin
+                    : opts.platform ? PathScurryPosix
                         : PathScurry;
             this.scurry = new Scurry(this.cwd, {
                 nocase: opts.nocase,
@@ -68488,11 +68042,12 @@ class Glob {
         return [
             ...(await new GlobWalker(this.patterns, this.scurry.cwd, {
                 ...this.opts,
-                maxDepth: this.maxDepth !== Infinity
-                    ? this.maxDepth + this.scurry.cwd.depth()
+                maxDepth: this.maxDepth !== Infinity ?
+                    this.maxDepth + this.scurry.cwd.depth()
                     : Infinity,
                 platform: this.platform,
                 nocase: this.nocase,
+                includeChildMatches: this.includeChildMatches,
             }).walk()),
         ];
     }
@@ -68500,32 +68055,35 @@ class Glob {
         return [
             ...new GlobWalker(this.patterns, this.scurry.cwd, {
                 ...this.opts,
-                maxDepth: this.maxDepth !== Infinity
-                    ? this.maxDepth + this.scurry.cwd.depth()
+                maxDepth: this.maxDepth !== Infinity ?
+                    this.maxDepth + this.scurry.cwd.depth()
                     : Infinity,
                 platform: this.platform,
                 nocase: this.nocase,
+                includeChildMatches: this.includeChildMatches,
             }).walkSync(),
         ];
     }
     stream() {
         return new GlobStream(this.patterns, this.scurry.cwd, {
             ...this.opts,
-            maxDepth: this.maxDepth !== Infinity
-                ? this.maxDepth + this.scurry.cwd.depth()
+            maxDepth: this.maxDepth !== Infinity ?
+                this.maxDepth + this.scurry.cwd.depth()
                 : Infinity,
             platform: this.platform,
             nocase: this.nocase,
+            includeChildMatches: this.includeChildMatches,
         }).stream();
     }
     streamSync() {
         return new GlobStream(this.patterns, this.scurry.cwd, {
             ...this.opts,
-            maxDepth: this.maxDepth !== Infinity
-                ? this.maxDepth + this.scurry.cwd.depth()
+            maxDepth: this.maxDepth !== Infinity ?
+                this.maxDepth + this.scurry.cwd.depth()
                 : Infinity,
             platform: this.platform,
             nocase: this.nocase,
+            includeChildMatches: this.includeChildMatches,
         }).streamSync();
     }
     /**
@@ -68578,6 +68136,10 @@ const hasMagic = (pattern, options = {}) => {
 
 
 
+
+
+
+
 function globStreamSync(pattern, options = {}) {
     return new Glob(pattern, options).streamSync();
 }
@@ -68607,11 +68169,6 @@ const sync = Object.assign(globSync, {
     stream: globStreamSync,
     iterate: globIterateSync,
 });
-/* c8 ignore start */
-
-
-
-/* c8 ignore stop */
 const glob = Object.assign(glob_, {
     glob: glob_,
     globSync,
