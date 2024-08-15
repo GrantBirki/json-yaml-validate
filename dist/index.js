@@ -69254,6 +69254,8 @@ class Exclude {
 
         core.info(`exclude_file was not found, but it is not required - OK`)
       }
+    } else {
+      core.debug(`exclude_file was not provided - OK`)
     }
 
     // if gitTrackOnly is true, add the git exclude patterns from the .gitignore file if it exists

@@ -4,6 +4,7 @@ import {Exclude} from '../../src/functions/exclude'
 const warningMock = jest.spyOn(core, 'warning').mockImplementation(() => {})
 const setFailedMock = jest.spyOn(core, 'setFailed').mockImplementation(() => {})
 const infoMock = jest.spyOn(core, 'info').mockImplementation(() => {})
+const debugMock = jest.spyOn(core, 'debug').mockImplementation(() => {})
 
 var exclude
 beforeEach(() => {
@@ -72,6 +73,15 @@ test('does not raise an exception when no exclude file is found and it is not re
   expect(infoMock).toHaveBeenCalledWith(
     `exclude_file was not found, but it is not required - OK`
   )
+})
+
+test('does not raise an exception when no exclude file is found and it is required', () => {
+  process.env.INPUT_EXCLUDE_FILE = ''
+  process.env.INPUT_EXCLUDE_FILE_REQUIRED = 'true'
+
+  const exclude = new Exclude()
+  expect(exclude.isExcluded('exclude-me.json')).toBe(false)
+  expect(debugMock).toHaveBeenCalledWith(`exclude_file was not provided - OK`)
 })
 
 test('excludes a file that is not tracked by git', () => {
