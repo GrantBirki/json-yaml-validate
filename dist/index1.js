@@ -1,27 +1,17 @@
 'use strict';
 
-const os = require('os');
 const pico = require('./lib/picomatch');
-
-const isWindows = os.platform() === 'win32';
+const utils = require('./lib/utils');
 
 function picomatch(glob, options, returnState = false) {
   // default to os.platform()
   if (options && (options.windows === null || options.windows === undefined)) {
     // don't mutate the original options object
-    options = { ...options, windows: isWindows };
+    options = { ...options, windows: utils.isWindows() };
   }
+
   return pico(glob, options, returnState);
 }
 
+Object.assign(picomatch, pico);
 module.exports = picomatch;
-// public api
-module.exports.test = pico.test;
-module.exports.matchBase = pico.matchBase;
-module.exports.isMatch = pico.isMatch;
-module.exports.parse = pico.parse;
-module.exports.scan = pico.scan;
-module.exports.compileRe = pico.compileRe;
-module.exports.toRegex = pico.toRegex;
-// for tests
-module.exports.makeRe = pico.makeRe;

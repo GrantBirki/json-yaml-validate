@@ -36,7 +36,7 @@
     "fdir": "^6.2.0",
     "glob": "^11.0.0",
     "ignore": "^5.3.2",
-    "picomatch": "^3.0.1",
+    "picomatch": "^4.0.2",
     "yaml": "^2.5.0",
     "yaml-schema-validator": "^1.2.3"
   },
