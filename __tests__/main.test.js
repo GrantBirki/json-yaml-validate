@@ -16,6 +16,7 @@ beforeEach(() => {
   })
 
   process.env.INPUT_USE_GITIGNORE = 'false'
+  process.env.INPUT_EXCLUDE_FILE_REQUIRED = 'true'
 })
 
 test('successfully runs the action', async () => {
