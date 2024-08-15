@@ -65152,6 +65152,8 @@ class PathBase {
     /**
      * Deprecated alias for Dirent['parentPath'] Somewhat counterintuitively,
      * this property refers to the *parent* path, not the path object itself.
+     *
+     * @deprecated
      */
     get path() {
         return this.parentPath;
