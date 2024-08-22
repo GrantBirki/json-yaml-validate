@@ -46,14 +46,11 @@ jobs:
             __tests__/**/test1.yml
             __tests__/**/test*.json
 
-      - name: acceptance test - custom formats
+      - name: acceptance test - flat yaml
         uses: ./
-        id: json-yaml-validate-custom-formats-test
+        id: json-yaml-validate-flat-yaml-test
         with:
           comment: "true"
-          json_schema: ./__tests__/fixtures/schemas/schema_with_custom_ajv_regexp_format.json
-          ajv_custom_regexp_formats: |
-            lowercase_char=^[a-z]*$
-            lowercase_alphanumeric=^[a-z0-9]*$
+          yaml_schema: ./__tests__/fixtures/schemas/flat.yaml
           files: |
-            __tests__/fixtures/json/custom_ajv_regexp_format/valid.json
+            __tests__/acceptance/flat_yaml/flat.yaml
