@@ -34,7 +34,7 @@ inputs:
     required: false
     default: ""
   json_schema_version:
-    description: The version of the JSON schema to use - "draft-07", "draft-2019-09", "draft-2020-12"
+    description: The version of the JSON schema to use - "draft-07", "draft-04", "draft-2019-09", "draft-2020-12"
     default: "draft-07"
     required: false
   json_extension:
