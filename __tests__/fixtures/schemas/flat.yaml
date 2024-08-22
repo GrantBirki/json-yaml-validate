@@ -1,4 +1,12 @@
 name:
   type: string
-  description: Name of the yaml value
+  description: The name
+  required: true
+author:
+  type: string
+  description: The author
+  required: true
+category:
+  type: string
+  description: The category
   required: true
