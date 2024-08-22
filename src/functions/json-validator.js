@@ -2,6 +2,7 @@ import * as core from '@actions/core'
 import Ajv from 'ajv'
 import Ajv2019 from 'ajv/dist/2019'
 import Ajv2020 from 'ajv/dist/2020'
+import AjvDraft04 from 'ajv-draft-04'
 import addFormats from 'ajv-formats'
 import {readFileSync} from 'fs'
 import {fdir} from 'fdir'
@@ -21,6 +22,8 @@ async function schema(jsonSchema) {
   var ajv
   if (jsonSchemaVersion === 'draft-07') {
     ajv = new Ajv({allErrors: true, strict: strict})
+  } else if (jsonSchemaVersion === 'draft-04') {
+    ajv = new AjvDraft04({allErrors: true, strict: strict})
   } else if (jsonSchemaVersion === 'draft-2019-09') {
     ajv = new Ajv2019({allErrors: true, strict: strict})
   } else if (jsonSchemaVersion === 'draft-2020-12') {

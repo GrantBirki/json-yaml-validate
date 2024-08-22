@@ -40,7 +40,7 @@ Here is a quick example of how to install this action in any workflow:
 | `files` | `false` | `""` | List of file paths to validate. Each file path must be on a newline. |
 | `use_dot_match` | `false` | `"true"` | Whether or not to use dot-matching when searching for files - `"true"` or `"false"` - If this is true, directories like `.github`, etc will be searched |
 | `json_schema` | `false` | `""` | The full path to the JSON schema file (e.g. ./schemas/schema.json) - Default is `""` which doesn't enforce a strict schema |
-| `json_schema_version` | `false` | `"draft-07"` | The version of the JSON schema to use - `"draft-07"`, `"draft-2019-09"`, `"draft-2020-12"` |
+| `json_schema_version` | `false` | `"draft-07"` | The version of the JSON schema to use - `"draft-07"`, `"draft-04"`, `"draft-2019-09"`, `"draft-2020-12"` |
 | `json_extension` | `false` | `".json"` | The file extension for JSON files (e.g. .json) |
 | `json_exclude_regex` | `false` | `""` | A regex to exclude files from validation (e.g. `".*\.schema\.json$"` to exclude all files ending with `.schema.json`) - Default is `""` which doesn't exclude any files |
 | `use_ajv_formats` | `false` | `"true"` | Whether or not to use the [AJV formats](https://github.com/ajv-validator/ajv-formats) with the JSON processor |

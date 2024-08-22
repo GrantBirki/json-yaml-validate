@@ -424,6 +424,26 @@ test('processes a real world example when yaml_as_json is true and the single fi
   )
 })
 
+test('processes a simple example and the single file contains no errors and uses the draft-04 ajv schema', async () => {
+  process.env.INPUT_BASE_DIR = '__tests__/fixtures/json/valid'
+  process.env.INPUT_JSON_SCHEMA_VERSION = 'draft-04'
+
+  expect(await jsonValidator(excludeMock)).toStrictEqual({
+    failed: 0,
+    passed: 1,
+    skipped: 0,
+    success: true,
+    violations: []
+  })
+
+  expect(debugMock).toHaveBeenCalledWith(
+    'using ajv-formats with json-validator'
+  )
+  expect(debugMock).toHaveBeenCalledWith(
+    'json - using baseDir: __tests__/fixtures/json/valid'
+  )
+})
+
 test('successfully validates json files with a schema when files is defined', async () => {
   const files = [
     '__tests__/fixtures/json/valid/json1.json',
