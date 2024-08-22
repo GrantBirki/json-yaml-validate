@@ -2016,11 +2016,11 @@ function getProxyUrl(reqUrl) {
     })();
     if (proxyVar) {
         try {
-            return new URL(proxyVar);
+            return new DecodedURL(proxyVar);
         }
         catch (_a) {
             if (!proxyVar.startsWith('http://') && !proxyVar.startsWith('https://'))
-                return new URL(`http://${proxyVar}`);
+                return new DecodedURL(`http://${proxyVar}`);
         }
     }
     else {
@@ -2078,6 +2078,19 @@ function isLoopbackAddress(host) {
         hostLower.startsWith('127.') ||
         hostLower.startsWith('[::1]') ||
         hostLower.startsWith('[0:0:0:0:0:0:0:1]'));
+}
+class DecodedURL extends URL {
+    constructor(url, base) {
+        super(url, base);
+        this._decodedUsername = decodeURIComponent(super.username);
+        this._decodedPassword = decodeURIComponent(super.password);
+    }
+    get username() {
+        return this._decodedUsername;
+    }
+    get password() {
+        return this._decodedPassword;
+    }
 }
 //# sourceMappingURL=proxy.js.map
 
@@ -5775,6 +5788,225 @@ var request = withDefaults(import_endpoint.endpoint, {
 // Annotate the CommonJS export names for ESM import in node:
 0 && (0);
 
+
+/***/ }),
+
+/***/ 7023:
+/***/ ((module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.CodeGen = exports.Name = exports.nil = exports.stringify = exports.str = exports._ = exports.KeywordCxt = void 0;
+const core_1 = __nccwpck_require__(2685);
+const draft4_1 = __nccwpck_require__(2589);
+const discriminator_1 = __nccwpck_require__(4025);
+const draft4MetaSchema = __nccwpck_require__(8978);
+const META_SUPPORT_DATA = ["/properties"];
+const META_SCHEMA_ID = "http://json-schema.org/draft-04/schema";
+class Ajv extends core_1.default {
+    constructor(opts = {}) {
+        super({
+            ...opts,
+            schemaId: "id",
+        });
+    }
+    _addVocabularies() {
+        super._addVocabularies();
+        draft4_1.default.forEach((v) => this.addVocabulary(v));
+        if (this.opts.discriminator)
+            this.addKeyword(discriminator_1.default);
+    }
+    _addDefaultMetaSchema() {
+        super._addDefaultMetaSchema();
+        if (!this.opts.meta)
+            return;
+        const metaSchema = this.opts.$data
+            ? this.$dataMetaSchema(draft4MetaSchema, META_SUPPORT_DATA)
+            : draft4MetaSchema;
+        this.addMetaSchema(metaSchema, META_SCHEMA_ID, false);
+        this.refs["http://json-schema.org/schema"] = META_SCHEMA_ID;
+    }
+    defaultMeta() {
+        return (this.opts.defaultMeta =
+            super.defaultMeta() || (this.getSchema(META_SCHEMA_ID) ? META_SCHEMA_ID : undefined));
+    }
+}
+module.exports = exports = Ajv;
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports["default"] = Ajv;
+var core_2 = __nccwpck_require__(2685);
+Object.defineProperty(exports, "KeywordCxt", ({ enumerable: true, get: function () { return core_2.KeywordCxt; } }));
+var core_3 = __nccwpck_require__(2685);
+Object.defineProperty(exports, "_", ({ enumerable: true, get: function () { return core_3._; } }));
+Object.defineProperty(exports, "str", ({ enumerable: true, get: function () { return core_3.str; } }));
+Object.defineProperty(exports, "stringify", ({ enumerable: true, get: function () { return core_3.stringify; } }));
+Object.defineProperty(exports, "nil", ({ enumerable: true, get: function () { return core_3.nil; } }));
+Object.defineProperty(exports, "Name", ({ enumerable: true, get: function () { return core_3.Name; } }));
+Object.defineProperty(exports, "CodeGen", ({ enumerable: true, get: function () { return core_3.CodeGen; } }));
+//# sourceMappingURL=index.js.map
+
+/***/ }),
+
+/***/ 4935:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+const ref_1 = __nccwpck_require__(6532);
+const core = [
+    "$schema",
+    "id",
+    "$defs",
+    { keyword: "$comment" },
+    "definitions",
+    ref_1.default,
+];
+exports["default"] = core;
+//# sourceMappingURL=core.js.map
+
+/***/ }),
+
+/***/ 2589:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+const core_1 = __nccwpck_require__(4935);
+const validation_1 = __nccwpck_require__(3035);
+const applicator_1 = __nccwpck_require__(3048);
+const format_1 = __nccwpck_require__(9841);
+const metadataVocabulary = ["title", "description", "default"];
+const draft4Vocabularies = [
+    core_1.default,
+    validation_1.default,
+    applicator_1.default(),
+    format_1.default,
+    metadataVocabulary,
+];
+exports["default"] = draft4Vocabularies;
+//# sourceMappingURL=draft4.js.map
+
+/***/ }),
+
+/***/ 3035:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+const limitNumber_1 = __nccwpck_require__(45);
+const limitNumberExclusive_1 = __nccwpck_require__(2674);
+const multipleOf_1 = __nccwpck_require__(3201);
+const limitLength_1 = __nccwpck_require__(7598);
+const pattern_1 = __nccwpck_require__(4960);
+const limitProperties_1 = __nccwpck_require__(3470);
+const required_1 = __nccwpck_require__(3602);
+const limitItems_1 = __nccwpck_require__(3924);
+const uniqueItems_1 = __nccwpck_require__(9351);
+const const_1 = __nccwpck_require__(3694);
+const enum_1 = __nccwpck_require__(5529);
+const validation = [
+    // number
+    limitNumber_1.default,
+    limitNumberExclusive_1.default,
+    multipleOf_1.default,
+    // string
+    limitLength_1.default,
+    pattern_1.default,
+    // object
+    limitProperties_1.default,
+    required_1.default,
+    // array
+    limitItems_1.default,
+    uniqueItems_1.default,
+    // any
+    { keyword: "type", schemaType: ["string", "array"] },
+    { keyword: "nullable", schemaType: "boolean" },
+    const_1.default,
+    enum_1.default,
+];
+exports["default"] = validation;
+//# sourceMappingURL=index.js.map
+
+/***/ }),
+
+/***/ 45:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+const core_1 = __nccwpck_require__(2685);
+const codegen_1 = __nccwpck_require__(9179);
+const ops = codegen_1.operators;
+const KWDs = {
+    maximum: {
+        exclusive: "exclusiveMaximum",
+        ops: [
+            { okStr: "<=", ok: ops.LTE, fail: ops.GT },
+            { okStr: "<", ok: ops.LT, fail: ops.GTE },
+        ],
+    },
+    minimum: {
+        exclusive: "exclusiveMinimum",
+        ops: [
+            { okStr: ">=", ok: ops.GTE, fail: ops.LT },
+            { okStr: ">", ok: ops.GT, fail: ops.LTE },
+        ],
+    },
+};
+const error = {
+    message: (cxt) => core_1.str `must be ${kwdOp(cxt).okStr} ${cxt.schemaCode}`,
+    params: (cxt) => core_1._ `{comparison: ${kwdOp(cxt).okStr}, limit: ${cxt.schemaCode}}`,
+};
+const def = {
+    keyword: Object.keys(KWDs),
+    type: "number",
+    schemaType: "number",
+    $data: true,
+    error,
+    code(cxt) {
+        const { data, schemaCode } = cxt;
+        cxt.fail$data(core_1._ `${data} ${kwdOp(cxt).fail} ${schemaCode} || isNaN(${data})`);
+    },
+};
+function kwdOp(cxt) {
+    var _a;
+    const keyword = cxt.keyword;
+    const opsIdx = ((_a = cxt.parentSchema) === null || _a === void 0 ? void 0 : _a[KWDs[keyword].exclusive]) ? 1 : 0;
+    return KWDs[keyword].ops[opsIdx];
+}
+exports["default"] = def;
+//# sourceMappingURL=limitNumber.js.map
+
+/***/ }),
+
+/***/ 2674:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+const KWDs = {
+    exclusiveMaximum: "maximum",
+    exclusiveMinimum: "minimum",
+};
+const def = {
+    keyword: Object.keys(KWDs),
+    type: "number",
+    schemaType: "boolean",
+    code({ keyword, parentSchema }) {
+        const limitKwd = KWDs[keyword];
+        if (parentSchema[limitKwd] === undefined) {
+            throw new Error(`${keyword} can only be used with ${limitKwd}`);
+        }
+    },
+};
+exports["default"] = def;
+//# sourceMappingURL=limitNumberExclusive.js.map
 
 /***/ }),
 
@@ -51731,7 +51963,7 @@ var YAMLMap = __nccwpck_require__(6011);
 var YAMLSeq = __nccwpck_require__(5161);
 var resolveBlockMap = __nccwpck_require__(2986);
 var resolveBlockSeq = __nccwpck_require__(2289);
-var resolveFlowCollection = __nccwpck_require__(45);
+var resolveFlowCollection = __nccwpck_require__(5488);
 
 function resolveCollection(CN, ctx, token, onError, tagName, tag) {
     const coll = token.type === 'block-map'
@@ -52726,7 +52958,7 @@ exports.resolveEnd = resolveEnd;
 
 /***/ }),
 
-/***/ 45:
+/***/ 5488:
 /***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
 
 "use strict";
@@ -60199,6 +60431,14 @@ exports.visitAsync = visitAsync;
 
 /***/ }),
 
+/***/ 8978:
+/***/ ((module) => {
+
+"use strict";
+module.exports = JSON.parse('{"id":"http://json-schema.org/draft-04/schema#","$schema":"http://json-schema.org/draft-04/schema#","description":"Core schema meta-schema","definitions":{"schemaArray":{"type":"array","minItems":1,"items":{"$ref":"#"}},"positiveInteger":{"type":"integer","minimum":0},"positiveIntegerDefault0":{"allOf":[{"$ref":"#/definitions/positiveInteger"},{"default":0}]},"simpleTypes":{"enum":["array","boolean","integer","null","number","object","string"]},"stringArray":{"type":"array","items":{"type":"string"},"minItems":1,"uniqueItems":true}},"type":"object","properties":{"id":{"type":"string","format":"uri"},"$schema":{"type":"string","format":"uri"},"title":{"type":"string"},"description":{"type":"string"},"default":{},"multipleOf":{"type":"number","minimum":0,"exclusiveMinimum":true},"maximum":{"type":"number"},"exclusiveMaximum":{"type":"boolean","default":false},"minimum":{"type":"number"},"exclusiveMinimum":{"type":"boolean","default":false},"maxLength":{"$ref":"#/definitions/positiveInteger"},"minLength":{"$ref":"#/definitions/positiveIntegerDefault0"},"pattern":{"type":"string","format":"regex"},"additionalItems":{"anyOf":[{"type":"boolean"},{"$ref":"#"}],"default":{}},"items":{"anyOf":[{"$ref":"#"},{"$ref":"#/definitions/schemaArray"}],"default":{}},"maxItems":{"$ref":"#/definitions/positiveInteger"},"minItems":{"$ref":"#/definitions/positiveIntegerDefault0"},"uniqueItems":{"type":"boolean","default":false},"maxProperties":{"$ref":"#/definitions/positiveInteger"},"minProperties":{"$ref":"#/definitions/positiveIntegerDefault0"},"required":{"$ref":"#/definitions/stringArray"},"additionalProperties":{"anyOf":[{"type":"boolean"},{"$ref":"#"}],"default":{}},"definitions":{"type":"object","additionalProperties":{"$ref":"#"},"default":{}},"properties":{"type":"object","additionalProperties":{"$ref":"#"},"default":{}},"patternProperties":{"type":"object","additionalProperties":{"$ref":"#"},"default":{}},"dependencies":{"type":"object","additionalProperties":{"anyOf":[{"$ref":"#"},{"$ref":"#/definitions/stringArray"}]}},"enum":{"type":"array","minItems":1,"uniqueItems":true},"type":{"anyOf":[{"$ref":"#/definitions/simpleTypes"},{"type":"array","items":{"$ref":"#/definitions/simpleTypes"},"minItems":1,"uniqueItems":true}]},"allOf":{"$ref":"#/definitions/schemaArray"},"anyOf":{"$ref":"#/definitions/schemaArray"},"oneOf":{"$ref":"#/definitions/schemaArray"},"not":{"$ref":"#"}},"dependencies":{"exclusiveMaximum":["maximum"],"exclusiveMinimum":["minimum"]},"default":{}}');
+
+/***/ }),
+
 /***/ 4775:
 /***/ ((module) => {
 
@@ -60486,9 +60726,12 @@ var _2019_default = /*#__PURE__*/__nccwpck_require__.n(_2019);
 // EXTERNAL MODULE: ./node_modules/ajv/dist/2020.js
 var _2020 = __nccwpck_require__(6121);
 var _2020_default = /*#__PURE__*/__nccwpck_require__.n(_2020);
-// EXTERNAL MODULE: ./node_modules/ajv-formats/dist/index.js
-var dist = __nccwpck_require__(567);
+// EXTERNAL MODULE: ./node_modules/ajv-draft-04/dist/index.js
+var dist = __nccwpck_require__(7023);
 var dist_default = /*#__PURE__*/__nccwpck_require__.n(dist);
+// EXTERNAL MODULE: ./node_modules/ajv-formats/dist/index.js
+var ajv_formats_dist = __nccwpck_require__(567);
+var ajv_formats_dist_default = /*#__PURE__*/__nccwpck_require__.n(ajv_formats_dist);
 // EXTERNAL MODULE: external "fs"
 var external_fs_ = __nccwpck_require__(7147);
 // EXTERNAL MODULE: ./node_modules/fdir/dist/index.js
@@ -68191,6 +68434,7 @@ glob.glob = glob;
 
 
 
+
 // Helper function to setup the schema
 // :param jsonSchema: path to the jsonSchema file
 // :returns: the compiled schema
@@ -68204,6 +68448,8 @@ async function schema(jsonSchema) {
   var ajv
   if (jsonSchemaVersion === 'draft-07') {
     ajv = new (ajv_default())({allErrors: true, strict: strict})
+  } else if (jsonSchemaVersion === 'draft-04') {
+    ajv = new (dist_default())({allErrors: true, strict: strict})
   } else if (jsonSchemaVersion === 'draft-2019-09') {
     ajv = new (_2019_default())({allErrors: true, strict: strict})
   } else if (jsonSchemaVersion === 'draft-2020-12') {
@@ -68218,7 +68464,7 @@ async function schema(jsonSchema) {
   // use ajv-formats if enabled
   if (core.getBooleanInput('use_ajv_formats')) {
     core.debug('using ajv-formats with json-validator')
-    dist_default()(ajv)
+    ajv_formats_dist_default()(ajv)
   } else {
     core.debug('ajv-formats will not be used with the json-validator')
   }
