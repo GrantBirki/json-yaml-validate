@@ -149,6 +149,9 @@ export async function jsonValidator(exclude) {
       .withPromise()
   }
 
+  // Create a Set to track processed files
+  const processedFiles = new Set()
+
   for (const fullPath of files) {
     core.debug(`found file: ${fullPath}`)
 
@@ -185,6 +188,12 @@ export async function jsonValidator(exclude) {
       core.debug(
         `the json-validator found a yaml file so it will be skipped here: '${fullPath}'`
       )
+      continue
+    }
+
+    // Check if the file has already been processed
+    if (processedFiles.has(fullPath)) {
+      core.debug(`skipping duplicate file: ${fullPath}`)
       continue
     }
 
@@ -249,6 +258,9 @@ export async function jsonValidator(exclude) {
       })
       continue
     }
+
+    // Add the file to the processedFiles Set
+    processedFiles.add(fullPath)
 
     result.passed++
     core.info(`${fullPath} is valid`)
