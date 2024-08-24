@@ -1,0 +1,12 @@
+name:
+  type: string
+  description: The name
+  required: true
+author:
+  type: string
+  description: The author
+  required: true
+category:
+  type: string
+  description: The category
+  required: true
