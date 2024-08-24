@@ -62,6 +62,9 @@ export async function yamlValidator(exclude) {
       .withPromise()
   }
 
+  // Create a Set to track processed files
+  const processedFiles = new Set()
+
   for (const fullPath of files) {
     core.debug(`found file: ${fullPath}`)
 
@@ -90,6 +93,12 @@ export async function yamlValidator(exclude) {
     if (exclude.isExcluded(fullPath)) {
       core.info(`skipping due to exclude match: ${fullPath}`)
       result.skipped++
+      continue
+    }
+
+    // Check if the file has already been processed
+    if (processedFiles.has(fullPath)) {
+      core.debug(`skipping duplicate file: ${fullPath}`)
       continue
     }
 
@@ -175,6 +184,9 @@ export async function yamlValidator(exclude) {
       })
       continue
     }
+
+    // Add the file to the processedFiles Set
+    processedFiles.add(fullPath)
 
     result.passed++
     core.info(`${fullPath} is valid`)

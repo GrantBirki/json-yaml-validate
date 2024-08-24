@@ -128,7 +128,8 @@ test('fails to validate a yaml file without using a schema', async () => {
   )
 })
 
-test('successfully validates yaml files with a schema when files is defined', async () => {
+test('successfully validates yaml files with a schema when files is defined and there are duplicates', async () => {
+  // this file should only be validated once and not duplicated
   const files = [
     '__tests__/fixtures/yaml/valid/yaml1.yaml',
     '__tests__/fixtures/yaml/valid/yaml1.yaml'
@@ -137,7 +138,7 @@ test('successfully validates yaml files with a schema when files is defined', as
 
   expect(await yamlValidator(excludeMock)).toStrictEqual({
     failed: 0,
-    passed: 2,
+    passed: 1,
     skipped: 0,
     success: true,
     violations: []
