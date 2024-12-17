@@ -74,4 +74,4 @@ jobs:
           comment: "true"
           yaml_schema: ./__tests__/fixtures/schemas/regex.yaml
           files: |
-            __tests__/acceptance/flat_yaml/regex.yaml
+            __tests__/acceptance/regex/regex.yaml
