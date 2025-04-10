@@ -29,6 +29,7 @@ beforeEach(() => {
   process.env.INPUT_JSON_SCHEMA_VERSION = 'draft-07'
   process.env.INPUT_AJV_STRICT_MODE = 'true'
   process.env.INPUT_AJV_CUSTOM_REGEXP_FORMATS = ''
+  process.env.INPUT_ALLOW_MULTIPLE_DOCUMENTS = 'false'
 })
 
 test('successfully validates a json file with a schema', async () => {
@@ -583,7 +584,7 @@ test('test that validator throws error when custom_ajv_regexp_format does not co
   }
 })
 
-test('test that schema compile throws error when attemting to validate a json to a schema with unknown format', async () => {
+test('test that schema compile throws error when attempting to validate a json to a schema with unknown format', async () => {
   expect.assertions(1)
   try {
     process.env.INPUT_JSON_SCHEMA =
@@ -596,4 +597,47 @@ test('test that schema compile throws error when attemting to validate a json to
       'unknown format "lowercase_char" ignored in schema at path "#/properties/lowercase_char_property"'
     )
   }
+})
+
+test('yamlAsJson: successful validation of a multi-document-file', async () => {
+  process.env.INPUT_YAML_AS_JSON = 'true'
+  process.env.INPUT_ALLOW_MULTIPLE_DOCUMENTS = 'true'
+  process.env.INPUT_BASE_DIR = '__tests__/fixtures/yaml_as_json/valid_multi'
+  let result = await jsonValidator(excludeMock);
+  expect(result).toStrictEqual({
+    failed: 0,
+    passed: 1,
+    skipped: 0,
+    success: true,
+    violations: []
+  })
+})
+
+test('yamlAsJson: failed validation of a multi-document-file', async () => {
+  process.env.INPUT_YAML_AS_JSON = 'true'
+  process.env.INPUT_ALLOW_MULTIPLE_DOCUMENTS = 'true'
+  process.env.INPUT_BASE_DIR = '__tests__/fixtures/yaml_as_json/invalid_multi'
+  let result = await jsonValidator(excludeMock);
+  expect(result).toStrictEqual({
+    failed: 1,
+    passed: 0,
+    skipped: 0,
+    success: false,
+    violations: [
+      {
+        file: "__tests__/fixtures/yaml_as_json/invalid_multi/yaml1.yaml",
+        "errors": [
+          {
+            "document": 0,
+            "message": "must be integer",
+            "path": "/foo",
+          }, {
+            "document": 1,
+            "message": "must NOT have additional properties",
+            "path": null,
+          }
+        ]
+      }
+    ]
+  })
 })

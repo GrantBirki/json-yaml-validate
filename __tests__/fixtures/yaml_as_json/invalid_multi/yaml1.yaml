@@ -1,0 +1,6 @@
+---
+foo: "1" # invalid type, value should be int
+bar: "ok"
+---
+foo: 2
+foobar: "not ok" # invalid key, additionalProperties not allowed
