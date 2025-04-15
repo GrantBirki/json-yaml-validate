@@ -249,6 +249,10 @@ export async function jsonValidator(exclude) {
       data = [data]
     }
 
+    if (Array.isArray(data)) {
+      core.debug(`${data.length} object(s) found in file: ${fullPath}`)
+    }
+
     let allValid = true
     let allErrors = []
 
