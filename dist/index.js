@@ -68520,6 +68520,9 @@ async function jsonValidator(exclude) {
   const yamlExtension = core.getInput('yaml_extension')
   const yamlExtensionShort = core.getInput('yaml_extension_short')
   const useDotMatch = core.getBooleanInput('use_dot_match')
+  const allowMultipleDocuments = core.getBooleanInput(
+    'allow_multiple_documents'
+  )
   let patterns = core.getMultilineInput('files').filter(Boolean)
 
   core.debug(`yaml_as_json: ${yamlAsJson}`)
@@ -68631,8 +68634,11 @@ async function jsonValidator(exclude) {
           fullPath.endsWith(yamlExtensionShort))
       ) {
         core.debug(`attempting to process yaml file: '${fullPath}' as json`)
-        data = (0,yaml_dist/* parse */.Qc)((0,external_fs_.readFileSync)(fullPath, 'utf8'))
-
+        if (allowMultipleDocuments === true) {
+          data = (0,yaml_dist/* parseAllDocuments */.Ej)((0,external_fs_.readFileSync)(fullPath, 'utf8'))
+        } else {
+          data = (0,yaml_dist/* parse */.Qc)((0,external_fs_.readFileSync)(fullPath, 'utf8'))
+        }
         // if the file is a json file
       } else {
         data = JSON.parse((0,external_fs_.readFileSync)(fullPath, 'utf8'))
@@ -68654,32 +68660,60 @@ async function jsonValidator(exclude) {
       continue
     }
 
-    // if a jsonSchema is provided, validate the json against it
-    const valid = validate(data)
-    if (!valid) {
-      // if the json file is invalid against the schema, log an error and set success to false
+    // ensure data is always an array; in case of single-document-mode it'll
+    // have just one element.
+    // this is required to support multi-doc files when yamlAsJson is true
+    if (yamlAsJson === true && allowMultipleDocuments === true) {
+      let newData = []
+      data.forEach(doc => {
+        newData.push(doc.toJS())
+      })
+      data = newData
+    }
+    if (allowMultipleDocuments !== true) {
+      data = [data]
+    }
+
+    if (Array.isArray(data)) {
+      core.debug(`${data.length} object(s) found in file: ${fullPath}`)
+    }
+
+    let allValid = true
+    let allErrors = []
+
+    // perform the validation for each document
+    data.forEach((doc, index) => {
+      const valid = validate(doc)
+      if (valid) {
+        return
+      }
+
+      // validation failed, record the error
+      allValid = false
+      allErrors.push(
+        ...validate.errors.map(error => {
+          let errorValue = {
+            path: error.instancePath || null,
+            message: error.message
+          }
+          // when we have multiple documents, we need to add the document index
+          if (allowMultipleDocuments && yamlAsJson === true) {
+            errorValue.document = index
+          }
+          return errorValue
+        })
+      )
+    })
+
+    if (!allValid) {
       core.error(
-        `❌ failed to parse JSON file: ${fullPath}\n${JSON.stringify(
-          validate.errors
-        )}`
+        `❌ failed to parse JSON file: ${fullPath}\n${JSON.stringify(allErrors)}`
       )
       result.success = false
       result.failed++
-
-      // add the errors to the result object (path and message)
-      // where path is the path to the property that failed validation
-      var errors = []
-      for (const error of validate.errors) {
-        errors.push({
-          path: error.instancePath || null,
-          message: error.message
-        })
-      }
-
-      // add the file and errors to the result object
       result.violations.push({
         file: `${fullPath}`,
-        errors: errors
+        errors: allErrors
       })
       continue
     }
