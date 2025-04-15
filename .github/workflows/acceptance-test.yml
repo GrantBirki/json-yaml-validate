@@ -73,6 +73,7 @@ jobs:
         with:
           comment: "true"
           allow_multiple_documents: true
+          yaml_as_json: true
           json_schema: ./__tests__/fixtures/schemas/schema1.json
           files: |
             __tests__/fixtures/yaml_as_json/valid_multi/yaml1.yaml
