@@ -95,7 +95,9 @@ export async function jsonValidator(exclude) {
   const yamlExtension = core.getInput('yaml_extension')
   const yamlExtensionShort = core.getInput('yaml_extension_short')
   const useDotMatch = core.getBooleanInput('use_dot_match')
-  const allowMultipleDocuments = core.getBooleanInput('allow_multiple_documents')
+  const allowMultipleDocuments = core.getBooleanInput(
+    'allow_multiple_documents'
+  )
   let patterns = core.getMultilineInput('files').filter(Boolean)
 
   core.debug(`yaml_as_json: ${yamlAsJson}`)
@@ -259,17 +261,19 @@ export async function jsonValidator(exclude) {
 
       // validation failed, record the error
       allValid = false
-      allErrors.push(...validate.errors.map(error => {
-        let errorValue = {
-          path: error.instancePath || null,
-          message: error.message
-        };
-        // when we have multiple documents, we need to add the document index
-        if (allowMultipleDocuments && yamlAsJson === true) {
-          errorValue.document = index
-        }
-        return errorValue;
-      }))
+      allErrors.push(
+        ...validate.errors.map(error => {
+          let errorValue = {
+            path: error.instancePath || null,
+            message: error.message
+          }
+          // when we have multiple documents, we need to add the document index
+          if (allowMultipleDocuments && yamlAsJson === true) {
+            errorValue.document = index
+          }
+          return errorValue
+        })
+      )
     })
 
     if (!allValid) {

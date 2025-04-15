@@ -603,7 +603,7 @@ test('yamlAsJson: successful validation of a multi-document-file', async () => {
   process.env.INPUT_YAML_AS_JSON = 'true'
   process.env.INPUT_ALLOW_MULTIPLE_DOCUMENTS = 'true'
   process.env.INPUT_BASE_DIR = '__tests__/fixtures/yaml_as_json/valid_multi'
-  let result = await jsonValidator(excludeMock);
+  let result = await jsonValidator(excludeMock)
   expect(result).toStrictEqual({
     failed: 0,
     passed: 1,
@@ -617,7 +617,7 @@ test('yamlAsJson: failed validation of a multi-document-file', async () => {
   process.env.INPUT_YAML_AS_JSON = 'true'
   process.env.INPUT_ALLOW_MULTIPLE_DOCUMENTS = 'true'
   process.env.INPUT_BASE_DIR = '__tests__/fixtures/yaml_as_json/invalid_multi'
-  let result = await jsonValidator(excludeMock);
+  let result = await jsonValidator(excludeMock)
   expect(result).toStrictEqual({
     failed: 1,
     passed: 0,
@@ -625,16 +625,17 @@ test('yamlAsJson: failed validation of a multi-document-file', async () => {
     success: false,
     violations: [
       {
-        file: "__tests__/fixtures/yaml_as_json/invalid_multi/yaml1.yaml",
-        "errors": [
+        file: '__tests__/fixtures/yaml_as_json/invalid_multi/yaml1.yaml',
+        errors: [
           {
-            "document": 0,
-            "message": "must be integer",
-            "path": "/foo",
-          }, {
-            "document": 1,
-            "message": "must NOT have additional properties",
-            "path": null,
+            document: 0,
+            message: 'must be integer',
+            path: '/foo'
+          },
+          {
+            document: 1,
+            message: 'must NOT have additional properties',
+            path: null
           }
         ]
       }
