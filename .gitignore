@@ -31,3 +31,7 @@ secrets.json
 *.key
 *.secret
 *.secrets
+
+# jetbrains
+.idea
+*.iml
