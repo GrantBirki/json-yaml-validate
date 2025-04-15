@@ -49215,9 +49215,6 @@ const logLevels = {
 }
 
 const validateSchema =  (targetObject, options = {}) => {
-
-  console.log('targetObject', targetObject)
-
   if(!targetObject)
     return logger.error('Missing argument: either targetObject or filePath is required')
   let isPath = typeof targetObject === 'string'
