@@ -66,3 +66,13 @@ jobs:
           yaml_schema: ./__tests__/fixtures/schemas/flat.yaml
           files: |
             __tests__/acceptance/flat_yaml/flat.yaml
+
+      - name: acceptance test - multi yaml as json
+        uses: ./
+        id: json-yaml-validate-multi-yaml-as-json-test
+        with:
+          comment: "true"
+          allow_multiple_documents: true
+          json_schema: ./__tests__/fixtures/schemas/schema1.json
+          files: |
+            __tests__/fixtures/yaml_as_json/valid_multi/yaml1.yaml
