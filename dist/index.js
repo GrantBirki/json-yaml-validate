@@ -68674,7 +68674,6 @@ async function jsonValidator(exclude) {
       data = [data]
     }
 
-    // Log the number of objects if data is an array
     if (Array.isArray(data)) {
       core.debug(`${data.length} object(s) found in file: ${fullPath}`)
     }
