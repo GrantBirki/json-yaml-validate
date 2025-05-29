@@ -1,4 +1,4 @@
-name: acceptance-test
+name: acceptance
 
 on:
   pull_request:
@@ -11,7 +11,7 @@ permissions:
   pull-requests: write
 
 jobs:
-  test:
+  acceptance:
     runs-on: ubuntu-latest
     steps:
       # Need to checkout for testing the Action in this repo

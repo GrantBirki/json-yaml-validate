@@ -1882,6 +1882,7 @@ class Context {
         this.action = process.env.GITHUB_ACTION;
         this.actor = process.env.GITHUB_ACTOR;
         this.job = process.env.GITHUB_JOB;
+        this.runAttempt = parseInt(process.env.GITHUB_RUN_ATTEMPT, 10);
         this.runNumber = parseInt(process.env.GITHUB_RUN_NUMBER, 10);
         this.runId = parseInt(process.env.GITHUB_RUN_ID, 10);
         this.apiUrl = (_a = process.env.GITHUB_API_URL) !== null && _a !== void 0 ? _a : `https://api.github.com`;
@@ -15699,7 +15700,8 @@ module.exports = function equal(a, b) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.callback = exports.promise = void 0;
+exports.promise = promise;
+exports.callback = callback;
 const walker_1 = __nccwpck_require__(4835);
 function promise(root, options) {
     return new Promise((resolve, reject) => {
@@ -15710,12 +15712,10 @@ function promise(root, options) {
         });
     });
 }
-exports.promise = promise;
 function callback(root, options, callback) {
     let walker = new walker_1.Walker(root, options, callback);
     walker.start();
 }
-exports.callback = callback;
 
 
 /***/ }),
@@ -15761,7 +15761,7 @@ exports.Counter = Counter;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.build = void 0;
+exports.build = build;
 const getArray = (paths) => {
     return paths;
 };
@@ -15771,7 +15771,6 @@ const getArrayGroup = () => {
 function build(options) {
     return options.group ? getArrayGroup : getArray;
 }
-exports.build = build;
 
 
 /***/ }),
@@ -15782,7 +15781,7 @@ exports.build = build;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.build = void 0;
+exports.build = build;
 const groupFiles = (groups, directory, files) => {
     groups.push({ directory, files, dir: directory });
 };
@@ -15790,7 +15789,6 @@ const empty = () => { };
 function build(options) {
     return options.group ? groupFiles : empty;
 }
-exports.build = build;
 
 
 /***/ }),
@@ -15801,7 +15799,7 @@ exports.build = build;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.build = void 0;
+exports.build = build;
 const onlyCountsSync = (state) => {
     return state.counts;
 };
@@ -15855,7 +15853,6 @@ function build(options, isSynchronous) {
             ? defaultSync
             : defaultAsync;
 }
-exports.build = build;
 
 
 /***/ }),
@@ -15866,13 +15863,14 @@ exports.build = build;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.build = exports.joinDirectoryPath = exports.joinPathWithBasePath = void 0;
+exports.joinPathWithBasePath = joinPathWithBasePath;
+exports.joinDirectoryPath = joinDirectoryPath;
+exports.build = build;
 const path_1 = __nccwpck_require__(6928);
 const utils_1 = __nccwpck_require__(6407);
 function joinPathWithBasePath(filename, directoryPath) {
     return directoryPath + filename;
 }
-exports.joinPathWithBasePath = joinPathWithBasePath;
 function joinPathWithRelativePath(root, options) {
     return function (filename, directoryPath) {
         const sameRoot = directoryPath.startsWith(root);
@@ -15890,7 +15888,6 @@ function joinPath(filename) {
 function joinDirectoryPath(filename, directoryPath, separator) {
     return directoryPath + filename + separator;
 }
-exports.joinDirectoryPath = joinDirectoryPath;
 function build(root, options) {
     const { relativePaths, includeBasePath } = options;
     return relativePaths && root
@@ -15899,7 +15896,6 @@ function build(root, options) {
             ? joinPathWithBasePath
             : joinPath;
 }
-exports.build = build;
 
 
 /***/ }),
@@ -15910,7 +15906,7 @@ exports.build = build;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.build = void 0;
+exports.build = build;
 function pushDirectoryWithRelativePath(root) {
     return function (directoryPath, paths) {
         paths.push(directoryPath.substring(root.length) || ".");
@@ -15944,7 +15940,6 @@ function build(root, options) {
             : pushDirectoryWithRelativePath(root);
     return filters && filters.length ? pushDirectoryFilter : pushDirectory;
 }
-exports.build = build;
 
 
 /***/ }),
@@ -15955,7 +15950,7 @@ exports.build = build;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.build = void 0;
+exports.build = build;
 const pushFileFilterAndCount = (filename, _paths, counts, filters) => {
     if (filters.every((filter) => filter(filename, false)))
         counts.files++;
@@ -15985,7 +15980,6 @@ function build(options) {
         return pushFile;
     }
 }
-exports.build = build;
 
 
 /***/ }),
@@ -15999,7 +15993,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.build = void 0;
+exports.build = build;
 const fs_1 = __importDefault(__nccwpck_require__(9896));
 const path_1 = __nccwpck_require__(6928);
 const resolveSymlinksAsync = function (path, state, callback) {
@@ -16038,7 +16032,6 @@ function build(options, isSynchronous) {
         return null;
     return isSynchronous ? resolveSymlinks : resolveSymlinksAsync;
 }
-exports.build = build;
 function isRecursive(path, resolved, state) {
     if (state.options.useRealPaths)
         return isRecursiveUsingRealPaths(resolved, state);
@@ -16074,15 +16067,15 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.build = void 0;
+exports.build = build;
 const fs_1 = __importDefault(__nccwpck_require__(9896));
 const readdirOpts = { withFileTypes: true };
 const walkAsync = (state, crawlPath, directoryPath, currentDepth, callback) => {
-    if (currentDepth < 0)
+    state.queue.enqueue();
+    if (currentDepth <= 0)
         return state.queue.dequeue(null, state);
     state.visited.push(crawlPath);
     state.counts.directories++;
-    state.queue.enqueue();
     // Perf: Node >= 10 introduced withFileTypes that helps us
     // skip an extra fs.stat call.
     fs_1.default.readdir(crawlPath || ".", readdirOpts, (error, entries = []) => {
@@ -16091,7 +16084,7 @@ const walkAsync = (state, crawlPath, directoryPath, currentDepth, callback) => {
     });
 };
 const walkSync = (state, crawlPath, directoryPath, currentDepth, callback) => {
-    if (currentDepth < 0)
+    if (currentDepth <= 0)
         return;
     state.visited.push(crawlPath);
     state.counts.directories++;
@@ -16108,7 +16101,6 @@ const walkSync = (state, crawlPath, directoryPath, currentDepth, callback) => {
 function build(isSynchronous) {
     return isSynchronous ? walkSync : walkAsync;
 }
-exports.build = build;
 
 
 /***/ }),
@@ -16133,10 +16125,16 @@ class Queue {
     }
     enqueue() {
         this.count++;
+        return this.count;
     }
     dequeue(error, output) {
-        if (--this.count <= 0 || error)
+        if (this.onQueueEmpty && (--this.count <= 0 || error)) {
             this.onQueueEmpty(error, output);
+            if (error) {
+                output.controller.abort();
+                this.onQueueEmpty = undefined;
+            }
+        }
     }
 }
 exports.Queue = Queue;
@@ -16150,13 +16148,12 @@ exports.Queue = Queue;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.sync = void 0;
+exports.sync = sync;
 const walker_1 = __nccwpck_require__(4835);
 function sync(root, options) {
     const walker = new walker_1.Walker(root, options);
     return walker.start();
 }
-exports.sync = sync;
 
 
 /***/ }),
@@ -16182,13 +16179,23 @@ var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (
 }) : function(o, v) {
     o["default"] = v;
 });
-var __importStar = (this && this.__importStar) || function (mod) {
-    if (mod && mod.__esModule) return mod;
-    var result = {};
-    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
-    __setModuleDefault(result, mod);
-    return result;
-};
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.Walker = void 0;
 const path_1 = __nccwpck_require__(6928);
@@ -16220,7 +16227,7 @@ class Walker {
         this.callbackInvoker = invokeCallback.build(options, this.isSynchronous);
         this.root = (0, utils_1.normalizePath)(root, options);
         this.state = {
-            root: this.root.slice(0, -1),
+            root: (0, utils_1.isRootDirectory)(this.root) ? this.root : this.root.slice(0, -1),
             // Perf: we explicitly tell the compiler to optimize for String arrays
             paths: [""].slice(0, 0),
             groups: [],
@@ -16229,6 +16236,7 @@ class Walker {
             queue: new queue_1.Queue((error, state) => this.callbackInvoker(state, error, callback)),
             symlinks: new Map(),
             visited: [""].slice(0, 0),
+            controller: new AbortController(),
         };
         /*
          * Perf: We conditionally change functions according to options. This gives a slight
@@ -16244,14 +16252,16 @@ class Walker {
         this.walkDirectory = walkDirectory.build(this.isSynchronous);
     }
     start() {
+        this.pushDirectory(this.root, this.state.paths, this.state.options.filters);
         this.walkDirectory(this.state, this.root, this.root, this.state.options.maxDepth, this.walk);
         return this.isSynchronous ? this.callbackInvoker(this.state, null) : null;
     }
     walk = (entries, directoryPath, depth) => {
-        const { paths, options: { filters, resolveSymlinks, excludeSymlinks, exclude, maxFiles, signal, useRealPaths, pathSeparator, }, } = this.state;
-        if ((signal && signal.aborted) || (maxFiles && paths.length > maxFiles))
+        const { paths, options: { filters, resolveSymlinks, excludeSymlinks, exclude, maxFiles, signal, useRealPaths, pathSeparator, }, controller, } = this.state;
+        if (controller.signal.aborted ||
+            (signal && signal.aborted) ||
+            (maxFiles && paths.length > maxFiles))
             return;
-        this.pushDirectory(directoryPath, paths, filters);
         const files = this.getArray(this.state.paths);
         for (let i = 0; i < entries.length; ++i) {
             const entry = entries[i];
@@ -16264,14 +16274,16 @@ class Walker {
                 let path = joinPath.joinDirectoryPath(entry.name, directoryPath, this.state.options.pathSeparator);
                 if (exclude && exclude(entry.name, path))
                     continue;
+                this.pushDirectory(path, paths, filters);
                 this.walkDirectory(this.state, path, path, depth - 1, this.walk);
             }
-            else if (entry.isSymbolicLink() && this.resolveSymlink) {
+            else if (this.resolveSymlink && entry.isSymbolicLink()) {
                 let path = joinPath.joinPathWithBasePath(entry.name, directoryPath);
                 this.resolveSymlink(path, this.state, (stat, resolvedPath) => {
                     if (stat.isDirectory()) {
                         resolvedPath = (0, utils_1.normalizePath)(resolvedPath, this.state.options);
-                        if (exclude && exclude(entry.name, useRealPaths ? resolvedPath : path + pathSeparator))
+                        if (exclude &&
+                            exclude(entry.name, useRealPaths ? resolvedPath : path + pathSeparator))
                             return;
                         this.walkDirectory(this.state, resolvedPath, useRealPaths ? resolvedPath : path + pathSeparator, depth - 1, this.walk);
                     }
@@ -16452,7 +16464,7 @@ class Builder {
         const globFn = (this.globFunction || pm);
         /* c8 ignore next 5 */
         if (!globFn) {
-            throw new Error('Please specify a glob function to use glob matching.');
+            throw new Error("Please specify a glob function to use glob matching.");
         }
         var isMatch = this.globCache[patterns.join("\0")];
         if (!isMatch) {
@@ -16512,7 +16524,10 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.normalizePath = exports.convertSlashes = exports.cleanPath = void 0;
+exports.cleanPath = cleanPath;
+exports.convertSlashes = convertSlashes;
+exports.isRootDirectory = isRootDirectory;
+exports.normalizePath = normalizePath;
 const path_1 = __nccwpck_require__(6928);
 function cleanPath(path) {
     let normalized = (0, path_1.normalize)(path);
@@ -16522,12 +16537,14 @@ function cleanPath(path) {
         normalized = normalized.substring(0, normalized.length - 1);
     return normalized;
 }
-exports.cleanPath = cleanPath;
 const SLASHES_REGEX = /[\\/]/g;
 function convertSlashes(path, separator) {
     return path.replace(SLASHES_REGEX, separator);
 }
-exports.convertSlashes = convertSlashes;
+const WINDOWS_ROOT_DIR_REGEX = /^[a-z]:[\\/]$/i;
+function isRootDirectory(path) {
+    return path === "/" || WINDOWS_ROOT_DIR_REGEX.test(path);
+}
 function normalizePath(path, options) {
     const { resolvePaths, normalizePath, pathSeparator } = options;
     const pathNeedsCleaning = (process.platform === "win32" && path.includes("/")) ||
@@ -16541,7 +16558,6 @@ function normalizePath(path, options) {
     const needsSeperator = path[path.length - 1] !== pathSeparator;
     return convertSlashes(needsSeperator ? path + pathSeparator : path, pathSeparator);
 }
-exports.normalizePath = normalizePath;
 
 
 /***/ }),
@@ -50144,14 +50160,6 @@ module.exports = require("net");
 
 /***/ }),
 
-/***/ 4573:
-/***/ ((module) => {
-
-"use strict";
-module.exports = require("node:buffer");
-
-/***/ }),
-
 /***/ 7598:
 /***/ ((module) => {
 
@@ -50165,14 +50173,6 @@ module.exports = require("node:crypto");
 
 "use strict";
 module.exports = require("node:events");
-
-/***/ }),
-
-/***/ 1708:
-/***/ ((module) => {
-
-"use strict";
-module.exports = require("node:process");
 
 /***/ }),
 
@@ -50213,6 +50213,14 @@ module.exports = require("path");
 
 "use strict";
 module.exports = require("perf_hooks");
+
+/***/ }),
+
+/***/ 932:
+/***/ ((module) => {
+
+"use strict";
+module.exports = require("process");
 
 /***/ }),
 
@@ -53092,7 +53100,7 @@ exports.composeScalar = composeScalar;
 "use strict";
 
 
-var node_process = __nccwpck_require__(1708);
+var node_process = __nccwpck_require__(932);
 var directives = __nccwpck_require__(1342);
 var Document = __nccwpck_require__(5402);
 var errors = __nccwpck_require__(1464);
@@ -54285,8 +54293,7 @@ function resolveProps(tokens, { flow, indicator, next, offset, onError, parentIn
                 if (token.source.endsWith(':'))
                     onError(token.offset + token.source.length - 1, 'BAD_ALIAS', 'Anchor ending in : is ambiguous', true);
                 anchor = token;
-                if (start === null)
-                    start = token.offset;
+                start ?? (start = token.offset);
                 atNewline = false;
                 hasSpace = false;
                 reqSpace = true;
@@ -54295,8 +54302,7 @@ function resolveProps(tokens, { flow, indicator, next, offset, onError, parentIn
                 if (tag)
                     onError(token, 'MULTIPLE_TAGS', 'A node can have at most one tag');
                 tag = token;
-                if (start === null)
-                    start = token.offset;
+                start ?? (start = token.offset);
                 atNewline = false;
                 hasSpace = false;
                 reqSpace = true;
@@ -54415,8 +54421,7 @@ exports.containsNewline = containsNewline;
 
 function emptyScalarPosition(offset, before, pos) {
     if (before) {
-        if (pos === null)
-            pos = before.length;
+        pos ?? (pos = before.length);
         for (let i = pos - 1; i >= 0; --i) {
             let st = before[i];
             switch (st.type) {
@@ -54884,8 +54889,7 @@ function createNodeAnchors(doc, prefix) {
     return {
         onAnchor: (source) => {
             aliasObjects.push(source);
-            if (!prevAnchors)
-                prevAnchors = anchorNames(doc);
+            prevAnchors ?? (prevAnchors = anchorNames(doc));
             const anchor = findNewAnchor(prefix, prevAnchors);
             prevAnchors.add(anchor);
             return anchor;
@@ -55033,8 +55037,7 @@ function createNode(value, tagName, ctx) {
     if (aliasDuplicateObjects && value && typeof value === 'object') {
         ref = sourceObjects.get(value);
         if (ref) {
-            if (!ref.anchor)
-                ref.anchor = onAnchor(value);
+            ref.anchor ?? (ref.anchor = onAnchor(value));
             return new Alias.Alias(ref.anchor);
         }
         else {
@@ -55407,7 +55410,7 @@ __webpack_unused_export__ = visit.visitAsync;
 "use strict";
 
 
-var node_process = __nccwpck_require__(1708);
+var node_process = __nccwpck_require__(932);
 
 function debug(logLevel, ...messages) {
     if (logLevel === 'debug')
@@ -55454,23 +55457,36 @@ class Alias extends Node.NodeBase {
      * Resolve the value of this alias within `doc`, finding the last
      * instance of the `source` anchor before this node.
      */
-    resolve(doc) {
+    resolve(doc, ctx) {
+        let nodes;
+        if (ctx?.aliasResolveCache) {
+            nodes = ctx.aliasResolveCache;
+        }
+        else {
+            nodes = [];
+            visit.visit(doc, {
+                Node: (_key, node) => {
+                    if (identity.isAlias(node) || identity.hasAnchor(node))
+                        nodes.push(node);
+                }
+            });
+            if (ctx)
+                ctx.aliasResolveCache = nodes;
+        }
         let found = undefined;
-        visit.visit(doc, {
-            Node: (_key, node) => {
-                if (node === this)
-                    return visit.visit.BREAK;
-                if (node.anchor === this.source)
-                    found = node;
-            }
-        });
+        for (const node of nodes) {
+            if (node === this)
+                break;
+            if (node.anchor === this.source)
+                found = node;
+        }
         return found;
     }
     toJSON(_arg, ctx) {
         if (!ctx)
             return { source: this.source };
         const { anchors, doc, maxAliasCount } = ctx;
-        const source = this.resolve(doc);
+        const source = this.resolve(doc, ctx);
         if (!source) {
             const msg = `Unresolved alias (the anchor must be set before the alias): ${this.source}`;
             throw new ReferenceError(msg);
@@ -56151,6 +56167,7 @@ function addPairToJSMap(ctx, map, { key, value }) {
 function stringifyKey(key, jsKey, ctx) {
     if (jsKey === null)
         return '';
+    // eslint-disable-next-line @typescript-eslint/no-base-to-string
     if (typeof jsKey !== 'object')
         return String(jsKey);
     if (identity.isNode(key) && ctx?.doc) {
@@ -57592,7 +57609,7 @@ exports.LineCounter = LineCounter;
 "use strict";
 
 
-var node_process = __nccwpck_require__(1708);
+var node_process = __nccwpck_require__(932);
 var cst = __nccwpck_require__(3461);
 var lexer = __nccwpck_require__(361);
 
@@ -59183,7 +59200,7 @@ exports.getTags = getTags;
 "use strict";
 
 
-var node_buffer = __nccwpck_require__(4573);
+var node_buffer = __nccwpck_require__(181);
 var Scalar = __nccwpck_require__(3301);
 var stringifyString = __nccwpck_require__(3069);
 
@@ -59236,8 +59253,7 @@ const binary = {
         else {
             throw new Error('This environment does not support writing binary tags; either Buffer or btoa is required');
         }
-        if (!type)
-            type = Scalar.Scalar.BLOCK_LITERAL;
+        type ?? (type = Scalar.Scalar.BLOCK_LITERAL);
         if (type !== Scalar.Scalar.QUOTE_DOUBLE) {
             const lineWidth = Math.max(ctx.options.lineWidth - ctx.indent.length, ctx.options.minContentWidth);
             const n = Math.ceil(str.length / lineWidth);
@@ -60187,7 +60203,7 @@ function getTagObject(tags, item) {
         tagObj = tags.find(t => t.nodeClass && obj instanceof t.nodeClass);
     }
     if (!tagObj) {
-        const name = obj?.constructor?.name ?? typeof obj;
+        const name = obj?.constructor?.name ?? (obj === null ? 'null' : typeof obj);
         throw new Error(`Tag not resolved for ${name} value`);
     }
     return tagObj;
@@ -60202,7 +60218,7 @@ function stringifyProps(node, tagObj, { anchors: anchors$1, doc }) {
         anchors$1.add(anchor);
         props.push(`&${anchor}`);
     }
-    const tag = node.tag ? node.tag : tagObj.default ? null : tagObj.tag;
+    const tag = node.tag ?? (tagObj.default ? null : tagObj.tag);
     if (tag)
         props.push(doc.directives.tagString(tag));
     return props.join(' ');
@@ -60228,8 +60244,7 @@ function stringify(item, ctx, onComment, onChompKeep) {
     const node = identity.isNode(item)
         ? item
         : ctx.doc.createNode(item, { onTagObj: o => (tagObj = o) });
-    if (!tagObj)
-        tagObj = getTagObject(ctx.doc.schema.tags, node);
+    tagObj ?? (tagObj = getTagObject(ctx.doc.schema.tags, node));
     const props = stringifyProps(node, tagObj, ctx);
     if (props.length > 0)
         ctx.indentAtStart = (ctx.indentAtStart ?? 0) + props.length + 1;
@@ -60986,10 +61001,9 @@ function plainString(item, ctx, onComment, onChompKeep) {
         (inFlow && /[[\]{},]/.test(value))) {
         return quotedString(value, ctx);
     }
-    if (!value ||
-        /^[\n\t ,[\]{}#&*!|>'"%@`]|^[?-]$|^[?-][ \t]|[\n:][ \t]|[ \t]\n|[\n\t ]#|[\n\t :]$/.test(value)) {
+    if (/^[\n\t ,[\]{}#&*!|>'"%@`]|^[?-]$|^[?-][ \t]|[\n:][ \t]|[ \t]\n|[\n\t ]#|[\n\t :]$/.test(value)) {
         // not allowed:
-        // - empty string, '-' or '?'
+        // - '-' or '?'
         // - start with an indicator character (except [?:-]) or /[?-] /
         // - '\n ', ': ' or ' \n' anywhere
         // - '#' not preceded by a non-space char
@@ -69338,6 +69352,14 @@ glob.glob = glob;
 
 
 
+// Constants
+const DRAFT_07 = 'draft-07'
+const DRAFT_04 = 'draft-04'
+const DRAFT_2019_09 = 'draft-2019-09'
+const DRAFT_2020_12 = 'draft-2020-12'
+const INVALID_JSON_MESSAGE = 'Invalid JSON'
+const CUSTOM_FORMAT_REGEX = /^[\w-]+=.+$/
+
 // Helper function to setup the schema
 // :param jsonSchema: path to the jsonSchema file
 // :returns: the compiled schema
@@ -69348,18 +69370,18 @@ async function schema(jsonSchema) {
   core.debug(`json_schema_version: ${jsonSchemaVersion}`)
   core.debug(`strict: ${strict}`)
 
-  var ajv
-  if (jsonSchemaVersion === 'draft-07') {
+  let ajv
+  if (jsonSchemaVersion === DRAFT_07) {
     ajv = new (ajv_default())({allErrors: true, strict: strict})
-  } else if (jsonSchemaVersion === 'draft-04') {
+  } else if (jsonSchemaVersion === DRAFT_04) {
     ajv = new (dist_default())({allErrors: true, strict: strict})
-  } else if (jsonSchemaVersion === 'draft-2019-09') {
+  } else if (jsonSchemaVersion === DRAFT_2019_09) {
     ajv = new (_2019_default())({allErrors: true, strict: strict})
-  } else if (jsonSchemaVersion === 'draft-2020-12') {
+  } else if (jsonSchemaVersion === DRAFT_2020_12) {
     ajv = new (_2020_default())({allErrors: true, strict: strict})
   } else {
     core.warning(
-      `json_schema_version '${jsonSchemaVersion}' is not supported. Defaulting to 'draft-07'`
+      `json_schema_version '${jsonSchemaVersion}' is not supported. Defaulting to '${DRAFT_07}'`
     )
     ajv = new (ajv_default())({allErrors: true, strict: strict})
   }
@@ -69377,8 +69399,8 @@ async function schema(jsonSchema) {
     .filter(Boolean) // Filter out any empty lines
     .forEach(customFormat => {
       // Check format using a regex
-      if (!/^[\w-]+=.+$/.test(customFormat.trim())) {
-        throw Error(
+      if (!CUSTOM_FORMAT_REGEX.test(customFormat.trim())) {
+        throw new Error(
           `Invalid ajv_custom_regexp_formats format: "${customFormat}" is not in expected format "key=regex"`
         )
       }
@@ -69391,7 +69413,7 @@ async function schema(jsonSchema) {
       try {
         regex = new RegExp(keyValuePair[1])
       } catch (syntaxError) {
-        throw Error(`Invalid regular expression: ${syntaxError.message}`)
+        throw new Error(`Invalid regular expression: ${syntaxError.message}`)
       }
 
       // Add format if the regex is successfully compiled
@@ -69399,7 +69421,7 @@ async function schema(jsonSchema) {
     })
 
   // if a jsonSchema is provided, validate the json against it
-  var schema
+  let schema
   if (jsonSchema && jsonSchema !== '') {
     // parse the jsonSchema from the file path
     schema = JSON.parse((0,external_fs_.readFileSync)(jsonSchema, 'utf8'))
@@ -69433,14 +69455,14 @@ async function jsonValidator(exclude) {
   // construct a list of file paths to validate and use glob if necessary
   let files = []
   patterns.forEach(pattern => {
-    files = [...files, ...globSync(pattern)]
+    files.push(...globSync(pattern))
   })
 
   // remove trailing slash from baseDir
   const baseDirSanitized = baseDir.replace(/\/$/, '')
 
   // check if regex is enabled
-  var skipRegex = null
+  let skipRegex = null
   if (jsonExcludeRegex && jsonExcludeRegex !== '') {
     skipRegex = new RegExp(jsonExcludeRegex)
   }
@@ -69449,7 +69471,7 @@ async function jsonValidator(exclude) {
   const validate = await schema(jsonSchema)
 
   // loop through all json files in the baseDir and validate them
-  var result = {
+  const result = {
     success: true,
     passed: 0,
     failed: 0,
@@ -69510,12 +69532,10 @@ async function jsonValidator(exclude) {
     // if the file is a yaml file but it should not be treated as json
     // skipped++ does not need to be called here as the file should be validated later...
     // ...on as yaml with the yaml-validator
+    const isYamlFile =
+      fullPath.endsWith(yamlExtension) || fullPath.endsWith(yamlExtensionShort)
     /* istanbul ignore next */
-    if (
-      yamlAsJson === false &&
-      (fullPath.endsWith(yamlExtension) ||
-        fullPath.endsWith(yamlExtensionShort))
-    ) {
+    if (yamlAsJson === false && isYamlFile) {
       core.debug(
         `the json-validator found a yaml file so it will be skipped here: '${fullPath}'`
       )
@@ -69528,14 +69548,10 @@ async function jsonValidator(exclude) {
       continue
     }
 
-    var data
+    let data
     try {
       // if the file is a yaml file but being treated as json and yamlAsJson is true
-      if (
-        yamlAsJson === true &&
-        (fullPath.endsWith(yamlExtension) ||
-          fullPath.endsWith(yamlExtensionShort))
-      ) {
+      if (yamlAsJson === true && isYamlFile) {
         core.debug(`attempting to process yaml file: '${fullPath}' as json`)
         if (allowMultipleDocuments === true) {
           data = (0,yaml_dist/* parseAllDocuments */.hR)((0,external_fs_.readFileSync)(fullPath, 'utf8'))
@@ -69556,7 +69572,7 @@ async function jsonValidator(exclude) {
         errors: [
           {
             path: null,
-            message: 'Invalid JSON'
+            message: INVALID_JSON_MESSAGE
           }
         ]
       })
@@ -69567,7 +69583,7 @@ async function jsonValidator(exclude) {
     // have just one element.
     // this is required to support multi-doc files when yamlAsJson is true
     if (yamlAsJson === true && allowMultipleDocuments === true) {
-      let newData = []
+      const newData = []
       data.forEach(doc => {
         newData.push(doc.toJS())
       })
@@ -69582,7 +69598,7 @@ async function jsonValidator(exclude) {
     }
 
     let allValid = true
-    let allErrors = []
+    const allErrors = []
 
     // perform the validation for each document
     data.forEach((doc, index) => {
@@ -69595,7 +69611,7 @@ async function jsonValidator(exclude) {
       allValid = false
       allErrors.push(
         ...validate.errors.map(error => {
-          let errorValue = {
+          const errorValue = {
             path: error.instancePath || null,
             message: error.message
           }
@@ -69643,6 +69659,9 @@ var yaml_schema_validator_default = /*#__PURE__*/__nccwpck_require__.n(yaml_sche
 
 
 
+// Constants
+const INVALID_YAML_MESSAGE = 'Invalid YAML'
+
 // Helper function to validate all yaml files in the baseDir
 async function yamlValidator(exclude) {
   const baseDir = core.getInput('base_dir')
@@ -69660,20 +69679,20 @@ async function yamlValidator(exclude) {
   // construct a list of file paths to validate and use glob if necessary
   let files = []
   patterns.forEach(pattern => {
-    files = [...files, ...globSync(pattern)]
+    files.push(...globSync(pattern))
   })
 
   // remove trailing slash from baseDir
   const baseDirSanitized = baseDir.replace(/\/$/, '')
 
   // check if regex is enabled
-  var skipRegex = null
+  let skipRegex = null
   if (yamlExcludeRegex && yamlExcludeRegex !== '') {
     skipRegex = new RegExp(yamlExcludeRegex)
   }
 
   // loop through all yaml files in the baseDir and validate them
-  var result = {
+  const result = {
     success: true,
     passed: 0,
     failed: 0,
@@ -69706,7 +69725,7 @@ async function yamlValidator(exclude) {
   for (const fullPath of files) {
     core.debug(`found file: ${fullPath}`)
 
-    if (yamlSchema !== '' && fullPath.includes(yamlSchema)) {
+    if (yamlSchema !== '' && fullPath === yamlSchema) {
       core.debug(`skipping yaml schema file: ${fullPath}`)
       continue
     }
@@ -69768,7 +69787,7 @@ async function yamlValidator(exclude) {
         errors: [
           {
             path: null,
-            message: 'Invalid YAML',
+            message: INVALID_YAML_MESSAGE,
             // format error message
             error: err.toString().split(':').slice(0, 2).join('')
           }
@@ -69778,13 +69797,12 @@ async function yamlValidator(exclude) {
     }
 
     // if no yamlSchema is provided, skip validation against the schema
-    if (
+    const hasNoSchema =
       !yamlSchema ||
       yamlSchema === '' ||
       yamlSchema === null ||
-      yamlSchema === undefined ||
-      multipleDocuments
-    ) {
+      yamlSchema === undefined
+    if (hasNoSchema || multipleDocuments) {
       result.passed++
       core.info(`${fullPath} is valid`)
       continue
@@ -69807,7 +69825,7 @@ async function yamlValidator(exclude) {
 
       // add the errors to the result object (path and message)
       // where path is the path to the property that failed validation
-      var errors = []
+      const errors = []
       for (const error of schemaErrors) {
         errors.push({
           path: error.path || null,
@@ -69845,6 +69863,12 @@ var lib_default = /*#__PURE__*/__nccwpck_require__.n(lib);
 
 
 
+// Constants
+const SUCCESS_OUTPUT_VALUE = 'true'
+const FAILURE_OUTPUT_VALUE = 'false'
+const MODE_FAIL = 'fail'
+const MODE_WARN = 'warn'
+
 // Helper function to check the results of json and yaml validation
 // :param results: the results of the validation
 // :param type: the type of validation (json or yaml)
@@ -69881,7 +69905,7 @@ async function checkResults(results, type) {
 // :param yamlResults: the results of the yaml validation
 // :returns: the body of the PR comment
 async function constructBody(jsonResults, yamlResults) {
-  var body = '## JSON and YAML Validation Results'
+  let body = '## JSON and YAML Validation Results'
 
   if (jsonResults.success === false) {
     body += lib_default()(`
@@ -69935,12 +69959,12 @@ async function processResults(jsonResults, yamlResults) {
 
   // exit here if both JSON and YAML results are valid
   if (jsonResult === true && yamlResult === true) {
-    core.setOutput('success', `true`)
+    core.setOutput('success', SUCCESS_OUTPUT_VALUE)
     return true
   }
 
   // If we get here, the action failed
-  core.setOutput('success', 'false')
+  core.setOutput('success', FAILURE_OUTPUT_VALUE)
 
   // check if the context is a pull request and if we should comment
   // fetch the pr number from the context
@@ -69966,9 +69990,9 @@ async function processResults(jsonResults, yamlResults) {
   }
 
   // add final log messages and exit status of the action
-  if (core.getInput('mode') === 'fail') {
+  if (core.getInput('mode') === MODE_FAIL) {
     core.setFailed('❌ JSON or YAML files failed validation')
-  } else if (core.getInput('mode') === 'warn') {
+  } else if (core.getInput('mode') === MODE_WARN) {
     core.warning('mode is set to "warn" - this action will not fail')
     core.error('❌ JSON or YAML files failed validation')
   } else {

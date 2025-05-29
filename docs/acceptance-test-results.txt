@@ -25,7 +25,7 @@ skipping due to exclude match: __tests__/fixtures/json/project_dir/data/config/.
 action.yml is valid
 valid.yaml is valid
 skipping due to exclude match: tmp/invalid.yaml
-.github/workflows/acceptance-test.yml is valid
+.github/workflows/acceptance.yml is valid
 .github/workflows/codeql-analysis.yml is valid
 .github/workflows/lint.yml is valid
 .github/workflows/package-check.yml is valid

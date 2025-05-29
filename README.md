@@ -1,6 +1,11 @@
 # JSON and YAML - Validator ✅
 
-[![CodeQL](https://github.com/grantbirki/json-yaml-validate/actions/workflows/codeql-analysis.yml/badge.svg)](https://github.com/grantbirki/json-yaml-validate/actions/workflows/codeql-analysis.yml) [![test](https://github.com/grantbirki/json-yaml-validate/actions/workflows/test.yml/badge.svg)](https://github.com/grantbirki/json-yaml-validate/actions/workflows/test.yml) [![acceptance-test](https://github.com/GrantBirki/json-yaml-validate/actions/workflows/acceptance-test.yml/badge.svg)](https://github.com/GrantBirki/json-yaml-validate/actions/workflows/acceptance-test.yml) [![package-check](https://github.com/grantbirki/json-yaml-validate/actions/workflows/package-check.yml/badge.svg)](https://github.com/grantbirki/json-yaml-validate/actions/workflows/package-check.yml) [![lint](https://github.com/grantbirki/json-yaml-validate/actions/workflows/lint.yml/badge.svg)](https://github.com/grantbirki/json-yaml-validate/actions/workflows/lint.yml) [![coverage](./badges/coverage.svg)](./badges/coverage.svg)
+[![CodeQL](https://github.com/grantbirki/json-yaml-validate/actions/workflows/codeql-analysis.yml/badge.svg)](https://github.com/grantbirki/json-yaml-validate/actions/workflows/codeql-analysis.yml)
+[![test](https://github.com/grantbirki/json-yaml-validate/actions/workflows/test.yml/badge.svg)](https://github.com/grantbirki/json-yaml-validate/actions/workflows/test.yml)
+[![acceptance](https://github.com/GrantBirki/json-yaml-validate/actions/workflows/acceptance.yml/badge.svg)](https://github.com/GrantBirki/json-yaml-validate/actions/workflows/acceptance.yml)
+[![package-check](https://github.com/grantbirki/json-yaml-validate/actions/workflows/package-check.yml/badge.svg)](https://github.com/grantbirki/json-yaml-validate/actions/workflows/package-check.yml)
+[![lint](https://github.com/grantbirki/json-yaml-validate/actions/workflows/lint.yml/badge.svg)](https://github.com/grantbirki/json-yaml-validate/actions/workflows/lint.yml)
+[![coverage](./badges/coverage.svg)](./badges/coverage.svg)
 
 A GitHub Action to quickly validate JSON and YAML files in a repository
 
@@ -134,7 +139,7 @@ This Action also supports schema validation for both JSON and YAML files.
 References docs for both JSON and YAML schema validation can be found at the links below:
 
 - [JSON Schema Validation Docs](https://ajv.js.org/json-schema.html#json-schema)
-- [YAML Schema Validation Docs](https://github.com/ketanSaxena/schema-validator#yaml-schema) - Additional docs [here](https://www.npmjs.com/package/validate)
+- [YAML Schema Validation Docs](https://github.com/ketanSaxena/schema-validator#yaml-schema) - Additional docs [can be found here](https://www.npmjs.com/package/validate)
 
 > Note: JSON files and YAML files use two separate libraries for schema validation
 
