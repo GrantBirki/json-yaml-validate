@@ -441,7 +441,8 @@ test('edge case: yaml with undefined/null values in error paths', async () => {
 
 test('skips json files when yaml_as_json is false', async () => {
   process.env.INPUT_YAML_AS_JSON = 'false'
-  process.env.INPUT_FILES = '__tests__/fixtures/json/valid/json1.json\n__tests__/fixtures/yaml/valid/yaml1.yaml'
+  process.env.INPUT_FILES =
+    '__tests__/fixtures/json/valid/json1.json\n__tests__/fixtures/yaml/valid/yaml1.yaml'
 
   expect(await yamlValidator(excludeMock)).toStrictEqual({
     failed: 0,
@@ -452,6 +453,6 @@ test('skips json files when yaml_as_json is false', async () => {
   })
 
   expect(debugMock).toHaveBeenCalledWith(
-    'the yaml-validator found a json file so it will be skipped here: \'__tests__/fixtures/json/valid/json1.json\''
+    "the yaml-validator found a json file so it will be skipped here: '__tests__/fixtures/json/valid/json1.json'"
   )
 })
