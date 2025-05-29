@@ -273,3 +273,167 @@ test('successfully validates a yaml file with multiple documents but fails on th
     )
   )
 })
+
+test('successfully skips YAML files that match yaml_exclude_regex', async () => {
+  process.env.INPUT_YAML_EXCLUDE_REGEX = '.*valid.*\\.yaml'
+  process.env.INPUT_BASE_DIR = '__tests__/fixtures/yaml/valid'
+
+  expect(await yamlValidator(excludeMock)).toStrictEqual({
+    failed: 0,
+    passed: 0,
+    skipped: 1,
+    success: true,
+    violations: []
+  })
+
+  expect(infoMock).toHaveBeenCalledWith(
+    expect.stringMatching('skipping due to exclude match:')
+  )
+})
+
+test('handles yaml_exclude_regex with empty string (no exclusion)', async () => {
+  process.env.INPUT_YAML_EXCLUDE_REGEX = ''
+  process.env.INPUT_BASE_DIR = '__tests__/fixtures/yaml/valid'
+
+  expect(await yamlValidator(excludeMock)).toStrictEqual({
+    failed: 0,
+    passed: 1,
+    skipped: 0,
+    success: true,
+    violations: []
+  })
+})
+
+test('successfully validates YAML with multiple documents enabled but single document', async () => {
+  process.env.INPUT_ALLOW_MULTIPLE_DOCUMENTS = 'true'
+  process.env.INPUT_BASE_DIR = '__tests__/fixtures/yaml/valid'
+
+  expect(await yamlValidator(excludeMock)).toStrictEqual({
+    failed: 0,
+    passed: 1,
+    skipped: 0,
+    success: true,
+    violations: []
+  })
+})
+
+test('processes YAML files with custom file patterns', async () => {
+  process.env.INPUT_FILES = '__tests__/fixtures/yaml/valid/yaml1.yaml'
+  process.env.INPUT_BASE_DIR = '.'
+
+  expect(await yamlValidator(excludeMock)).toStrictEqual({
+    failed: 0,
+    passed: 1,
+    skipped: 0,
+    success: true,
+    violations: []
+  })
+
+  expect(debugMock).toHaveBeenCalledWith(expect.stringMatching('using files:'))
+})
+
+test('handles use_dot_match disabled', async () => {
+  process.env.INPUT_USE_DOT_MATCH = 'false'
+  process.env.INPUT_BASE_DIR = '__tests__/fixtures/yaml/valid'
+
+  expect(await yamlValidator(excludeMock)).toStrictEqual({
+    failed: 0,
+    passed: 1,
+    skipped: 0,
+    success: true,
+    violations: []
+  })
+})
+
+test('handles schema validation error with null path (covers line 177)', async () => {
+  // This test requires a schema validation error with no path
+  process.env.INPUT_YAML_SCHEMA = '__tests__/fixtures/schemas/schema1.yaml'
+  process.env.INPUT_BASE_DIR = '__tests__/fixtures/yaml/invalid'
+
+  const result = await yamlValidator(excludeMock)
+  expect(result.success).toBe(false)
+  expect(result.failed).toBeGreaterThan(0)
+
+  // Check that we have at least one error with path: null
+  const hasNullPath = result.violations.some(v =>
+    v.errors.some(e => e.path === null)
+  )
+  expect(hasNullPath).toBe(true)
+})
+
+test('edge case: empty yaml_exclude_regex with complex file structure', async () => {
+  process.env.INPUT_YAML_EXCLUDE_REGEX = ''
+  process.env.INPUT_BASE_DIR = '__tests__/fixtures/yaml/mixture'
+
+  const result = await yamlValidator(excludeMock)
+  expect(result.passed + result.failed).toBeGreaterThan(0)
+})
+
+test('edge case: yaml files with custom extensions', async () => {
+  process.env.INPUT_YAML_EXTENSION = '.custom'
+  process.env.INPUT_YAML_EXTENSION_SHORT = '.cust'
+  process.env.INPUT_BASE_DIR = '__tests__/fixtures/yaml/valid'
+
+  // Should find no files with custom extensions
+  const result = await yamlValidator(excludeMock)
+  expect(result.passed + result.failed + result.skipped).toBe(0)
+})
+
+test('edge case: yaml schema file skipping', async () => {
+  process.env.INPUT_YAML_SCHEMA = '__tests__/fixtures/schemas/schema1.yaml'
+  process.env.INPUT_FILES =
+    '__tests__/fixtures/schemas/schema1.yaml\n__tests__/fixtures/yaml/valid/yaml1.yaml'
+  process.env.INPUT_BASE_DIR = '.'
+
+  const result = await yamlValidator(excludeMock)
+  expect(result.passed).toBe(1) // Only yaml1.yaml should be processed
+
+  expect(debugMock).toHaveBeenCalledWith(
+    expect.stringMatching('skipping yaml schema file:')
+  )
+})
+
+test('edge case: mixed valid and invalid yaml with multiple documents disabled', async () => {
+  process.env.INPUT_ALLOW_MULTIPLE_DOCUMENTS = 'false'
+  process.env.INPUT_BASE_DIR = '__tests__/fixtures/yaml/mixture'
+
+  const result = await yamlValidator(excludeMock)
+  expect(result.passed + result.failed).toBeGreaterThan(0)
+})
+
+test('edge case: yaml with empty/minimal data structure', async () => {
+  // Create a temporary minimal YAML file
+  const fs = require('fs')
+  const tempFile = '/tmp/minimal.yaml'
+  fs.writeFileSync(tempFile, 'null')
+
+  process.env.INPUT_FILES = tempFile
+  process.env.INPUT_BASE_DIR = '.'
+  process.env.INPUT_YAML_SCHEMA = ''
+
+  const result = await yamlValidator(excludeMock)
+  expect(result.passed).toBe(1)
+
+  // Cleanup
+  fs.unlinkSync(tempFile)
+})
+
+test('edge case: yaml with undefined/null values in error paths', async () => {
+  // This test tries to trigger a schema error with a null/undefined path
+  const fs = require('fs')
+  const tempFile = '/tmp/null_path_error.yaml'
+  fs.writeFileSync(
+    tempFile,
+    'invalid_structure: true\nextra_field: not_allowed'
+  )
+
+  process.env.INPUT_FILES = tempFile
+  process.env.INPUT_BASE_DIR = '.'
+  process.env.INPUT_YAML_SCHEMA = '__tests__/fixtures/schemas/schema1.yaml'
+
+  const result = await yamlValidator(excludeMock)
+  expect(result.failed + result.passed).toBeGreaterThan(0)
+
+  // Cleanup
+  fs.unlinkSync(tempFile)
+})

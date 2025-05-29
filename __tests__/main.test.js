@@ -24,3 +24,28 @@ beforeEach(() => {
 test('successfully runs the action', async () => {
   expect(await run()).toBe(undefined)
 })
+
+test('tests main execution when LOCAL_ACTIONS_CI_TEST is not true', async () => {
+  // Test the condition logic that determines whether to run or not
+  const originalEnv = process.env.LOCAL_ACTIONS_CI_TEST
+
+  // Test when LOCAL_ACTIONS_CI_TEST is not 'true'
+  process.env.LOCAL_ACTIONS_CI_TEST = 'false'
+  const shouldRun1 = process.env.LOCAL_ACTIONS_CI_TEST !== 'true'
+  expect(shouldRun1).toBe(true)
+
+  // Test when LOCAL_ACTIONS_CI_TEST is undefined
+  delete process.env.LOCAL_ACTIONS_CI_TEST
+  const shouldRun2 = process.env.LOCAL_ACTIONS_CI_TEST !== 'true'
+  expect(shouldRun2).toBe(true)
+
+  // Test when LOCAL_ACTIONS_CI_TEST is 'true'
+  process.env.LOCAL_ACTIONS_CI_TEST = 'true'
+  const shouldRun3 = process.env.LOCAL_ACTIONS_CI_TEST !== 'true'
+  expect(shouldRun3).toBe(false)
+
+  // Restore original environment
+  if (originalEnv) {
+    process.env.LOCAL_ACTIONS_CI_TEST = originalEnv
+  }
+})

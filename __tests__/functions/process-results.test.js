@@ -266,3 +266,44 @@ test('fails the action due to yaml AND json errors - comment mode enabled', asyn
     '❌ JSON or YAML files failed validation'
   )
 })
+test('tests constructBody function with JSON failures only (covers lines 50-67)', async () => {
+  process.env.INPUT_COMMENT = 'true'
+  expect(
+    await processResults(
+      {
+        success: false,
+        failed: 1,
+        passed: 0,
+        skipped: 0,
+        violations: jsonViolations
+      },
+      {success: true, failed: 0, passed: 3, skipped: 0, violations: []}
+    )
+  ).toBe(false)
+
+  // The constructBody function should have been called and created a comment
+  expect(infoMock).toHaveBeenCalledWith(
+    expect.stringMatching('📝 adding comment to PR')
+  )
+})
+
+test('tests constructBody function with YAML failures only (covers lines 69-86)', async () => {
+  process.env.INPUT_COMMENT = 'true'
+  expect(
+    await processResults(
+      {success: true, failed: 0, passed: 5, skipped: 0, violations: []},
+      {
+        success: false,
+        failed: 1,
+        passed: 0,
+        skipped: 0,
+        violations: yamlViolations
+      }
+    )
+  ).toBe(false)
+
+  // The constructBody function should have been called and created a comment
+  expect(infoMock).toHaveBeenCalledWith(
+    expect.stringMatching('📝 adding comment to PR')
+  )
+})
