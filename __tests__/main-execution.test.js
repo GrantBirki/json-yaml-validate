@@ -15,27 +15,23 @@ afterEach(() => {
 test('covers main.js execution when LOCAL_ACTIONS_CI_TEST is not true (integration test)', async () => {
   // Mock the validators to avoid actual execution
   jest.doMock('../src/functions/json-validator', () => ({
-    jsonValidator: jest
-      .fn()
-      .mockResolvedValue({
-        success: true,
-        failed: 0,
-        passed: 1,
-        skipped: 0,
-        violations: []
-      })
+    jsonValidator: jest.fn().mockResolvedValue({
+      success: true,
+      failed: 0,
+      passed: 1,
+      skipped: 0,
+      violations: []
+    })
   }))
 
   jest.doMock('../src/functions/yaml-validator', () => ({
-    yamlValidator: jest
-      .fn()
-      .mockResolvedValue({
-        success: true,
-        failed: 0,
-        passed: 1,
-        skipped: 0,
-        violations: []
-      })
+    yamlValidator: jest.fn().mockResolvedValue({
+      success: true,
+      failed: 0,
+      passed: 1,
+      skipped: 0,
+      violations: []
+    })
   }))
 
   jest.doMock('../src/functions/process-results', () => ({
