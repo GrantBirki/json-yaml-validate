@@ -69572,8 +69572,8 @@ async function jsonValidator(exclude) {
         newData.push(doc.toJS())
       })
       data = newData
-    }
-    if (allowMultipleDocuments !== true) {
+    } else {
+      // For JSON files or single YAML documents, wrap in array
       data = [data]
     }
 
