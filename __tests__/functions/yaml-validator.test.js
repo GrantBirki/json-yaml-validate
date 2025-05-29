@@ -17,6 +17,7 @@ beforeEach(() => {
   jest.clearAllMocks()
   process.env.INPUT_YAML_SCHEMA = '__tests__/fixtures/schemas/schema1.yaml'
   process.env.INPUT_BASE_DIR = '__tests__/fixtures/yaml/valid'
+  process.env.INPUT_JSON_EXTENSION = '.json'
   process.env.INPUT_YAML_EXTENSION = '.yaml'
   process.env.INPUT_YAML_EXTENSION_SHORT = '.yml'
   process.env.INPUT_YAML_EXCLUDE_REGEX = '.*bad.*\\.yaml'
@@ -436,4 +437,21 @@ test('edge case: yaml with undefined/null values in error paths', async () => {
 
   // Cleanup
   fs.unlinkSync(tempFile)
+})
+
+test('skips json files when yaml_as_json is false', async () => {
+  process.env.INPUT_YAML_AS_JSON = 'false'
+  process.env.INPUT_FILES = '__tests__/fixtures/json/valid/json1.json\n__tests__/fixtures/yaml/valid/yaml1.yaml'
+
+  expect(await yamlValidator(excludeMock)).toStrictEqual({
+    failed: 0,
+    passed: 1,
+    skipped: 0,
+    success: true,
+    violations: []
+  })
+
+  expect(debugMock).toHaveBeenCalledWith(
+    'the yaml-validator found a json file so it will be skipped here: \'__tests__/fixtures/json/valid/json1.json\''
+  )
 })

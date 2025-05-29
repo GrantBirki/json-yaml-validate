@@ -11,6 +11,7 @@ const INVALID_YAML_MESSAGE = 'Invalid YAML'
 // Helper function to validate all yaml files in the baseDir
 export async function yamlValidator(exclude) {
   const baseDir = core.getInput('base_dir')
+  const jsonExtension = core.getInput('json_extension')
   const yamlExtension = core.getInput('yaml_extension')
   const yamlExtensionShort = core.getInput('yaml_extension_short')
   const yamlSchema = core.getInput('yaml_schema')
@@ -73,6 +74,17 @@ export async function yamlValidator(exclude) {
 
     if (yamlSchema !== '' && fullPath === yamlSchema) {
       core.debug(`skipping yaml schema file: ${fullPath}`)
+      continue
+    }
+
+    // if the file is a json file but it should not be treated as yaml
+    // skipped++ does not need to be called here as the file should be validated later...
+    // ...on as json with the json-validator
+    const isJsonFile = jsonExtension && fullPath.endsWith(jsonExtension)
+    if (yamlAsJson === false && isJsonFile) {
+      core.debug(
+        `the yaml-validator found a json file so it will be skipped here: '${fullPath}'`
+      )
       continue
     }
 
