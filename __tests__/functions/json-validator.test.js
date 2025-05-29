@@ -646,7 +646,7 @@ test('yamlAsJson: failed validation of a multi-document-file', async () => {
 test('successfully skips JSON files that match json_exclude_regex', async () => {
   process.env.INPUT_JSON_EXCLUDE_REGEX = '.*valid.*\\.json'
   process.env.INPUT_BASE_DIR = '__tests__/fixtures/json/valid'
-  
+
   expect(await jsonValidator(excludeMock)).toStrictEqual({
     failed: 0,
     passed: 0,
@@ -654,7 +654,7 @@ test('successfully skips JSON files that match json_exclude_regex', async () => 
     success: true,
     violations: []
   })
-  
+
   expect(infoMock).toHaveBeenCalledWith(
     expect.stringMatching('skipping due to exclude match:')
   )
@@ -663,7 +663,7 @@ test('successfully skips JSON files that match json_exclude_regex', async () => 
 test('handles json_exclude_regex with empty string (no exclusion)', async () => {
   process.env.INPUT_JSON_EXCLUDE_REGEX = ''
   process.env.INPUT_BASE_DIR = '__tests__/fixtures/json/valid'
-  
+
   expect(await jsonValidator(excludeMock)).toStrictEqual({
     failed: 0,
     passed: 1,
@@ -676,11 +676,11 @@ test('handles json_exclude_regex with empty string (no exclusion)', async () => 
 test('processes non-array data correctly (covers data validation branch)', async () => {
   process.env.INPUT_BASE_DIR = '__tests__/fixtures/json/valid'
   process.env.INPUT_JSON_SCHEMA = ''
-  
+
   const result = await jsonValidator(excludeMock)
   expect(result.success).toBe(true)
   expect(result.passed).toBe(1)
-  
+
   expect(debugMock).toHaveBeenCalledWith(
     expect.stringMatching('1 object\\(s\\) found in file:')
   )
@@ -756,20 +756,22 @@ test('handles use_ajv_formats disabled', async () => {
     violations: []
   })
 
-  expect(debugMock).toHaveBeenCalledWith('ajv-formats will not be used with the json-validator')
+  expect(debugMock).toHaveBeenCalledWith(
+    'ajv-formats will not be used with the json-validator'
+  )
 })
 
 test('handles non-array data processing with single document YAML as JSON', async () => {
   // This test covers the case where data is not initially an array (line 254)
   process.env.INPUT_YAML_AS_JSON = 'true'
-  process.env.INPUT_ALLOW_MULTIPLE_DOCUMENTS = 'false'  // This makes data not an array initially
+  process.env.INPUT_ALLOW_MULTIPLE_DOCUMENTS = 'false' // This makes data not an array initially
   process.env.INPUT_BASE_DIR = '__tests__/fixtures/yaml_as_json/valid'
   process.env.INPUT_JSON_SCHEMA = ''
-  
+
   const result = await jsonValidator(excludeMock)
   expect(result.success).toBe(true)
   expect(result.passed).toBe(1)
-  
+
   // This should trigger the Array.isArray check and the debug message
   expect(debugMock).toHaveBeenCalledWith(
     expect.stringMatching('1 object\\(s\\) found in file:')
@@ -780,29 +782,29 @@ test('edge case: empty json_exclude_regex with complex file structure', async ()
   process.env.INPUT_JSON_EXCLUDE_REGEX = ''
   process.env.INPUT_BASE_DIR = '__tests__/fixtures/json/mixture'
   process.env.INPUT_JSON_SCHEMA = ''
-  
+
   const result = await jsonValidator(excludeMock)
   expect(result.passed + result.failed).toBeGreaterThan(0)
 })
 
 test('edge case: complex file patterns with multiple extensions', async () => {
-  process.env.INPUT_FILES = '__tests__/fixtures/json/valid/*.json\n__tests__/fixtures/yaml_as_json/valid/*.yaml'
+  process.env.INPUT_FILES =
+    '__tests__/fixtures/json/valid/*.json\n__tests__/fixtures/yaml_as_json/valid/*.yaml'
   process.env.INPUT_YAML_AS_JSON = 'true'
   process.env.INPUT_BASE_DIR = '.'
   process.env.INPUT_JSON_SCHEMA = ''
-  
+
   const result = await jsonValidator(excludeMock)
   expect(result.passed).toBeGreaterThan(0)
-  
-  expect(debugMock).toHaveBeenCalledWith(
-    expect.stringMatching('using files:')
-  )
+
+  expect(debugMock).toHaveBeenCalledWith(expect.stringMatching('using files:'))
 })
 
 test('edge case: malformed custom regexp formats with complex patterns', async () => {
   expect.assertions(1)
   try {
-    process.env.INPUT_AJV_CUSTOM_REGEXP_FORMATS = 'valid_format=^[a-z]+$\ninvalid-format'
+    process.env.INPUT_AJV_CUSTOM_REGEXP_FORMATS =
+      'valid_format=^[a-z]+$\ninvalid-format'
     await jsonValidator(excludeMock)
   } catch (e) {
     expect(e.message).toContain('is not in expected format "key=regex"')
@@ -811,12 +813,13 @@ test('edge case: malformed custom regexp formats with complex patterns', async (
 
 test('edge case: schema file skipping logic', async () => {
   process.env.INPUT_JSON_SCHEMA = '__tests__/fixtures/schemas/schema1.json'
-  process.env.INPUT_FILES = '__tests__/fixtures/schemas/schema1.json\n__tests__/fixtures/json/valid/json1.json'
+  process.env.INPUT_FILES =
+    '__tests__/fixtures/schemas/schema1.json\n__tests__/fixtures/json/valid/json1.json'
   process.env.INPUT_BASE_DIR = '.'
-  
+
   const result = await jsonValidator(excludeMock)
   expect(result.passed).toBe(1) // Only json1.json should be processed, schema1.json should be skipped
-  
+
   expect(debugMock).toHaveBeenCalledWith(
     expect.stringMatching('skipping json schema file:')
   )
@@ -827,33 +830,34 @@ test('stress test: large number of custom regex formats', async () => {
   for (let i = 0; i < 10; i++) {
     formats.push(`format${i}=^test${i}.*$`)
   }
-  
+
   process.env.INPUT_AJV_CUSTOM_REGEXP_FORMATS = formats.join('\n')
   process.env.INPUT_BASE_DIR = '__tests__/fixtures/json/valid'
   process.env.INPUT_JSON_SCHEMA = ''
-  
+
   const result = await jsonValidator(excludeMock)
   expect(result.success).toBe(true)
 })
 
 test('edge case: duplicate file processing prevention', async () => {
   // Test that files are not processed multiple times
-  process.env.INPUT_FILES = '__tests__/fixtures/json/valid/json1.json\n__tests__/fixtures/json/valid/json1.json'
+  process.env.INPUT_FILES =
+    '__tests__/fixtures/json/valid/json1.json\n__tests__/fixtures/json/valid/json1.json'
   process.env.INPUT_BASE_DIR = '.'
   process.env.INPUT_JSON_SCHEMA = ''
-  
+
   const result = await jsonValidator(excludeMock)
   expect(result.passed).toBe(1) // Should only process the file once
-  
+
   expect(debugMock).toHaveBeenCalledWith(
     expect.stringMatching('skipping duplicate file:')
   )
 })
 
 test('edge case: baseDir with trailing slash normalization', async () => {
-  process.env.INPUT_BASE_DIR = '__tests__/fixtures/json/valid/'  // Note trailing slash
+  process.env.INPUT_BASE_DIR = '__tests__/fixtures/json/valid/' // Note trailing slash
   process.env.INPUT_JSON_SCHEMA = ''
-  
+
   const result = await jsonValidator(excludeMock)
   expect(result.success).toBe(true)
   expect(result.passed).toBe(1)
@@ -864,7 +868,7 @@ test('real world scenario: large schema with draft-2019-09', async () => {
   process.env.INPUT_JSON_SCHEMA = '__tests__/fixtures/schemas/challenge.json'
   process.env.INPUT_BASE_DIR = '__tests__/fixtures/real_world/challenges'
   process.env.INPUT_YAML_AS_JSON = 'true'
-  
+
   const result = await jsonValidator(excludeMock)
   expect(result).toBeDefined()
   expect(typeof result.success).toBe('boolean')
@@ -875,16 +879,16 @@ test('edge case: potential non-array data with complex yaml parsing', async () =
   const fs = require('fs')
   const tempFile = '/tmp/complex_yaml.yaml'
   fs.writeFileSync(tempFile, 'scalar_value')
-  
+
   process.env.INPUT_YAML_AS_JSON = 'true'
   process.env.INPUT_ALLOW_MULTIPLE_DOCUMENTS = 'false'
   process.env.INPUT_FILES = tempFile
   process.env.INPUT_BASE_DIR = '.'
   process.env.INPUT_JSON_SCHEMA = ''
-  
+
   const result = await jsonValidator(excludeMock)
   expect(result.passed).toBe(1)
-  
+
   // Cleanup
   fs.unlinkSync(tempFile)
 })
@@ -894,16 +898,16 @@ test('edge case: empty document processing', async () => {
   const fs = require('fs')
   const tempFile = '/tmp/empty.yaml'
   fs.writeFileSync(tempFile, '')
-  
+
   process.env.INPUT_YAML_AS_JSON = 'true'
   process.env.INPUT_ALLOW_MULTIPLE_DOCUMENTS = 'false'
   process.env.INPUT_FILES = tempFile
   process.env.INPUT_BASE_DIR = '.'
   process.env.INPUT_JSON_SCHEMA = ''
-  
+
   const result = await jsonValidator(excludeMock)
   expect(result.passed + result.failed).toBeGreaterThan(0)
-  
+
   // Cleanup
   fs.unlinkSync(tempFile)
 })
@@ -913,16 +917,16 @@ test('edge case: malformed JSON in real file', async () => {
   const fs = require('fs')
   const tempFile = '/tmp/malformed.json'
   fs.writeFileSync(tempFile, '{"invalid": json, missing quotes}')
-  
+
   process.env.INPUT_FILES = tempFile
   process.env.INPUT_BASE_DIR = '.'
   process.env.INPUT_JSON_SCHEMA = ''
   process.env.INPUT_YAML_AS_JSON = 'false'
-  
+
   const result = await jsonValidator(excludeMock)
   expect(result.failed).toBe(1)
   expect(result.success).toBe(false)
-  
+
   // Cleanup
   fs.unlinkSync(tempFile)
 })

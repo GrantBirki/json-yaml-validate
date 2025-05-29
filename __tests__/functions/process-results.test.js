@@ -280,7 +280,7 @@ test('tests constructBody function with JSON failures only (covers lines 50-67)'
       {success: true, failed: 0, passed: 3, skipped: 0, violations: []}
     )
   ).toBe(false)
-  
+
   // The constructBody function should have been called and created a comment
   expect(infoMock).toHaveBeenCalledWith(
     expect.stringMatching('📝 adding comment to PR')
@@ -301,7 +301,7 @@ test('tests constructBody function with YAML failures only (covers lines 69-86)'
       }
     )
   ).toBe(false)
-  
+
   // The constructBody function should have been called and created a comment
   expect(infoMock).toHaveBeenCalledWith(
     expect.stringMatching('📝 adding comment to PR')
