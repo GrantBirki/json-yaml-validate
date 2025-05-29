@@ -24,6 +24,8 @@ This project **requires 100% test coverage** of code.
 
 Unit tests should exist in the `__tests__` directory. They are powered by `jest`.
 
+An important note about tests is that you might get a warning/error when running `npm run test` related to problems with the coverage badge due to network troubles. If this is the case, please swap to using `npm run ci-test` instead. This will run the tests and generate the coverage report without trying to create a coverage badge.
+
 ## Bundling
 
 The final commit should always be a bundle of the code. This is done by running the following command:
