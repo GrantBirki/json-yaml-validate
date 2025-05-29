@@ -3,6 +3,12 @@ import * as github from '@actions/github'
 import {context} from '@actions/github'
 import dedent from 'dedent-js'
 
+// Constants
+const SUCCESS_OUTPUT_VALUE = 'true'
+const FAILURE_OUTPUT_VALUE = 'false'
+const MODE_FAIL = 'fail'
+const MODE_WARN = 'warn'
+
 // Helper function to check the results of json and yaml validation
 // :param results: the results of the validation
 // :param type: the type of validation (json or yaml)
@@ -39,7 +45,7 @@ async function checkResults(results, type) {
 // :param yamlResults: the results of the yaml validation
 // :returns: the body of the PR comment
 async function constructBody(jsonResults, yamlResults) {
-  var body = '## JSON and YAML Validation Results'
+  let body = '## JSON and YAML Validation Results'
 
   if (jsonResults.success === false) {
     body += dedent(`
@@ -93,12 +99,12 @@ export async function processResults(jsonResults, yamlResults) {
 
   // exit here if both JSON and YAML results are valid
   if (jsonResult === true && yamlResult === true) {
-    core.setOutput('success', `true`)
+    core.setOutput('success', SUCCESS_OUTPUT_VALUE)
     return true
   }
 
   // If we get here, the action failed
-  core.setOutput('success', 'false')
+  core.setOutput('success', FAILURE_OUTPUT_VALUE)
 
   // check if the context is a pull request and if we should comment
   // fetch the pr number from the context
@@ -124,9 +130,9 @@ export async function processResults(jsonResults, yamlResults) {
   }
 
   // add final log messages and exit status of the action
-  if (core.getInput('mode') === 'fail') {
+  if (core.getInput('mode') === MODE_FAIL) {
     core.setFailed('❌ JSON or YAML files failed validation')
-  } else if (core.getInput('mode') === 'warn') {
+  } else if (core.getInput('mode') === MODE_WARN) {
     core.warning('mode is set to "warn" - this action will not fail')
     core.error('❌ JSON or YAML files failed validation')
   } else {

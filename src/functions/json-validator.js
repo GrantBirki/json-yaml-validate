@@ -9,6 +9,14 @@ import {fdir} from 'fdir'
 import {parse, parseAllDocuments} from 'yaml'
 import {globSync} from 'glob'
 
+// Constants
+const DRAFT_07 = 'draft-07'
+const DRAFT_04 = 'draft-04'
+const DRAFT_2019_09 = 'draft-2019-09'
+const DRAFT_2020_12 = 'draft-2020-12'
+const INVALID_JSON_MESSAGE = 'Invalid JSON'
+const CUSTOM_FORMAT_REGEX = /^[\w-]+=.+$/
+
 // Helper function to setup the schema
 // :param jsonSchema: path to the jsonSchema file
 // :returns: the compiled schema
@@ -19,18 +27,18 @@ async function schema(jsonSchema) {
   core.debug(`json_schema_version: ${jsonSchemaVersion}`)
   core.debug(`strict: ${strict}`)
 
-  var ajv
-  if (jsonSchemaVersion === 'draft-07') {
+  let ajv
+  if (jsonSchemaVersion === DRAFT_07) {
     ajv = new Ajv({allErrors: true, strict: strict})
-  } else if (jsonSchemaVersion === 'draft-04') {
+  } else if (jsonSchemaVersion === DRAFT_04) {
     ajv = new AjvDraft04({allErrors: true, strict: strict})
-  } else if (jsonSchemaVersion === 'draft-2019-09') {
+  } else if (jsonSchemaVersion === DRAFT_2019_09) {
     ajv = new Ajv2019({allErrors: true, strict: strict})
-  } else if (jsonSchemaVersion === 'draft-2020-12') {
+  } else if (jsonSchemaVersion === DRAFT_2020_12) {
     ajv = new Ajv2020({allErrors: true, strict: strict})
   } else {
     core.warning(
-      `json_schema_version '${jsonSchemaVersion}' is not supported. Defaulting to 'draft-07'`
+      `json_schema_version '${jsonSchemaVersion}' is not supported. Defaulting to '${DRAFT_07}'`
     )
     ajv = new Ajv({allErrors: true, strict: strict})
   }
@@ -49,8 +57,8 @@ async function schema(jsonSchema) {
     .filter(Boolean) // Filter out any empty lines
     .forEach(customFormat => {
       // Check format using a regex
-      if (!/^[\w-]+=.+$/.test(customFormat.trim())) {
-        throw Error(
+      if (!CUSTOM_FORMAT_REGEX.test(customFormat.trim())) {
+        throw new Error(
           `Invalid ajv_custom_regexp_formats format: "${customFormat}" is not in expected format "key=regex"`
         )
       }
@@ -63,7 +71,7 @@ async function schema(jsonSchema) {
       try {
         regex = new RegExp(keyValuePair[1])
       } catch (syntaxError) {
-        throw Error(`Invalid regular expression: ${syntaxError.message}`)
+        throw new Error(`Invalid regular expression: ${syntaxError.message}`)
       }
 
       // Add format if the regex is successfully compiled
@@ -71,7 +79,7 @@ async function schema(jsonSchema) {
     })
 
   // if a jsonSchema is provided, validate the json against it
-  var schema
+  let schema
   if (jsonSchema && jsonSchema !== '') {
     // parse the jsonSchema from the file path
     schema = JSON.parse(readFileSync(jsonSchema, 'utf8'))
@@ -105,14 +113,14 @@ export async function jsonValidator(exclude) {
   // construct a list of file paths to validate and use glob if necessary
   let files = []
   patterns.forEach(pattern => {
-    files = [...files, ...globSync(pattern)]
+    files.push(...globSync(pattern))
   })
 
   // remove trailing slash from baseDir
   const baseDirSanitized = baseDir.replace(/\/$/, '')
 
   // check if regex is enabled
-  var skipRegex = null
+  let skipRegex = null
   if (jsonExcludeRegex && jsonExcludeRegex !== '') {
     skipRegex = new RegExp(jsonExcludeRegex)
   }
@@ -121,7 +129,7 @@ export async function jsonValidator(exclude) {
   const validate = await schema(jsonSchema)
 
   // loop through all json files in the baseDir and validate them
-  var result = {
+  const result = {
     success: true,
     passed: 0,
     failed: 0,
@@ -182,12 +190,10 @@ export async function jsonValidator(exclude) {
     // if the file is a yaml file but it should not be treated as json
     // skipped++ does not need to be called here as the file should be validated later...
     // ...on as yaml with the yaml-validator
+    const isYamlFile =
+      fullPath.endsWith(yamlExtension) || fullPath.endsWith(yamlExtensionShort)
     /* istanbul ignore next */
-    if (
-      yamlAsJson === false &&
-      (fullPath.endsWith(yamlExtension) ||
-        fullPath.endsWith(yamlExtensionShort))
-    ) {
+    if (yamlAsJson === false && isYamlFile) {
       core.debug(
         `the json-validator found a yaml file so it will be skipped here: '${fullPath}'`
       )
@@ -200,14 +206,10 @@ export async function jsonValidator(exclude) {
       continue
     }
 
-    var data
+    let data
     try {
       // if the file is a yaml file but being treated as json and yamlAsJson is true
-      if (
-        yamlAsJson === true &&
-        (fullPath.endsWith(yamlExtension) ||
-          fullPath.endsWith(yamlExtensionShort))
-      ) {
+      if (yamlAsJson === true && isYamlFile) {
         core.debug(`attempting to process yaml file: '${fullPath}' as json`)
         if (allowMultipleDocuments === true) {
           data = parseAllDocuments(readFileSync(fullPath, 'utf8'))
@@ -228,7 +230,7 @@ export async function jsonValidator(exclude) {
         errors: [
           {
             path: null,
-            message: 'Invalid JSON'
+            message: INVALID_JSON_MESSAGE
           }
         ]
       })
@@ -239,7 +241,7 @@ export async function jsonValidator(exclude) {
     // have just one element.
     // this is required to support multi-doc files when yamlAsJson is true
     if (yamlAsJson === true && allowMultipleDocuments === true) {
-      let newData = []
+      const newData = []
       data.forEach(doc => {
         newData.push(doc.toJS())
       })
@@ -254,7 +256,7 @@ export async function jsonValidator(exclude) {
     }
 
     let allValid = true
-    let allErrors = []
+    const allErrors = []
 
     // perform the validation for each document
     data.forEach((doc, index) => {
@@ -267,7 +269,7 @@ export async function jsonValidator(exclude) {
       allValid = false
       allErrors.push(
         ...validate.errors.map(error => {
-          let errorValue = {
+          const errorValue = {
             path: error.instancePath || null,
             message: error.message
           }

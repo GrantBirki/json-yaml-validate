@@ -69338,6 +69338,14 @@ glob.glob = glob;
 
 
 
+// Constants
+const DRAFT_07 = 'draft-07'
+const DRAFT_04 = 'draft-04'
+const DRAFT_2019_09 = 'draft-2019-09'
+const DRAFT_2020_12 = 'draft-2020-12'
+const INVALID_JSON_MESSAGE = 'Invalid JSON'
+const CUSTOM_FORMAT_REGEX = /^[\w-]+=.+$/
+
 // Helper function to setup the schema
 // :param jsonSchema: path to the jsonSchema file
 // :returns: the compiled schema
@@ -69348,18 +69356,18 @@ async function schema(jsonSchema) {
   core.debug(`json_schema_version: ${jsonSchemaVersion}`)
   core.debug(`strict: ${strict}`)
 
-  var ajv
-  if (jsonSchemaVersion === 'draft-07') {
+  let ajv
+  if (jsonSchemaVersion === DRAFT_07) {
     ajv = new (ajv_default())({allErrors: true, strict: strict})
-  } else if (jsonSchemaVersion === 'draft-04') {
+  } else if (jsonSchemaVersion === DRAFT_04) {
     ajv = new (dist_default())({allErrors: true, strict: strict})
-  } else if (jsonSchemaVersion === 'draft-2019-09') {
+  } else if (jsonSchemaVersion === DRAFT_2019_09) {
     ajv = new (_2019_default())({allErrors: true, strict: strict})
-  } else if (jsonSchemaVersion === 'draft-2020-12') {
+  } else if (jsonSchemaVersion === DRAFT_2020_12) {
     ajv = new (_2020_default())({allErrors: true, strict: strict})
   } else {
     core.warning(
-      `json_schema_version '${jsonSchemaVersion}' is not supported. Defaulting to 'draft-07'`
+      `json_schema_version '${jsonSchemaVersion}' is not supported. Defaulting to '${DRAFT_07}'`
     )
     ajv = new (ajv_default())({allErrors: true, strict: strict})
   }
@@ -69377,8 +69385,8 @@ async function schema(jsonSchema) {
     .filter(Boolean) // Filter out any empty lines
     .forEach(customFormat => {
       // Check format using a regex
-      if (!/^[\w-]+=.+$/.test(customFormat.trim())) {
-        throw Error(
+      if (!CUSTOM_FORMAT_REGEX.test(customFormat.trim())) {
+        throw new Error(
           `Invalid ajv_custom_regexp_formats format: "${customFormat}" is not in expected format "key=regex"`
         )
       }
@@ -69391,7 +69399,7 @@ async function schema(jsonSchema) {
       try {
         regex = new RegExp(keyValuePair[1])
       } catch (syntaxError) {
-        throw Error(`Invalid regular expression: ${syntaxError.message}`)
+        throw new Error(`Invalid regular expression: ${syntaxError.message}`)
       }
 
       // Add format if the regex is successfully compiled
@@ -69399,7 +69407,7 @@ async function schema(jsonSchema) {
     })
 
   // if a jsonSchema is provided, validate the json against it
-  var schema
+  let schema
   if (jsonSchema && jsonSchema !== '') {
     // parse the jsonSchema from the file path
     schema = JSON.parse((0,external_fs_.readFileSync)(jsonSchema, 'utf8'))
@@ -69433,14 +69441,14 @@ async function jsonValidator(exclude) {
   // construct a list of file paths to validate and use glob if necessary
   let files = []
   patterns.forEach(pattern => {
-    files = [...files, ...globSync(pattern)]
+    files.push(...globSync(pattern))
   })
 
   // remove trailing slash from baseDir
   const baseDirSanitized = baseDir.replace(/\/$/, '')
 
   // check if regex is enabled
-  var skipRegex = null
+  let skipRegex = null
   if (jsonExcludeRegex && jsonExcludeRegex !== '') {
     skipRegex = new RegExp(jsonExcludeRegex)
   }
@@ -69449,7 +69457,7 @@ async function jsonValidator(exclude) {
   const validate = await schema(jsonSchema)
 
   // loop through all json files in the baseDir and validate them
-  var result = {
+  const result = {
     success: true,
     passed: 0,
     failed: 0,
@@ -69510,12 +69518,10 @@ async function jsonValidator(exclude) {
     // if the file is a yaml file but it should not be treated as json
     // skipped++ does not need to be called here as the file should be validated later...
     // ...on as yaml with the yaml-validator
+    const isYamlFile =
+      fullPath.endsWith(yamlExtension) || fullPath.endsWith(yamlExtensionShort)
     /* istanbul ignore next */
-    if (
-      yamlAsJson === false &&
-      (fullPath.endsWith(yamlExtension) ||
-        fullPath.endsWith(yamlExtensionShort))
-    ) {
+    if (yamlAsJson === false && isYamlFile) {
       core.debug(
         `the json-validator found a yaml file so it will be skipped here: '${fullPath}'`
       )
@@ -69528,14 +69534,10 @@ async function jsonValidator(exclude) {
       continue
     }
 
-    var data
+    let data
     try {
       // if the file is a yaml file but being treated as json and yamlAsJson is true
-      if (
-        yamlAsJson === true &&
-        (fullPath.endsWith(yamlExtension) ||
-          fullPath.endsWith(yamlExtensionShort))
-      ) {
+      if (yamlAsJson === true && isYamlFile) {
         core.debug(`attempting to process yaml file: '${fullPath}' as json`)
         if (allowMultipleDocuments === true) {
           data = (0,yaml_dist/* parseAllDocuments */.hR)((0,external_fs_.readFileSync)(fullPath, 'utf8'))
@@ -69556,7 +69558,7 @@ async function jsonValidator(exclude) {
         errors: [
           {
             path: null,
-            message: 'Invalid JSON'
+            message: INVALID_JSON_MESSAGE
           }
         ]
       })
@@ -69567,7 +69569,7 @@ async function jsonValidator(exclude) {
     // have just one element.
     // this is required to support multi-doc files when yamlAsJson is true
     if (yamlAsJson === true && allowMultipleDocuments === true) {
-      let newData = []
+      const newData = []
       data.forEach(doc => {
         newData.push(doc.toJS())
       })
@@ -69582,7 +69584,7 @@ async function jsonValidator(exclude) {
     }
 
     let allValid = true
-    let allErrors = []
+    const allErrors = []
 
     // perform the validation for each document
     data.forEach((doc, index) => {
@@ -69595,7 +69597,7 @@ async function jsonValidator(exclude) {
       allValid = false
       allErrors.push(
         ...validate.errors.map(error => {
-          let errorValue = {
+          const errorValue = {
             path: error.instancePath || null,
             message: error.message
           }
@@ -69643,6 +69645,9 @@ var yaml_schema_validator_default = /*#__PURE__*/__nccwpck_require__.n(yaml_sche
 
 
 
+// Constants
+const INVALID_YAML_MESSAGE = 'Invalid YAML'
+
 // Helper function to validate all yaml files in the baseDir
 async function yamlValidator(exclude) {
   const baseDir = core.getInput('base_dir')
@@ -69660,20 +69665,20 @@ async function yamlValidator(exclude) {
   // construct a list of file paths to validate and use glob if necessary
   let files = []
   patterns.forEach(pattern => {
-    files = [...files, ...globSync(pattern)]
+    files.push(...globSync(pattern))
   })
 
   // remove trailing slash from baseDir
   const baseDirSanitized = baseDir.replace(/\/$/, '')
 
   // check if regex is enabled
-  var skipRegex = null
+  let skipRegex = null
   if (yamlExcludeRegex && yamlExcludeRegex !== '') {
     skipRegex = new RegExp(yamlExcludeRegex)
   }
 
   // loop through all yaml files in the baseDir and validate them
-  var result = {
+  const result = {
     success: true,
     passed: 0,
     failed: 0,
@@ -69706,7 +69711,7 @@ async function yamlValidator(exclude) {
   for (const fullPath of files) {
     core.debug(`found file: ${fullPath}`)
 
-    if (yamlSchema !== '' && fullPath.includes(yamlSchema)) {
+    if (yamlSchema !== '' && fullPath === yamlSchema) {
       core.debug(`skipping yaml schema file: ${fullPath}`)
       continue
     }
@@ -69768,7 +69773,7 @@ async function yamlValidator(exclude) {
         errors: [
           {
             path: null,
-            message: 'Invalid YAML',
+            message: INVALID_YAML_MESSAGE,
             // format error message
             error: err.toString().split(':').slice(0, 2).join('')
           }
@@ -69778,13 +69783,12 @@ async function yamlValidator(exclude) {
     }
 
     // if no yamlSchema is provided, skip validation against the schema
-    if (
+    const hasNoSchema =
       !yamlSchema ||
       yamlSchema === '' ||
       yamlSchema === null ||
-      yamlSchema === undefined ||
-      multipleDocuments
-    ) {
+      yamlSchema === undefined
+    if (hasNoSchema || multipleDocuments) {
       result.passed++
       core.info(`${fullPath} is valid`)
       continue
@@ -69807,7 +69811,7 @@ async function yamlValidator(exclude) {
 
       // add the errors to the result object (path and message)
       // where path is the path to the property that failed validation
-      var errors = []
+      const errors = []
       for (const error of schemaErrors) {
         errors.push({
           path: error.path || null,
@@ -69845,6 +69849,12 @@ var lib_default = /*#__PURE__*/__nccwpck_require__.n(lib);
 
 
 
+// Constants
+const SUCCESS_OUTPUT_VALUE = 'true'
+const FAILURE_OUTPUT_VALUE = 'false'
+const MODE_FAIL = 'fail'
+const MODE_WARN = 'warn'
+
 // Helper function to check the results of json and yaml validation
 // :param results: the results of the validation
 // :param type: the type of validation (json or yaml)
@@ -69881,7 +69891,7 @@ async function checkResults(results, type) {
 // :param yamlResults: the results of the yaml validation
 // :returns: the body of the PR comment
 async function constructBody(jsonResults, yamlResults) {
-  var body = '## JSON and YAML Validation Results'
+  let body = '## JSON and YAML Validation Results'
 
   if (jsonResults.success === false) {
     body += lib_default()(`
@@ -69935,12 +69945,12 @@ async function processResults(jsonResults, yamlResults) {
 
   // exit here if both JSON and YAML results are valid
   if (jsonResult === true && yamlResult === true) {
-    core.setOutput('success', `true`)
+    core.setOutput('success', SUCCESS_OUTPUT_VALUE)
     return true
   }
 
   // If we get here, the action failed
-  core.setOutput('success', 'false')
+  core.setOutput('success', FAILURE_OUTPUT_VALUE)
 
   // check if the context is a pull request and if we should comment
   // fetch the pr number from the context
@@ -69966,9 +69976,9 @@ async function processResults(jsonResults, yamlResults) {
   }
 
   // add final log messages and exit status of the action
-  if (core.getInput('mode') === 'fail') {
+  if (core.getInput('mode') === MODE_FAIL) {
     core.setFailed('❌ JSON or YAML files failed validation')
-  } else if (core.getInput('mode') === 'warn') {
+  } else if (core.getInput('mode') === MODE_WARN) {
     core.warning('mode is set to "warn" - this action will not fail')
     core.error('❌ JSON or YAML files failed validation')
   } else {

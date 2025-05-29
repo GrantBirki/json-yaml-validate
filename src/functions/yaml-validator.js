@@ -5,6 +5,9 @@ import {fdir} from 'fdir'
 import {parse, parseAllDocuments} from 'yaml'
 import {globSync} from 'glob'
 
+// Constants
+const INVALID_YAML_MESSAGE = 'Invalid YAML'
+
 // Helper function to validate all yaml files in the baseDir
 export async function yamlValidator(exclude) {
   const baseDir = core.getInput('base_dir')
@@ -22,20 +25,20 @@ export async function yamlValidator(exclude) {
   // construct a list of file paths to validate and use glob if necessary
   let files = []
   patterns.forEach(pattern => {
-    files = [...files, ...globSync(pattern)]
+    files.push(...globSync(pattern))
   })
 
   // remove trailing slash from baseDir
   const baseDirSanitized = baseDir.replace(/\/$/, '')
 
   // check if regex is enabled
-  var skipRegex = null
+  let skipRegex = null
   if (yamlExcludeRegex && yamlExcludeRegex !== '') {
     skipRegex = new RegExp(yamlExcludeRegex)
   }
 
   // loop through all yaml files in the baseDir and validate them
-  var result = {
+  const result = {
     success: true,
     passed: 0,
     failed: 0,
@@ -68,7 +71,7 @@ export async function yamlValidator(exclude) {
   for (const fullPath of files) {
     core.debug(`found file: ${fullPath}`)
 
-    if (yamlSchema !== '' && fullPath.includes(yamlSchema)) {
+    if (yamlSchema !== '' && fullPath === yamlSchema) {
       core.debug(`skipping yaml schema file: ${fullPath}`)
       continue
     }
@@ -130,7 +133,7 @@ export async function yamlValidator(exclude) {
         errors: [
           {
             path: null,
-            message: 'Invalid YAML',
+            message: INVALID_YAML_MESSAGE,
             // format error message
             error: err.toString().split(':').slice(0, 2).join('')
           }
@@ -140,13 +143,12 @@ export async function yamlValidator(exclude) {
     }
 
     // if no yamlSchema is provided, skip validation against the schema
-    if (
+    const hasNoSchema =
       !yamlSchema ||
       yamlSchema === '' ||
       yamlSchema === null ||
-      yamlSchema === undefined ||
-      multipleDocuments
-    ) {
+      yamlSchema === undefined
+    if (hasNoSchema || multipleDocuments) {
       result.passed++
       core.info(`${fullPath} is valid`)
       continue
@@ -169,7 +171,7 @@ export async function yamlValidator(exclude) {
 
       // add the errors to the result object (path and message)
       // where path is the path to the property that failed validation
-      var errors = []
+      const errors = []
       for (const error of schemaErrors) {
         errors.push({
           path: error.path || null,
