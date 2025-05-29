@@ -77,3 +77,12 @@ jobs:
           json_schema: ./__tests__/fixtures/schemas/schema1.json
           files: |
             __tests__/fixtures/yaml_as_json/valid_multi/yaml1.yaml
+
+      - name: acceptance test - excluding helm charts
+        uses: ./
+        id: json-yaml-validate-exclude-helm-charts-test
+        with:
+          comment: "true"
+          yaml_exclude_regex: "(charts/external-dns/templates.*|mkdocs.yml)"
+          allow_multiple_documents: "true"
+          base_dir: __tests__/acceptance
