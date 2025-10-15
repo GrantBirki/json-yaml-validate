@@ -3570,13 +3570,28 @@ var import_graphql = __nccwpck_require__(7);
 var import_auth_token = __nccwpck_require__(7864);
 
 // pkg/dist-src/version.js
-var VERSION = "5.2.1";
+var VERSION = "5.2.2";
 
 // pkg/dist-src/index.js
 var noop = () => {
 };
 var consoleWarn = console.warn.bind(console);
 var consoleError = console.error.bind(console);
+function createLogger(logger = {}) {
+  if (typeof logger.debug !== "function") {
+    logger.debug = noop;
+  }
+  if (typeof logger.info !== "function") {
+    logger.info = noop;
+  }
+  if (typeof logger.warn !== "function") {
+    logger.warn = consoleWarn;
+  }
+  if (typeof logger.error !== "function") {
+    logger.error = consoleError;
+  }
+  return logger;
+}
 var userAgentTrail = `octokit-core.js/${VERSION} ${(0, import_universal_user_agent.getUserAgent)()}`;
 var Octokit = class {
   static {
@@ -3650,15 +3665,7 @@ var Octokit = class {
     }
     this.request = import_request.request.defaults(requestDefaults);
     this.graphql = (0, import_graphql.withCustomRequest)(this.request).defaults(requestDefaults);
-    this.log = Object.assign(
-      {
-        debug: noop,
-        info: noop,
-        warn: consoleWarn,
-        error: consoleError
-      },
-      options.log
-    );
+    this.log = createLogger(options.log);
     this.hook = hook;
     if (!options.authStrategy) {
       if (!options.auth) {
@@ -13988,81 +13995,11 @@ exports["default"] = def;
 
 /***/ }),
 
-/***/ 6999:
-/***/ ((module) => {
-
-"use strict";
-
-module.exports = balanced;
-function balanced(a, b, str) {
-  if (a instanceof RegExp) a = maybeMatch(a, str);
-  if (b instanceof RegExp) b = maybeMatch(b, str);
-
-  var r = range(a, b, str);
-
-  return r && {
-    start: r[0],
-    end: r[1],
-    pre: str.slice(0, r[0]),
-    body: str.slice(r[0] + a.length, r[1]),
-    post: str.slice(r[1] + b.length)
-  };
-}
-
-function maybeMatch(reg, str) {
-  var m = str.match(reg);
-  return m ? m[0] : null;
-}
-
-balanced.range = range;
-function range(a, b, str) {
-  var begs, beg, left, right, result;
-  var ai = str.indexOf(a);
-  var bi = str.indexOf(b, ai + 1);
-  var i = ai;
-
-  if (ai >= 0 && bi > 0) {
-    if(a===b) {
-      return [ai, bi];
-    }
-    begs = [];
-    left = str.length;
-
-    while (i >= 0 && !result) {
-      if (i == ai) {
-        begs.push(i);
-        ai = str.indexOf(a, i + 1);
-      } else if (begs.length == 1) {
-        result = [ begs.pop(), bi ];
-      } else {
-        beg = begs.pop();
-        if (beg < left) {
-          left = beg;
-          right = bi;
-        }
-
-        bi = str.indexOf(b, i + 1);
-      }
-
-      i = ai < bi && ai >= 0 ? ai : bi;
-    }
-
-    if (begs.length) {
-      result = [ left, right ];
-    }
-  }
-
-  return result;
-}
-
-
-/***/ }),
-
 /***/ 2732:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 var register = __nccwpck_require__(1063);
-var addHook = __nccwpck_require__(4408);
+var addHook = __nccwpck_require__(2027);
 var removeHook = __nccwpck_require__(9934);
 
 // bind with array of arguments: https://stackoverflow.com/a/21792913
@@ -14126,7 +14063,7 @@ module.exports.Collection = Hook.Collection;
 
 /***/ }),
 
-/***/ 4408:
+/***/ 2027:
 /***/ ((module) => {
 
 module.exports = addHook;
@@ -15694,1084 +15631,6 @@ module.exports = function equal(a, b) {
 
 /***/ }),
 
-/***/ 4413:
-/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.promise = promise;
-exports.callback = callback;
-const walker_1 = __nccwpck_require__(4835);
-function promise(root, options) {
-    return new Promise((resolve, reject) => {
-        callback(root, options, (err, output) => {
-            if (err)
-                return reject(err);
-            resolve(output);
-        });
-    });
-}
-function callback(root, options, callback) {
-    let walker = new walker_1.Walker(root, options, callback);
-    walker.start();
-}
-
-
-/***/ }),
-
-/***/ 945:
-/***/ ((__unused_webpack_module, exports) => {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.Counter = void 0;
-class Counter {
-    _files = 0;
-    _directories = 0;
-    set files(num) {
-        this._files = num;
-    }
-    get files() {
-        return this._files;
-    }
-    set directories(num) {
-        this._directories = num;
-    }
-    get directories() {
-        return this._directories;
-    }
-    /**
-     * @deprecated use `directories` instead
-     */
-    /* c8 ignore next 3 */
-    get dirs() {
-        return this._directories;
-    }
-}
-exports.Counter = Counter;
-
-
-/***/ }),
-
-/***/ 3123:
-/***/ ((__unused_webpack_module, exports) => {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.build = build;
-const getArray = (paths) => {
-    return paths;
-};
-const getArrayGroup = () => {
-    return [""].slice(0, 0);
-};
-function build(options) {
-    return options.group ? getArrayGroup : getArray;
-}
-
-
-/***/ }),
-
-/***/ 3482:
-/***/ ((__unused_webpack_module, exports) => {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.build = build;
-const groupFiles = (groups, directory, files) => {
-    groups.push({ directory, files, dir: directory });
-};
-const empty = () => { };
-function build(options) {
-    return options.group ? groupFiles : empty;
-}
-
-
-/***/ }),
-
-/***/ 2027:
-/***/ ((__unused_webpack_module, exports) => {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.build = build;
-const onlyCountsSync = (state) => {
-    return state.counts;
-};
-const groupsSync = (state) => {
-    return state.groups;
-};
-const defaultSync = (state) => {
-    return state.paths;
-};
-const limitFilesSync = (state) => {
-    return state.paths.slice(0, state.options.maxFiles);
-};
-const onlyCountsAsync = (state, error, callback) => {
-    report(error, callback, state.counts, state.options.suppressErrors);
-    return null;
-};
-const defaultAsync = (state, error, callback) => {
-    report(error, callback, state.paths, state.options.suppressErrors);
-    return null;
-};
-const limitFilesAsync = (state, error, callback) => {
-    report(error, callback, state.paths.slice(0, state.options.maxFiles), state.options.suppressErrors);
-    return null;
-};
-const groupsAsync = (state, error, callback) => {
-    report(error, callback, state.groups, state.options.suppressErrors);
-    return null;
-};
-function report(error, callback, output, suppressErrors) {
-    if (error && !suppressErrors)
-        callback(error, output);
-    else
-        callback(null, output);
-}
-function build(options, isSynchronous) {
-    const { onlyCounts, group, maxFiles } = options;
-    if (onlyCounts)
-        return isSynchronous
-            ? onlyCountsSync
-            : onlyCountsAsync;
-    else if (group)
-        return isSynchronous
-            ? groupsSync
-            : groupsAsync;
-    else if (maxFiles)
-        return isSynchronous
-            ? limitFilesSync
-            : limitFilesAsync;
-    else
-        return isSynchronous
-            ? defaultSync
-            : defaultAsync;
-}
-
-
-/***/ }),
-
-/***/ 5179:
-/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.joinPathWithBasePath = joinPathWithBasePath;
-exports.joinDirectoryPath = joinDirectoryPath;
-exports.build = build;
-const path_1 = __nccwpck_require__(6928);
-const utils_1 = __nccwpck_require__(6407);
-function joinPathWithBasePath(filename, directoryPath) {
-    return directoryPath + filename;
-}
-function joinPathWithRelativePath(root, options) {
-    return function (filename, directoryPath) {
-        const sameRoot = directoryPath.startsWith(root);
-        if (sameRoot)
-            return directoryPath.replace(root, "") + filename;
-        else
-            return ((0, utils_1.convertSlashes)((0, path_1.relative)(root, directoryPath), options.pathSeparator) +
-                options.pathSeparator +
-                filename);
-    };
-}
-function joinPath(filename) {
-    return filename;
-}
-function joinDirectoryPath(filename, directoryPath, separator) {
-    return directoryPath + filename + separator;
-}
-function build(root, options) {
-    const { relativePaths, includeBasePath } = options;
-    return relativePaths && root
-        ? joinPathWithRelativePath(root, options)
-        : includeBasePath
-            ? joinPathWithBasePath
-            : joinPath;
-}
-
-
-/***/ }),
-
-/***/ 3673:
-/***/ ((__unused_webpack_module, exports) => {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.build = build;
-function pushDirectoryWithRelativePath(root) {
-    return function (directoryPath, paths) {
-        paths.push(directoryPath.substring(root.length) || ".");
-    };
-}
-function pushDirectoryFilterWithRelativePath(root) {
-    return function (directoryPath, paths, filters) {
-        const relativePath = directoryPath.substring(root.length) || ".";
-        if (filters.every((filter) => filter(relativePath, true))) {
-            paths.push(relativePath);
-        }
-    };
-}
-const pushDirectory = (directoryPath, paths) => {
-    paths.push(directoryPath || ".");
-};
-const pushDirectoryFilter = (directoryPath, paths, filters) => {
-    const path = directoryPath || ".";
-    if (filters.every((filter) => filter(path, true))) {
-        paths.push(path);
-    }
-};
-const empty = () => { };
-function build(root, options) {
-    const { includeDirs, filters, relativePaths } = options;
-    if (!includeDirs)
-        return empty;
-    if (relativePaths)
-        return filters && filters.length
-            ? pushDirectoryFilterWithRelativePath(root)
-            : pushDirectoryWithRelativePath(root);
-    return filters && filters.length ? pushDirectoryFilter : pushDirectory;
-}
-
-
-/***/ }),
-
-/***/ 8578:
-/***/ ((__unused_webpack_module, exports) => {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.build = build;
-const pushFileFilterAndCount = (filename, _paths, counts, filters) => {
-    if (filters.every((filter) => filter(filename, false)))
-        counts.files++;
-};
-const pushFileFilter = (filename, paths, _counts, filters) => {
-    if (filters.every((filter) => filter(filename, false)))
-        paths.push(filename);
-};
-const pushFileCount = (_filename, _paths, counts, _filters) => {
-    counts.files++;
-};
-const pushFile = (filename, paths) => {
-    paths.push(filename);
-};
-const empty = () => { };
-function build(options) {
-    const { excludeFiles, filters, onlyCounts } = options;
-    if (excludeFiles)
-        return empty;
-    if (filters && filters.length) {
-        return onlyCounts ? pushFileFilterAndCount : pushFileFilter;
-    }
-    else if (onlyCounts) {
-        return pushFileCount;
-    }
-    else {
-        return pushFile;
-    }
-}
-
-
-/***/ }),
-
-/***/ 8361:
-/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
-
-"use strict";
-
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.build = build;
-const fs_1 = __importDefault(__nccwpck_require__(9896));
-const path_1 = __nccwpck_require__(6928);
-const resolveSymlinksAsync = function (path, state, callback) {
-    const { queue, options: { suppressErrors }, } = state;
-    queue.enqueue();
-    fs_1.default.realpath(path, (error, resolvedPath) => {
-        if (error)
-            return queue.dequeue(suppressErrors ? null : error, state);
-        fs_1.default.stat(resolvedPath, (error, stat) => {
-            if (error)
-                return queue.dequeue(suppressErrors ? null : error, state);
-            if (stat.isDirectory() && isRecursive(path, resolvedPath, state))
-                return queue.dequeue(null, state);
-            callback(stat, resolvedPath);
-            queue.dequeue(null, state);
-        });
-    });
-};
-const resolveSymlinks = function (path, state, callback) {
-    const { queue, options: { suppressErrors }, } = state;
-    queue.enqueue();
-    try {
-        const resolvedPath = fs_1.default.realpathSync(path);
-        const stat = fs_1.default.statSync(resolvedPath);
-        if (stat.isDirectory() && isRecursive(path, resolvedPath, state))
-            return;
-        callback(stat, resolvedPath);
-    }
-    catch (e) {
-        if (!suppressErrors)
-            throw e;
-    }
-};
-function build(options, isSynchronous) {
-    if (!options.resolveSymlinks || options.excludeSymlinks)
-        return null;
-    return isSynchronous ? resolveSymlinks : resolveSymlinksAsync;
-}
-function isRecursive(path, resolved, state) {
-    if (state.options.useRealPaths)
-        return isRecursiveUsingRealPaths(resolved, state);
-    let parent = (0, path_1.dirname)(path);
-    let depth = 1;
-    while (parent !== state.root && depth < 2) {
-        const resolvedPath = state.symlinks.get(parent);
-        const isSameRoot = !!resolvedPath &&
-            (resolvedPath === resolved ||
-                resolvedPath.startsWith(resolved) ||
-                resolved.startsWith(resolvedPath));
-        if (isSameRoot)
-            depth++;
-        else
-            parent = (0, path_1.dirname)(parent);
-    }
-    state.symlinks.set(path, resolved);
-    return depth > 1;
-}
-function isRecursiveUsingRealPaths(resolved, state) {
-    return state.visited.includes(resolved + state.options.pathSeparator);
-}
-
-
-/***/ }),
-
-/***/ 8568:
-/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
-
-"use strict";
-
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.build = build;
-const fs_1 = __importDefault(__nccwpck_require__(9896));
-const readdirOpts = { withFileTypes: true };
-const walkAsync = (state, crawlPath, directoryPath, currentDepth, callback) => {
-    state.queue.enqueue();
-    if (currentDepth <= 0)
-        return state.queue.dequeue(null, state);
-    state.visited.push(crawlPath);
-    state.counts.directories++;
-    // Perf: Node >= 10 introduced withFileTypes that helps us
-    // skip an extra fs.stat call.
-    fs_1.default.readdir(crawlPath || ".", readdirOpts, (error, entries = []) => {
-        callback(entries, directoryPath, currentDepth);
-        state.queue.dequeue(state.options.suppressErrors ? null : error, state);
-    });
-};
-const walkSync = (state, crawlPath, directoryPath, currentDepth, callback) => {
-    if (currentDepth <= 0)
-        return;
-    state.visited.push(crawlPath);
-    state.counts.directories++;
-    let entries = [];
-    try {
-        entries = fs_1.default.readdirSync(crawlPath || ".", readdirOpts);
-    }
-    catch (e) {
-        if (!state.options.suppressErrors)
-            throw e;
-    }
-    callback(entries, directoryPath, currentDepth);
-};
-function build(isSynchronous) {
-    return isSynchronous ? walkSync : walkAsync;
-}
-
-
-/***/ }),
-
-/***/ 706:
-/***/ ((__unused_webpack_module, exports) => {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.Queue = void 0;
-/**
- * This is a custom stateless queue to track concurrent async fs calls.
- * It increments a counter whenever a call is queued and decrements it
- * as soon as it completes. When the counter hits 0, it calls onQueueEmpty.
- */
-class Queue {
-    onQueueEmpty;
-    count = 0;
-    constructor(onQueueEmpty) {
-        this.onQueueEmpty = onQueueEmpty;
-    }
-    enqueue() {
-        this.count++;
-        return this.count;
-    }
-    dequeue(error, output) {
-        if (this.onQueueEmpty && (--this.count <= 0 || error)) {
-            this.onQueueEmpty(error, output);
-            if (error) {
-                output.controller.abort();
-                this.onQueueEmpty = undefined;
-            }
-        }
-    }
-}
-exports.Queue = Queue;
-
-
-/***/ }),
-
-/***/ 398:
-/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.sync = sync;
-const walker_1 = __nccwpck_require__(4835);
-function sync(root, options) {
-    const walker = new walker_1.Walker(root, options);
-    return walker.start();
-}
-
-
-/***/ }),
-
-/***/ 4835:
-/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
-
-"use strict";
-
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || (function () {
-    var ownKeys = function(o) {
-        ownKeys = Object.getOwnPropertyNames || function (o) {
-            var ar = [];
-            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
-            return ar;
-        };
-        return ownKeys(o);
-    };
-    return function (mod) {
-        if (mod && mod.__esModule) return mod;
-        var result = {};
-        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
-        __setModuleDefault(result, mod);
-        return result;
-    };
-})();
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.Walker = void 0;
-const path_1 = __nccwpck_require__(6928);
-const utils_1 = __nccwpck_require__(6407);
-const joinPath = __importStar(__nccwpck_require__(5179));
-const pushDirectory = __importStar(__nccwpck_require__(3673));
-const pushFile = __importStar(__nccwpck_require__(8578));
-const getArray = __importStar(__nccwpck_require__(3123));
-const groupFiles = __importStar(__nccwpck_require__(3482));
-const resolveSymlink = __importStar(__nccwpck_require__(8361));
-const invokeCallback = __importStar(__nccwpck_require__(2027));
-const walkDirectory = __importStar(__nccwpck_require__(8568));
-const queue_1 = __nccwpck_require__(706);
-const counter_1 = __nccwpck_require__(945);
-class Walker {
-    root;
-    isSynchronous;
-    state;
-    joinPath;
-    pushDirectory;
-    pushFile;
-    getArray;
-    groupFiles;
-    resolveSymlink;
-    walkDirectory;
-    callbackInvoker;
-    constructor(root, options, callback) {
-        this.isSynchronous = !callback;
-        this.callbackInvoker = invokeCallback.build(options, this.isSynchronous);
-        this.root = (0, utils_1.normalizePath)(root, options);
-        this.state = {
-            root: (0, utils_1.isRootDirectory)(this.root) ? this.root : this.root.slice(0, -1),
-            // Perf: we explicitly tell the compiler to optimize for String arrays
-            paths: [""].slice(0, 0),
-            groups: [],
-            counts: new counter_1.Counter(),
-            options,
-            queue: new queue_1.Queue((error, state) => this.callbackInvoker(state, error, callback)),
-            symlinks: new Map(),
-            visited: [""].slice(0, 0),
-            controller: new AbortController(),
-        };
-        /*
-         * Perf: We conditionally change functions according to options. This gives a slight
-         * performance boost. Since these functions are so small, they are automatically inlined
-         * by the javascript engine so there's no function call overhead (in most cases).
-         */
-        this.joinPath = joinPath.build(this.root, options);
-        this.pushDirectory = pushDirectory.build(this.root, options);
-        this.pushFile = pushFile.build(options);
-        this.getArray = getArray.build(options);
-        this.groupFiles = groupFiles.build(options);
-        this.resolveSymlink = resolveSymlink.build(options, this.isSynchronous);
-        this.walkDirectory = walkDirectory.build(this.isSynchronous);
-    }
-    start() {
-        this.pushDirectory(this.root, this.state.paths, this.state.options.filters);
-        this.walkDirectory(this.state, this.root, this.root, this.state.options.maxDepth, this.walk);
-        return this.isSynchronous ? this.callbackInvoker(this.state, null) : null;
-    }
-    walk = (entries, directoryPath, depth) => {
-        const { paths, options: { filters, resolveSymlinks, excludeSymlinks, exclude, maxFiles, signal, useRealPaths, pathSeparator, }, controller, } = this.state;
-        if (controller.signal.aborted ||
-            (signal && signal.aborted) ||
-            (maxFiles && paths.length > maxFiles))
-            return;
-        const files = this.getArray(this.state.paths);
-        for (let i = 0; i < entries.length; ++i) {
-            const entry = entries[i];
-            if (entry.isFile() ||
-                (entry.isSymbolicLink() && !resolveSymlinks && !excludeSymlinks)) {
-                const filename = this.joinPath(entry.name, directoryPath);
-                this.pushFile(filename, files, this.state.counts, filters);
-            }
-            else if (entry.isDirectory()) {
-                let path = joinPath.joinDirectoryPath(entry.name, directoryPath, this.state.options.pathSeparator);
-                if (exclude && exclude(entry.name, path))
-                    continue;
-                this.pushDirectory(path, paths, filters);
-                this.walkDirectory(this.state, path, path, depth - 1, this.walk);
-            }
-            else if (this.resolveSymlink && entry.isSymbolicLink()) {
-                let path = joinPath.joinPathWithBasePath(entry.name, directoryPath);
-                this.resolveSymlink(path, this.state, (stat, resolvedPath) => {
-                    if (stat.isDirectory()) {
-                        resolvedPath = (0, utils_1.normalizePath)(resolvedPath, this.state.options);
-                        if (exclude &&
-                            exclude(entry.name, useRealPaths ? resolvedPath : path + pathSeparator))
-                            return;
-                        this.walkDirectory(this.state, resolvedPath, useRealPaths ? resolvedPath : path + pathSeparator, depth - 1, this.walk);
-                    }
-                    else {
-                        resolvedPath = useRealPaths ? resolvedPath : path;
-                        const filename = (0, path_1.basename)(resolvedPath);
-                        const directoryPath = (0, utils_1.normalizePath)((0, path_1.dirname)(resolvedPath), this.state.options);
-                        resolvedPath = this.joinPath(filename, directoryPath);
-                        this.pushFile(resolvedPath, files, this.state.counts, filters);
-                    }
-                });
-            }
-        }
-        this.groupFiles(this.state.groups, directoryPath, files);
-    };
-}
-exports.Walker = Walker;
-
-
-/***/ }),
-
-/***/ 8248:
-/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.APIBuilder = void 0;
-const async_1 = __nccwpck_require__(4413);
-const sync_1 = __nccwpck_require__(398);
-class APIBuilder {
-    root;
-    options;
-    constructor(root, options) {
-        this.root = root;
-        this.options = options;
-    }
-    withPromise() {
-        return (0, async_1.promise)(this.root, this.options);
-    }
-    withCallback(cb) {
-        (0, async_1.callback)(this.root, this.options, cb);
-    }
-    sync() {
-        return (0, sync_1.sync)(this.root, this.options);
-    }
-}
-exports.APIBuilder = APIBuilder;
-
-
-/***/ }),
-
-/***/ 3362:
-/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.Builder = void 0;
-const path_1 = __nccwpck_require__(6928);
-const api_builder_1 = __nccwpck_require__(8248);
-var pm = null;
-/* c8 ignore next 6 */
-try {
-    __nccwpck_require__.ab + "index1.js"
-    pm = __nccwpck_require__(4006);
-}
-catch (_e) {
-    // do nothing
-}
-class Builder {
-    globCache = {};
-    options = {
-        maxDepth: Infinity,
-        suppressErrors: true,
-        pathSeparator: path_1.sep,
-        filters: [],
-    };
-    globFunction;
-    constructor(options) {
-        this.options = { ...this.options, ...options };
-        this.globFunction = this.options.globFunction;
-    }
-    group() {
-        this.options.group = true;
-        return this;
-    }
-    withPathSeparator(separator) {
-        this.options.pathSeparator = separator;
-        return this;
-    }
-    withBasePath() {
-        this.options.includeBasePath = true;
-        return this;
-    }
-    withRelativePaths() {
-        this.options.relativePaths = true;
-        return this;
-    }
-    withDirs() {
-        this.options.includeDirs = true;
-        return this;
-    }
-    withMaxDepth(depth) {
-        this.options.maxDepth = depth;
-        return this;
-    }
-    withMaxFiles(limit) {
-        this.options.maxFiles = limit;
-        return this;
-    }
-    withFullPaths() {
-        this.options.resolvePaths = true;
-        this.options.includeBasePath = true;
-        return this;
-    }
-    withErrors() {
-        this.options.suppressErrors = false;
-        return this;
-    }
-    withSymlinks({ resolvePaths = true } = {}) {
-        this.options.resolveSymlinks = true;
-        this.options.useRealPaths = resolvePaths;
-        return this.withFullPaths();
-    }
-    withAbortSignal(signal) {
-        this.options.signal = signal;
-        return this;
-    }
-    normalize() {
-        this.options.normalizePath = true;
-        return this;
-    }
-    filter(predicate) {
-        this.options.filters.push(predicate);
-        return this;
-    }
-    onlyDirs() {
-        this.options.excludeFiles = true;
-        this.options.includeDirs = true;
-        return this;
-    }
-    exclude(predicate) {
-        this.options.exclude = predicate;
-        return this;
-    }
-    onlyCounts() {
-        this.options.onlyCounts = true;
-        return this;
-    }
-    crawl(root) {
-        return new api_builder_1.APIBuilder(root || ".", this.options);
-    }
-    withGlobFunction(fn) {
-        // cast this since we don't have the new type params yet
-        this.globFunction = fn;
-        return this;
-    }
-    /**
-     * @deprecated Pass options using the constructor instead:
-     * ```ts
-     * new fdir(options).crawl("/path/to/root");
-     * ```
-     * This method will be removed in v7.0
-     */
-    /* c8 ignore next 4 */
-    crawlWithOptions(root, options) {
-        this.options = { ...this.options, ...options };
-        return new api_builder_1.APIBuilder(root || ".", this.options);
-    }
-    glob(...patterns) {
-        if (this.globFunction) {
-            return this.globWithOptions(patterns);
-        }
-        return this.globWithOptions(patterns, ...[{ dot: true }]);
-    }
-    globWithOptions(patterns, ...options) {
-        const globFn = (this.globFunction || pm);
-        /* c8 ignore next 5 */
-        if (!globFn) {
-            throw new Error("Please specify a glob function to use glob matching.");
-        }
-        var isMatch = this.globCache[patterns.join("\0")];
-        if (!isMatch) {
-            isMatch = globFn(patterns, ...options);
-            this.globCache[patterns.join("\0")] = isMatch;
-        }
-        this.options.filters.push((path) => isMatch(path));
-        return this;
-    }
-}
-exports.Builder = Builder;
-
-
-/***/ }),
-
-/***/ 6966:
-/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
-
-"use strict";
-
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __exportStar = (this && this.__exportStar) || function(m, exports) {
-    for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
-};
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.fdir = void 0;
-const builder_1 = __nccwpck_require__(3362);
-Object.defineProperty(exports, "fdir", ({ enumerable: true, get: function () { return builder_1.Builder; } }));
-__exportStar(__nccwpck_require__(1771), exports);
-
-
-/***/ }),
-
-/***/ 1771:
-/***/ ((__unused_webpack_module, exports) => {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-
-
-/***/ }),
-
-/***/ 6407:
-/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.cleanPath = cleanPath;
-exports.convertSlashes = convertSlashes;
-exports.isRootDirectory = isRootDirectory;
-exports.normalizePath = normalizePath;
-const path_1 = __nccwpck_require__(6928);
-function cleanPath(path) {
-    let normalized = (0, path_1.normalize)(path);
-    // we have to remove the last path separator
-    // to account for / root path
-    if (normalized.length > 1 && normalized[normalized.length - 1] === path_1.sep)
-        normalized = normalized.substring(0, normalized.length - 1);
-    return normalized;
-}
-const SLASHES_REGEX = /[\\/]/g;
-function convertSlashes(path, separator) {
-    return path.replace(SLASHES_REGEX, separator);
-}
-const WINDOWS_ROOT_DIR_REGEX = /^[a-z]:[\\/]$/i;
-function isRootDirectory(path) {
-    return path === "/" || WINDOWS_ROOT_DIR_REGEX.test(path);
-}
-function normalizePath(path, options) {
-    const { resolvePaths, normalizePath, pathSeparator } = options;
-    const pathNeedsCleaning = (process.platform === "win32" && path.includes("/")) ||
-        path.startsWith(".");
-    if (resolvePaths)
-        path = (0, path_1.resolve)(path);
-    if (normalizePath || pathNeedsCleaning)
-        path = cleanPath(path);
-    if (path === ".")
-        return "";
-    const needsSeperator = path[path.length - 1] !== pathSeparator;
-    return convertSlashes(needsSeperator ? path + pathSeparator : path, pathSeparator);
-}
-
-
-/***/ }),
-
-/***/ 8497:
-/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
-
-var balanced = __nccwpck_require__(6999);
-
-module.exports = expandTop;
-
-var escSlash = '\0SLASH'+Math.random()+'\0';
-var escOpen = '\0OPEN'+Math.random()+'\0';
-var escClose = '\0CLOSE'+Math.random()+'\0';
-var escComma = '\0COMMA'+Math.random()+'\0';
-var escPeriod = '\0PERIOD'+Math.random()+'\0';
-
-function numeric(str) {
-  return parseInt(str, 10) == str
-    ? parseInt(str, 10)
-    : str.charCodeAt(0);
-}
-
-function escapeBraces(str) {
-  return str.split('\\\\').join(escSlash)
-            .split('\\{').join(escOpen)
-            .split('\\}').join(escClose)
-            .split('\\,').join(escComma)
-            .split('\\.').join(escPeriod);
-}
-
-function unescapeBraces(str) {
-  return str.split(escSlash).join('\\')
-            .split(escOpen).join('{')
-            .split(escClose).join('}')
-            .split(escComma).join(',')
-            .split(escPeriod).join('.');
-}
-
-
-// Basically just str.split(","), but handling cases
-// where we have nested braced sections, which should be
-// treated as individual members, like {a,{b,c},d}
-function parseCommaParts(str) {
-  if (!str)
-    return [''];
-
-  var parts = [];
-  var m = balanced('{', '}', str);
-
-  if (!m)
-    return str.split(',');
-
-  var pre = m.pre;
-  var body = m.body;
-  var post = m.post;
-  var p = pre.split(',');
-
-  p[p.length-1] += '{' + body + '}';
-  var postParts = parseCommaParts(post);
-  if (post.length) {
-    p[p.length-1] += postParts.shift();
-    p.push.apply(p, postParts);
-  }
-
-  parts.push.apply(parts, p);
-
-  return parts;
-}
-
-function expandTop(str) {
-  if (!str)
-    return [];
-
-  // I don't know why Bash 4.3 does this, but it does.
-  // Anything starting with {} will have the first two bytes preserved
-  // but *only* at the top level, so {},a}b will not expand to anything,
-  // but a{},b}c will be expanded to [a}c,abc].
-  // One could argue that this is a bug in Bash, but since the goal of
-  // this module is to match Bash's rules, we escape a leading {}
-  if (str.substr(0, 2) === '{}') {
-    str = '\\{\\}' + str.substr(2);
-  }
-
-  return expand(escapeBraces(str), true).map(unescapeBraces);
-}
-
-function embrace(str) {
-  return '{' + str + '}';
-}
-function isPadded(el) {
-  return /^-?0\d/.test(el);
-}
-
-function lte(i, y) {
-  return i <= y;
-}
-function gte(i, y) {
-  return i >= y;
-}
-
-function expand(str, isTop) {
-  var expansions = [];
-
-  var m = balanced('{', '}', str);
-  if (!m) return [str];
-
-  // no need to expand pre, since it is guaranteed to be free of brace-sets
-  var pre = m.pre;
-  var post = m.post.length
-    ? expand(m.post, false)
-    : [''];
-
-  if (/\$$/.test(m.pre)) {    
-    for (var k = 0; k < post.length; k++) {
-      var expansion = pre+ '{' + m.body + '}' + post[k];
-      expansions.push(expansion);
-    }
-  } else {
-    var isNumericSequence = /^-?\d+\.\.-?\d+(?:\.\.-?\d+)?$/.test(m.body);
-    var isAlphaSequence = /^[a-zA-Z]\.\.[a-zA-Z](?:\.\.-?\d+)?$/.test(m.body);
-    var isSequence = isNumericSequence || isAlphaSequence;
-    var isOptions = m.body.indexOf(',') >= 0;
-    if (!isSequence && !isOptions) {
-      // {a},b}
-      if (m.post.match(/,(?!,).*\}/)) {
-        str = m.pre + '{' + m.body + escClose + m.post;
-        return expand(str);
-      }
-      return [str];
-    }
-
-    var n;
-    if (isSequence) {
-      n = m.body.split(/\.\./);
-    } else {
-      n = parseCommaParts(m.body);
-      if (n.length === 1) {
-        // x{{a,b}}y ==> x{a}y x{b}y
-        n = expand(n[0], false).map(embrace);
-        if (n.length === 1) {
-          return post.map(function(p) {
-            return m.pre + n[0] + p;
-          });
-        }
-      }
-    }
-
-    // at this point, n is the parts, and we know it's not a comma set
-    // with a single entry.
-    var N;
-
-    if (isSequence) {
-      var x = numeric(n[0]);
-      var y = numeric(n[1]);
-      var width = Math.max(n[0].length, n[1].length)
-      var incr = n.length == 3
-        ? Math.abs(numeric(n[2]))
-        : 1;
-      var test = lte;
-      var reverse = y < x;
-      if (reverse) {
-        incr *= -1;
-        test = gte;
-      }
-      var pad = n.some(isPadded);
-
-      N = [];
-
-      for (var i = x; test(i, y); i += incr) {
-        var c;
-        if (isAlphaSequence) {
-          c = String.fromCharCode(i);
-          if (c === '\\')
-            c = '';
-        } else {
-          c = String(i);
-          if (pad) {
-            var need = width - c.length;
-            if (need > 0) {
-              var z = new Array(need + 1).join('0');
-              if (i < 0)
-                c = '-' + z + c.slice(1);
-              else
-                c = z + c;
-            }
-          }
-        }
-        N.push(c);
-      }
-    } else {
-      N = [];
-
-      for (var j = 0; j < n.length; j++) {
-        N.push.apply(N, expand(n[j], false));
-      }
-    }
-
-    for (var j = 0; j < N.length; j++) {
-      for (var k = 0; k < post.length; k++) {
-        var expansion = pre + N[j] + post[k];
-        if (!isTop || isSequence || expansion)
-          expansions.push(expansion);
-      }
-    }
-  }
-
-  return expansions;
-}
-
-
-
-/***/ }),
-
 /***/ 298:
 /***/ ((module) => {
 
@@ -17695,6 +16554,7 @@ module.exports = {
 
   // Replace globs with equivalent patterns to reduce parsing time.
   REPLACEMENTS: {
+    __proto__: null,
     '***': '*',
     '**/**': '**',
     '**/**/**': '**'
@@ -51943,29 +50803,50 @@ module.exports = parseParams
 "use strict";
 
 
-const { normalizeIPv6, normalizeIPv4, removeDotSegments, recomposeAuthority, normalizeComponentEncoding } = __nccwpck_require__(5077)
-const SCHEMES = __nccwpck_require__(5300)
+const { normalizeIPv6, removeDotSegments, recomposeAuthority, normalizeComponentEncoding, isIPv4, nonSimpleDomain } = __nccwpck_require__(5077)
+const { SCHEMES, getSchemeHandler } = __nccwpck_require__(5300)
 
+/**
+ * @template {import('./types/index').URIComponent|string} T
+ * @param {T} uri
+ * @param {import('./types/index').Options} [options]
+ * @returns {T}
+ */
 function normalize (uri, options) {
   if (typeof uri === 'string') {
-    uri = serialize(parse(uri, options), options)
+    uri = /** @type {T} */ (serialize(parse(uri, options), options))
   } else if (typeof uri === 'object') {
-    uri = parse(serialize(uri, options), options)
+    uri = /** @type {T} */ (parse(serialize(uri, options), options))
   }
   return uri
 }
 
+/**
+ * @param {string} baseURI
+ * @param {string} relativeURI
+ * @param {import('./types/index').Options} [options]
+ * @returns {string}
+ */
 function resolve (baseURI, relativeURI, options) {
-  const schemelessOptions = Object.assign({ scheme: 'null' }, options)
-  const resolved = resolveComponents(parse(baseURI, schemelessOptions), parse(relativeURI, schemelessOptions), schemelessOptions, true)
-  return serialize(resolved, { ...schemelessOptions, skipEscape: true })
+  const schemelessOptions = options ? Object.assign({ scheme: 'null' }, options) : { scheme: 'null' }
+  const resolved = resolveComponent(parse(baseURI, schemelessOptions), parse(relativeURI, schemelessOptions), schemelessOptions, true)
+  schemelessOptions.skipEscape = true
+  return serialize(resolved, schemelessOptions)
 }
 
-function resolveComponents (base, relative, options, skipNormalization) {
+/**
+ * @param {import ('./types/index').URIComponent} base
+ * @param {import ('./types/index').URIComponent} relative
+ * @param {import('./types/index').Options} [options]
+ * @param {boolean} [skipNormalization=false]
+ * @returns {import ('./types/index').URIComponent}
+ */
+function resolveComponent (base, relative, options, skipNormalization) {
+  /** @type {import('./types/index').URIComponent} */
   const target = {}
   if (!skipNormalization) {
-    base = parse(serialize(base, options), options) // normalize base components
-    relative = parse(serialize(relative, options), options) // normalize relative components
+    base = parse(serialize(base, options), options) // normalize base component
+    relative = parse(serialize(relative, options), options) // normalize relative component
   }
   options = options || {}
 
@@ -51994,7 +50875,7 @@ function resolveComponents (base, relative, options, skipNormalization) {
           target.query = base.query
         }
       } else {
-        if (relative.path.charAt(0) === '/') {
+        if (relative.path[0] === '/') {
           target.path = removeDotSegments(relative.path)
         } else {
           if ((base.userinfo !== undefined || base.host !== undefined || base.port !== undefined) && !base.path) {
@@ -52021,6 +50902,12 @@ function resolveComponents (base, relative, options, skipNormalization) {
   return target
 }
 
+/**
+ * @param {import ('./types/index').URIComponent|string} uriA
+ * @param {import ('./types/index').URIComponent|string} uriB
+ * @param {import ('./types/index').Options} options
+ * @returns {boolean}
+ */
 function equal (uriA, uriB, options) {
   if (typeof uriA === 'string') {
     uriA = unescape(uriA)
@@ -52039,8 +50926,13 @@ function equal (uriA, uriB, options) {
   return uriA.toLowerCase() === uriB.toLowerCase()
 }
 
+/**
+ * @param {Readonly<import('./types/index').URIComponent>} cmpts
+ * @param {import('./types/index').Options} [opts]
+ * @returns {string}
+ */
 function serialize (cmpts, opts) {
-  const components = {
+  const component = {
     host: cmpts.host,
     scheme: cmpts.scheme,
     userinfo: cmpts.userinfo,
@@ -52060,28 +50952,28 @@ function serialize (cmpts, opts) {
   const uriTokens = []
 
   // find scheme handler
-  const schemeHandler = SCHEMES[(options.scheme || components.scheme || '').toLowerCase()]
+  const schemeHandler = getSchemeHandler(options.scheme || component.scheme)
 
   // perform scheme specific serialization
-  if (schemeHandler && schemeHandler.serialize) schemeHandler.serialize(components, options)
+  if (schemeHandler && schemeHandler.serialize) schemeHandler.serialize(component, options)
 
-  if (components.path !== undefined) {
+  if (component.path !== undefined) {
     if (!options.skipEscape) {
-      components.path = escape(components.path)
+      component.path = escape(component.path)
 
-      if (components.scheme !== undefined) {
-        components.path = components.path.split('%3A').join(':')
+      if (component.scheme !== undefined) {
+        component.path = component.path.split('%3A').join(':')
       }
     } else {
-      components.path = unescape(components.path)
+      component.path = unescape(component.path)
     }
   }
 
-  if (options.reference !== 'suffix' && components.scheme) {
-    uriTokens.push(components.scheme, ':')
+  if (options.reference !== 'suffix' && component.scheme) {
+    uriTokens.push(component.scheme, ':')
   }
 
-  const authority = recomposeAuthority(components)
+  const authority = recomposeAuthority(component)
   if (authority !== undefined) {
     if (options.reference !== 'suffix') {
       uriTokens.push('//')
@@ -52089,51 +50981,49 @@ function serialize (cmpts, opts) {
 
     uriTokens.push(authority)
 
-    if (components.path && components.path.charAt(0) !== '/') {
+    if (component.path && component.path[0] !== '/') {
       uriTokens.push('/')
     }
   }
-  if (components.path !== undefined) {
-    let s = components.path
+  if (component.path !== undefined) {
+    let s = component.path
 
     if (!options.absolutePath && (!schemeHandler || !schemeHandler.absolutePath)) {
       s = removeDotSegments(s)
     }
 
-    if (authority === undefined) {
-      s = s.replace(/^\/\//u, '/%2F') // don't allow the path to start with "//"
+    if (
+      authority === undefined &&
+      s[0] === '/' &&
+      s[1] === '/'
+    ) {
+      // don't allow the path to start with "//"
+      s = '/%2F' + s.slice(2)
     }
 
     uriTokens.push(s)
   }
 
-  if (components.query !== undefined) {
-    uriTokens.push('?', components.query)
+  if (component.query !== undefined) {
+    uriTokens.push('?', component.query)
   }
 
-  if (components.fragment !== undefined) {
-    uriTokens.push('#', components.fragment)
+  if (component.fragment !== undefined) {
+    uriTokens.push('#', component.fragment)
   }
   return uriTokens.join('')
 }
 
-const hexLookUp = Array.from({ length: 127 }, (_v, k) => /[^!"$&'()*+,\-.;=_`a-z{}~]/u.test(String.fromCharCode(k)))
-
-function nonSimpleDomain (value) {
-  let code = 0
-  for (let i = 0, len = value.length; i < len; ++i) {
-    code = value.charCodeAt(i)
-    if (code > 126 || hexLookUp[code]) {
-      return true
-    }
-  }
-  return false
-}
-
 const URI_PARSE = /^(?:([^#/:?]+):)?(?:\/\/((?:([^#/?@]*)@)?(\[[^#/?\]]+\]|[^#/:?]*)(?::(\d*))?))?([^#?]*)(?:\?([^#]*))?(?:#((?:.|[\n\r])*))?/u
 
+/**
+ * @param {string} uri
+ * @param {import('./types/index').Options} [opts]
+ * @returns
+ */
 function parse (uri, opts) {
   const options = Object.assign({}, opts)
+  /** @type {import('./types/index').URIComponent} */
   const parsed = {
     scheme: undefined,
     userinfo: undefined,
@@ -52143,9 +51033,15 @@ function parse (uri, opts) {
     query: undefined,
     fragment: undefined
   }
-  const gotEncoding = uri.indexOf('%') !== -1
+
   let isIP = false
-  if (options.reference === 'suffix') uri = (options.scheme ? options.scheme + ':' : '') + '//' + uri
+  if (options.reference === 'suffix') {
+    if (options.scheme) {
+      uri = options.scheme + ':' + uri
+    } else {
+      uri = '//' + uri
+    }
+  }
 
   const matches = uri.match(URI_PARSE)
 
@@ -52164,13 +51060,12 @@ function parse (uri, opts) {
       parsed.port = matches[5]
     }
     if (parsed.host) {
-      const ipv4result = normalizeIPv4(parsed.host)
-      if (ipv4result.isIPV4 === false) {
-        const ipv6result = normalizeIPv6(ipv4result.host)
+      const ipv4result = isIPv4(parsed.host)
+      if (ipv4result === false) {
+        const ipv6result = normalizeIPv6(parsed.host)
         parsed.host = ipv6result.host.toLowerCase()
         isIP = ipv6result.isIPV6
       } else {
-        parsed.host = ipv4result.host
         isIP = true
       }
     }
@@ -52190,7 +51085,7 @@ function parse (uri, opts) {
     }
 
     // find scheme handler
-    const schemeHandler = SCHEMES[(options.scheme || parsed.scheme || '').toLowerCase()]
+    const schemeHandler = getSchemeHandler(options.scheme || parsed.scheme)
 
     // check if scheme can't handle IRIs
     if (!options.unicodeSupport && (!schemeHandler || !schemeHandler.unicodeSupport)) {
@@ -52207,11 +51102,13 @@ function parse (uri, opts) {
     }
 
     if (!schemeHandler || (schemeHandler && !schemeHandler.skipNormalize)) {
-      if (gotEncoding && parsed.scheme !== undefined) {
-        parsed.scheme = unescape(parsed.scheme)
-      }
-      if (gotEncoding && parsed.host !== undefined) {
-        parsed.host = unescape(parsed.host)
+      if (uri.indexOf('%') !== -1) {
+        if (parsed.scheme !== undefined) {
+          parsed.scheme = unescape(parsed.scheme)
+        }
+        if (parsed.host !== undefined) {
+          parsed.host = unescape(parsed.host)
+        }
       }
       if (parsed.path) {
         parsed.path = escape(unescape(parsed.path))
@@ -52235,7 +51132,7 @@ const fastUri = {
   SCHEMES,
   normalize,
   resolve,
-  resolveComponents,
+  resolveComponent,
   equal,
   serialize,
   parse
@@ -52249,301 +51146,380 @@ module.exports.fastUri = fastUri
 /***/ }),
 
 /***/ 5300:
-/***/ ((module) => {
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 "use strict";
 
 
-const UUID_REG = /^[\da-f]{8}-[\da-f]{4}-[\da-f]{4}-[\da-f]{4}-[\da-f]{12}$/iu
+const { isUUID } = __nccwpck_require__(5077)
 const URN_REG = /([\da-z][\d\-a-z]{0,31}):((?:[\w!$'()*+,\-.:;=@]|%[\da-f]{2})+)/iu
 
-function isSecure (wsComponents) {
-  return typeof wsComponents.secure === 'boolean' ? wsComponents.secure : String(wsComponents.scheme).toLowerCase() === 'wss'
+const supportedSchemeNames = /** @type {const} */ (['http', 'https', 'ws',
+  'wss', 'urn', 'urn:uuid'])
+
+/** @typedef {supportedSchemeNames[number]} SchemeName */
+
+/**
+ * @param {string} name
+ * @returns {name is SchemeName}
+ */
+function isValidSchemeName (name) {
+  return supportedSchemeNames.indexOf(/** @type {*} */ (name)) !== -1
 }
 
-function httpParse (components) {
-  if (!components.host) {
-    components.error = components.error || 'HTTP URIs must have a host.'
+/**
+ * @callback SchemeFn
+ * @param {import('../types/index').URIComponent} component
+ * @param {import('../types/index').Options} options
+ * @returns {import('../types/index').URIComponent}
+ */
+
+/**
+ * @typedef {Object} SchemeHandler
+ * @property {SchemeName} scheme - The scheme name.
+ * @property {boolean} [domainHost] - Indicates if the scheme supports domain hosts.
+ * @property {SchemeFn} parse - Function to parse the URI component for this scheme.
+ * @property {SchemeFn} serialize - Function to serialize the URI component for this scheme.
+ * @property {boolean} [skipNormalize] - Indicates if normalization should be skipped for this scheme.
+ * @property {boolean} [absolutePath] - Indicates if the scheme uses absolute paths.
+ * @property {boolean} [unicodeSupport] - Indicates if the scheme supports Unicode.
+ */
+
+/**
+ * @param {import('../types/index').URIComponent} wsComponent
+ * @returns {boolean}
+ */
+function wsIsSecure (wsComponent) {
+  if (wsComponent.secure === true) {
+    return true
+  } else if (wsComponent.secure === false) {
+    return false
+  } else if (wsComponent.scheme) {
+    return (
+      wsComponent.scheme.length === 3 &&
+      (wsComponent.scheme[0] === 'w' || wsComponent.scheme[0] === 'W') &&
+      (wsComponent.scheme[1] === 's' || wsComponent.scheme[1] === 'S') &&
+      (wsComponent.scheme[2] === 's' || wsComponent.scheme[2] === 'S')
+    )
+  } else {
+    return false
+  }
+}
+
+/** @type {SchemeFn} */
+function httpParse (component) {
+  if (!component.host) {
+    component.error = component.error || 'HTTP URIs must have a host.'
   }
 
-  return components
+  return component
 }
 
-function httpSerialize (components) {
-  const secure = String(components.scheme).toLowerCase() === 'https'
+/** @type {SchemeFn} */
+function httpSerialize (component) {
+  const secure = String(component.scheme).toLowerCase() === 'https'
 
   // normalize the default port
-  if (components.port === (secure ? 443 : 80) || components.port === '') {
-    components.port = undefined
+  if (component.port === (secure ? 443 : 80) || component.port === '') {
+    component.port = undefined
   }
 
   // normalize the empty path
-  if (!components.path) {
-    components.path = '/'
+  if (!component.path) {
+    component.path = '/'
   }
 
   // NOTE: We do not parse query strings for HTTP URIs
   // as WWW Form Url Encoded query strings are part of the HTML4+ spec,
   // and not the HTTP spec.
 
-  return components
+  return component
 }
 
-function wsParse (wsComponents) {
+/** @type {SchemeFn} */
+function wsParse (wsComponent) {
 // indicate if the secure flag is set
-  wsComponents.secure = isSecure(wsComponents)
+  wsComponent.secure = wsIsSecure(wsComponent)
 
   // construct resouce name
-  wsComponents.resourceName = (wsComponents.path || '/') + (wsComponents.query ? '?' + wsComponents.query : '')
-  wsComponents.path = undefined
-  wsComponents.query = undefined
+  wsComponent.resourceName = (wsComponent.path || '/') + (wsComponent.query ? '?' + wsComponent.query : '')
+  wsComponent.path = undefined
+  wsComponent.query = undefined
 
-  return wsComponents
+  return wsComponent
 }
 
-function wsSerialize (wsComponents) {
+/** @type {SchemeFn} */
+function wsSerialize (wsComponent) {
 // normalize the default port
-  if (wsComponents.port === (isSecure(wsComponents) ? 443 : 80) || wsComponents.port === '') {
-    wsComponents.port = undefined
+  if (wsComponent.port === (wsIsSecure(wsComponent) ? 443 : 80) || wsComponent.port === '') {
+    wsComponent.port = undefined
   }
 
   // ensure scheme matches secure flag
-  if (typeof wsComponents.secure === 'boolean') {
-    wsComponents.scheme = (wsComponents.secure ? 'wss' : 'ws')
-    wsComponents.secure = undefined
+  if (typeof wsComponent.secure === 'boolean') {
+    wsComponent.scheme = (wsComponent.secure ? 'wss' : 'ws')
+    wsComponent.secure = undefined
   }
 
   // reconstruct path from resource name
-  if (wsComponents.resourceName) {
-    const [path, query] = wsComponents.resourceName.split('?')
-    wsComponents.path = (path && path !== '/' ? path : undefined)
-    wsComponents.query = query
-    wsComponents.resourceName = undefined
+  if (wsComponent.resourceName) {
+    const [path, query] = wsComponent.resourceName.split('?')
+    wsComponent.path = (path && path !== '/' ? path : undefined)
+    wsComponent.query = query
+    wsComponent.resourceName = undefined
   }
 
   // forbid fragment component
-  wsComponents.fragment = undefined
+  wsComponent.fragment = undefined
 
-  return wsComponents
+  return wsComponent
 }
 
-function urnParse (urnComponents, options) {
-  if (!urnComponents.path) {
-    urnComponents.error = 'URN can not be parsed'
-    return urnComponents
+/** @type {SchemeFn} */
+function urnParse (urnComponent, options) {
+  if (!urnComponent.path) {
+    urnComponent.error = 'URN can not be parsed'
+    return urnComponent
   }
-  const matches = urnComponents.path.match(URN_REG)
+  const matches = urnComponent.path.match(URN_REG)
   if (matches) {
-    const scheme = options.scheme || urnComponents.scheme || 'urn'
-    urnComponents.nid = matches[1].toLowerCase()
-    urnComponents.nss = matches[2]
-    const urnScheme = `${scheme}:${options.nid || urnComponents.nid}`
-    const schemeHandler = SCHEMES[urnScheme]
-    urnComponents.path = undefined
+    const scheme = options.scheme || urnComponent.scheme || 'urn'
+    urnComponent.nid = matches[1].toLowerCase()
+    urnComponent.nss = matches[2]
+    const urnScheme = `${scheme}:${options.nid || urnComponent.nid}`
+    const schemeHandler = getSchemeHandler(urnScheme)
+    urnComponent.path = undefined
 
     if (schemeHandler) {
-      urnComponents = schemeHandler.parse(urnComponents, options)
+      urnComponent = schemeHandler.parse(urnComponent, options)
     }
   } else {
-    urnComponents.error = urnComponents.error || 'URN can not be parsed.'
+    urnComponent.error = urnComponent.error || 'URN can not be parsed.'
   }
 
-  return urnComponents
+  return urnComponent
 }
 
-function urnSerialize (urnComponents, options) {
-  const scheme = options.scheme || urnComponents.scheme || 'urn'
-  const nid = urnComponents.nid.toLowerCase()
+/** @type {SchemeFn} */
+function urnSerialize (urnComponent, options) {
+  if (urnComponent.nid === undefined) {
+    throw new Error('URN without nid cannot be serialized')
+  }
+  const scheme = options.scheme || urnComponent.scheme || 'urn'
+  const nid = urnComponent.nid.toLowerCase()
   const urnScheme = `${scheme}:${options.nid || nid}`
-  const schemeHandler = SCHEMES[urnScheme]
+  const schemeHandler = getSchemeHandler(urnScheme)
 
   if (schemeHandler) {
-    urnComponents = schemeHandler.serialize(urnComponents, options)
+    urnComponent = schemeHandler.serialize(urnComponent, options)
   }
 
-  const uriComponents = urnComponents
-  const nss = urnComponents.nss
-  uriComponents.path = `${nid || options.nid}:${nss}`
+  const uriComponent = urnComponent
+  const nss = urnComponent.nss
+  uriComponent.path = `${nid || options.nid}:${nss}`
 
   options.skipEscape = true
-  return uriComponents
+  return uriComponent
 }
 
-function urnuuidParse (urnComponents, options) {
-  const uuidComponents = urnComponents
-  uuidComponents.uuid = uuidComponents.nss
-  uuidComponents.nss = undefined
+/** @type {SchemeFn} */
+function urnuuidParse (urnComponent, options) {
+  const uuidComponent = urnComponent
+  uuidComponent.uuid = uuidComponent.nss
+  uuidComponent.nss = undefined
 
-  if (!options.tolerant && (!uuidComponents.uuid || !UUID_REG.test(uuidComponents.uuid))) {
-    uuidComponents.error = uuidComponents.error || 'UUID is not valid.'
+  if (!options.tolerant && (!uuidComponent.uuid || !isUUID(uuidComponent.uuid))) {
+    uuidComponent.error = uuidComponent.error || 'UUID is not valid.'
   }
 
-  return uuidComponents
+  return uuidComponent
 }
 
-function urnuuidSerialize (uuidComponents) {
-  const urnComponents = uuidComponents
+/** @type {SchemeFn} */
+function urnuuidSerialize (uuidComponent) {
+  const urnComponent = uuidComponent
   // normalize UUID
-  urnComponents.nss = (uuidComponents.uuid || '').toLowerCase()
-  return urnComponents
+  urnComponent.nss = (uuidComponent.uuid || '').toLowerCase()
+  return urnComponent
 }
 
-const http = {
+const http = /** @type {SchemeHandler} */ ({
   scheme: 'http',
   domainHost: true,
   parse: httpParse,
   serialize: httpSerialize
-}
+})
 
-const https = {
+const https = /** @type {SchemeHandler} */ ({
   scheme: 'https',
   domainHost: http.domainHost,
   parse: httpParse,
   serialize: httpSerialize
-}
+})
 
-const ws = {
+const ws = /** @type {SchemeHandler} */ ({
   scheme: 'ws',
   domainHost: true,
   parse: wsParse,
   serialize: wsSerialize
-}
+})
 
-const wss = {
+const wss = /** @type {SchemeHandler} */ ({
   scheme: 'wss',
   domainHost: ws.domainHost,
   parse: ws.parse,
   serialize: ws.serialize
-}
+})
 
-const urn = {
+const urn = /** @type {SchemeHandler} */ ({
   scheme: 'urn',
   parse: urnParse,
   serialize: urnSerialize,
   skipNormalize: true
-}
+})
 
-const urnuuid = {
+const urnuuid = /** @type {SchemeHandler} */ ({
   scheme: 'urn:uuid',
   parse: urnuuidParse,
   serialize: urnuuidSerialize,
   skipNormalize: true
-}
+})
 
-const SCHEMES = {
+const SCHEMES = /** @type {Record<SchemeName, SchemeHandler>} */ ({
   http,
   https,
   ws,
   wss,
   urn,
   'urn:uuid': urnuuid
-}
+})
 
-module.exports = SCHEMES
+Object.setPrototypeOf(SCHEMES, null)
 
-
-/***/ }),
-
-/***/ 1553:
-/***/ ((module) => {
-
-"use strict";
-
-
-const HEX = {
-  0: 0,
-  1: 1,
-  2: 2,
-  3: 3,
-  4: 4,
-  5: 5,
-  6: 6,
-  7: 7,
-  8: 8,
-  9: 9,
-  a: 10,
-  A: 10,
-  b: 11,
-  B: 11,
-  c: 12,
-  C: 12,
-  d: 13,
-  D: 13,
-  e: 14,
-  E: 14,
-  f: 15,
-  F: 15
+/**
+ * @param {string|undefined} scheme
+ * @returns {SchemeHandler|undefined}
+ */
+function getSchemeHandler (scheme) {
+  return (
+    scheme && (
+      SCHEMES[/** @type {SchemeName} */ (scheme)] ||
+      SCHEMES[/** @type {SchemeName} */(scheme.toLowerCase())])
+  ) ||
+    undefined
 }
 
 module.exports = {
-  HEX
+  wsIsSecure,
+  SCHEMES,
+  isValidSchemeName,
+  getSchemeHandler,
 }
 
 
 /***/ }),
 
 /***/ 5077:
-/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+/***/ ((module) => {
 
 "use strict";
 
 
-const { HEX } = __nccwpck_require__(1553)
+/** @type {(value: string) => boolean} */
+const isUUID = RegExp.prototype.test.bind(/^[\da-f]{8}-[\da-f]{4}-[\da-f]{4}-[\da-f]{4}-[\da-f]{12}$/iu)
 
-const IPV4_REG = /^(?:(?:25[0-5]|2[0-4]\d|1\d{2}|[1-9]\d|\d)\.){3}(?:25[0-5]|2[0-4]\d|1\d{2}|[1-9]\d|\d)$/u
-
-function normalizeIPv4 (host) {
-  if (findToken(host, '.') < 3) { return { host, isIPV4: false } }
-  const matches = host.match(IPV4_REG) || []
-  const [address] = matches
-  if (address) {
-    return { host: stripLeadingZeros(address, '.'), isIPV4: true }
-  } else {
-    return { host, isIPV4: false }
-  }
-}
+/** @type {(value: string) => boolean} */
+const isIPv4 = RegExp.prototype.test.bind(/^(?:(?:25[0-5]|2[0-4]\d|1\d{2}|[1-9]\d|\d)\.){3}(?:25[0-5]|2[0-4]\d|1\d{2}|[1-9]\d|\d)$/u)
 
 /**
- * @param {string[]} input
- * @param {boolean} [keepZero=false]
- * @returns {string|undefined}
+ * @param {Array<string>} input
+ * @returns {string}
  */
-function stringArrayToHexStripped (input, keepZero = false) {
+function stringArrayToHexStripped (input) {
   let acc = ''
-  let strip = true
-  for (const c of input) {
-    if (HEX[c] === undefined) return undefined
-    if (c !== '0' && strip === true) strip = false
-    if (!strip) acc += c
+  let code = 0
+  let i = 0
+
+  for (i = 0; i < input.length; i++) {
+    code = input[i].charCodeAt(0)
+    if (code === 48) {
+      continue
+    }
+    if (!((code >= 48 && code <= 57) || (code >= 65 && code <= 70) || (code >= 97 && code <= 102))) {
+      return ''
+    }
+    acc += input[i]
+    break
   }
-  if (keepZero && acc.length === 0) acc = '0'
+
+  for (i += 1; i < input.length; i++) {
+    code = input[i].charCodeAt(0)
+    if (!((code >= 48 && code <= 57) || (code >= 65 && code <= 70) || (code >= 97 && code <= 102))) {
+      return ''
+    }
+    acc += input[i]
+  }
   return acc
 }
 
+/**
+ * @typedef {Object} GetIPV6Result
+ * @property {boolean} error - Indicates if there was an error parsing the IPv6 address.
+ * @property {string} address - The parsed IPv6 address.
+ * @property {string} [zone] - The zone identifier, if present.
+ */
+
+/**
+ * @param {string} value
+ * @returns {boolean}
+ */
+const nonSimpleDomain = RegExp.prototype.test.bind(/[^!"$&'()*+,\-.;=_`a-z{}~]/u)
+
+/**
+ * @param {Array<string>} buffer
+ * @returns {boolean}
+ */
+function consumeIsZone (buffer) {
+  buffer.length = 0
+  return true
+}
+
+/**
+ * @param {Array<string>} buffer
+ * @param {Array<string>} address
+ * @param {GetIPV6Result} output
+ * @returns {boolean}
+ */
+function consumeHextets (buffer, address, output) {
+  if (buffer.length) {
+    const hex = stringArrayToHexStripped(buffer)
+    if (hex !== '') {
+      address.push(hex)
+    } else {
+      output.error = true
+      return false
+    }
+    buffer.length = 0
+  }
+  return true
+}
+
+/**
+ * @param {string} input
+ * @returns {GetIPV6Result}
+ */
 function getIPV6 (input) {
   let tokenCount = 0
   const output = { error: false, address: '', zone: '' }
+  /** @type {Array<string>} */
   const address = []
+  /** @type {Array<string>} */
   const buffer = []
-  let isZone = false
   let endipv6Encountered = false
   let endIpv6 = false
 
-  function consume () {
-    if (buffer.length) {
-      if (isZone === false) {
-        const hex = stringArrayToHexStripped(buffer)
-        if (hex !== undefined) {
-          address.push(hex)
-        } else {
-          output.error = true
-          return false
-        }
-      }
-      buffer.length = 0
-    }
-    return true
-  }
+  let consume = consumeHextets
 
   for (let i = 0; i < input.length; i++) {
     const cursor = input[i]
@@ -52552,29 +51528,28 @@ function getIPV6 (input) {
       if (endipv6Encountered === true) {
         endIpv6 = true
       }
-      if (!consume()) { break }
-      tokenCount++
-      address.push(':')
-      if (tokenCount > 7) {
+      if (!consume(buffer, address, output)) { break }
+      if (++tokenCount > 7) {
         // not valid
         output.error = true
         break
       }
-      if (i - 1 >= 0 && input[i - 1] === ':') {
+      if (i > 0 && input[i - 1] === ':') {
         endipv6Encountered = true
       }
+      address.push(':')
       continue
     } else if (cursor === '%') {
-      if (!consume()) { break }
+      if (!consume(buffer, address, output)) { break }
       // switch to zone detection
-      isZone = true
+      consume = consumeIsZone
     } else {
       buffer.push(cursor)
       continue
     }
   }
   if (buffer.length) {
-    if (isZone) {
+    if (consume === consumeIsZone) {
       output.zone = buffer.join('')
     } else if (endIpv6) {
       address.push(buffer.join(''))
@@ -52586,6 +51561,17 @@ function getIPV6 (input) {
   return output
 }
 
+/**
+ * @typedef {Object} NormalizeIPv6Result
+ * @property {string} host - The normalized host.
+ * @property {string} [escapedHost] - The escaped host.
+ * @property {boolean} isIPV6 - Indicates if the host is an IPv6 address.
+ */
+
+/**
+ * @param {string} host
+ * @returns {NormalizeIPv6Result}
+ */
 function normalizeIPv6 (host) {
   if (findToken(host, ':') < 2) { return { host, isIPV6: false } }
   const ipv6 = getIPV6(host)
@@ -52597,35 +51583,17 @@ function normalizeIPv6 (host) {
       newHost += '%' + ipv6.zone
       escapedHost += '%25' + ipv6.zone
     }
-    return { host: newHost, escapedHost, isIPV6: true }
+    return { host: newHost, isIPV6: true, escapedHost }
   } else {
     return { host, isIPV6: false }
   }
 }
 
-function stripLeadingZeros (str, token) {
-  let out = ''
-  let skip = true
-  const l = str.length
-  for (let i = 0; i < l; i++) {
-    const c = str[i]
-    if (c === '0' && skip) {
-      if ((i + 1 <= l && str[i + 1] === token) || i + 1 === l) {
-        out += c
-        skip = false
-      }
-    } else {
-      if (c === token) {
-        skip = true
-      } else {
-        skip = false
-      }
-      out += c
-    }
-  }
-  return out
-}
-
+/**
+ * @param {string} str
+ * @param {string} token
+ * @returns {number}
+ */
 function findToken (str, token) {
   let ind = 0
   for (let i = 0; i < str.length; i++) {
@@ -52634,99 +51602,161 @@ function findToken (str, token) {
   return ind
 }
 
-const RDS1 = /^\.\.?\//u
-const RDS2 = /^\/\.(?:\/|$)/u
-const RDS3 = /^\/\.\.(?:\/|$)/u
-const RDS5 = /^\/?(?:.|\n)*?(?=\/|$)/u
-
-function removeDotSegments (input) {
+/**
+ * @param {string} path
+ * @returns {string}
+ *
+ * @see https://datatracker.ietf.org/doc/html/rfc3986#section-5.2.4
+ */
+function removeDotSegments (path) {
+  let input = path
   const output = []
+  let nextSlash = -1
+  let len = 0
 
-  while (input.length) {
-    if (input.match(RDS1)) {
-      input = input.replace(RDS1, '')
-    } else if (input.match(RDS2)) {
-      input = input.replace(RDS2, '/')
-    } else if (input.match(RDS3)) {
-      input = input.replace(RDS3, '/')
-      output.pop()
-    } else if (input === '.' || input === '..') {
-      input = ''
-    } else {
-      const im = input.match(RDS5)
-      if (im) {
-        const s = im[0]
-        input = input.slice(s.length)
-        output.push(s)
+  // eslint-disable-next-line no-cond-assign
+  while (len = input.length) {
+    if (len === 1) {
+      if (input === '.') {
+        break
+      } else if (input === '/') {
+        output.push('/')
+        break
       } else {
-        throw new Error('Unexpected dot segment condition')
+        output.push(input)
+        break
+      }
+    } else if (len === 2) {
+      if (input[0] === '.') {
+        if (input[1] === '.') {
+          break
+        } else if (input[1] === '/') {
+          input = input.slice(2)
+          continue
+        }
+      } else if (input[0] === '/') {
+        if (input[1] === '.' || input[1] === '/') {
+          output.push('/')
+          break
+        }
+      }
+    } else if (len === 3) {
+      if (input === '/..') {
+        if (output.length !== 0) {
+          output.pop()
+        }
+        output.push('/')
+        break
       }
     }
+    if (input[0] === '.') {
+      if (input[1] === '.') {
+        if (input[2] === '/') {
+          input = input.slice(3)
+          continue
+        }
+      } else if (input[1] === '/') {
+        input = input.slice(2)
+        continue
+      }
+    } else if (input[0] === '/') {
+      if (input[1] === '.') {
+        if (input[2] === '/') {
+          input = input.slice(2)
+          continue
+        } else if (input[2] === '.') {
+          if (input[3] === '/') {
+            input = input.slice(3)
+            if (output.length !== 0) {
+              output.pop()
+            }
+            continue
+          }
+        }
+      }
+    }
+
+    // Rule 2E: Move normal path segment to output
+    if ((nextSlash = input.indexOf('/', 1)) === -1) {
+      output.push(input)
+      break
+    } else {
+      output.push(input.slice(0, nextSlash))
+      input = input.slice(nextSlash)
+    }
   }
+
   return output.join('')
 }
 
-function normalizeComponentEncoding (components, esc) {
+/**
+ * @param {import('../types/index').URIComponent} component
+ * @param {boolean} esc
+ * @returns {import('../types/index').URIComponent}
+ */
+function normalizeComponentEncoding (component, esc) {
   const func = esc !== true ? escape : unescape
-  if (components.scheme !== undefined) {
-    components.scheme = func(components.scheme)
+  if (component.scheme !== undefined) {
+    component.scheme = func(component.scheme)
   }
-  if (components.userinfo !== undefined) {
-    components.userinfo = func(components.userinfo)
+  if (component.userinfo !== undefined) {
+    component.userinfo = func(component.userinfo)
   }
-  if (components.host !== undefined) {
-    components.host = func(components.host)
+  if (component.host !== undefined) {
+    component.host = func(component.host)
   }
-  if (components.path !== undefined) {
-    components.path = func(components.path)
+  if (component.path !== undefined) {
+    component.path = func(component.path)
   }
-  if (components.query !== undefined) {
-    components.query = func(components.query)
+  if (component.query !== undefined) {
+    component.query = func(component.query)
   }
-  if (components.fragment !== undefined) {
-    components.fragment = func(components.fragment)
+  if (component.fragment !== undefined) {
+    component.fragment = func(component.fragment)
   }
-  return components
+  return component
 }
 
-function recomposeAuthority (components) {
+/**
+ * @param {import('../types/index').URIComponent} component
+ * @returns {string|undefined}
+ */
+function recomposeAuthority (component) {
   const uriTokens = []
 
-  if (components.userinfo !== undefined) {
-    uriTokens.push(components.userinfo)
+  if (component.userinfo !== undefined) {
+    uriTokens.push(component.userinfo)
     uriTokens.push('@')
   }
 
-  if (components.host !== undefined) {
-    let host = unescape(components.host)
-    const ipV4res = normalizeIPv4(host)
-
-    if (ipV4res.isIPV4) {
-      host = ipV4res.host
-    } else {
-      const ipV6res = normalizeIPv6(ipV4res.host)
+  if (component.host !== undefined) {
+    let host = unescape(component.host)
+    if (!isIPv4(host)) {
+      const ipV6res = normalizeIPv6(host)
       if (ipV6res.isIPV6 === true) {
         host = `[${ipV6res.escapedHost}]`
       } else {
-        host = components.host
+        host = component.host
       }
     }
     uriTokens.push(host)
   }
 
-  if (typeof components.port === 'number' || typeof components.port === 'string') {
+  if (typeof component.port === 'number' || typeof component.port === 'string') {
     uriTokens.push(':')
-    uriTokens.push(String(components.port))
+    uriTokens.push(String(component.port))
   }
 
   return uriTokens.length ? uriTokens.join('') : undefined
 };
 
 module.exports = {
+  nonSimpleDomain,
   recomposeAuthority,
   normalizeComponentEncoding,
   removeDotSegments,
-  normalizeIPv4,
+  isIPv4,
+  isUUID,
   normalizeIPv6,
   stringArrayToHexStripped
 }
@@ -60907,7 +59937,7 @@ function blockString({ comment, type, value }, ctx, onComment, onChompKeep) {
     const { blockQuote, commentString, lineWidth } = ctx.options;
     // 1. Block can't end in whitespace unless the last line is non-empty.
     // 2. Strings consisting of only whitespace are best rendered explicitly.
-    if (!blockQuote || /\n[\t ]+$/.test(value) || /^\s*$/.test(value)) {
+    if (!blockQuote || /\n[\t ]+$/.test(value)) {
         return quotedString(value, ctx);
     }
     const indent = ctx.indent ||
@@ -61633,12 +60663,833 @@ var ajv_formats_dist = __nccwpck_require__(2815);
 var ajv_formats_dist_default = /*#__PURE__*/__nccwpck_require__.n(ajv_formats_dist);
 // EXTERNAL MODULE: external "fs"
 var external_fs_ = __nccwpck_require__(9896);
-// EXTERNAL MODULE: ./node_modules/fdir/dist/index.js
-var fdir_dist = __nccwpck_require__(6966);
+var external_fs_namespaceObject = /*#__PURE__*/__nccwpck_require__.t(external_fs_, 2);
+;// CONCATENATED MODULE: external "module"
+const external_module_namespaceObject = require("module");
+// EXTERNAL MODULE: external "path"
+var external_path_ = __nccwpck_require__(6928);
+;// CONCATENATED MODULE: ./node_modules/fdir/dist/index.mjs
+
+
+
+
+//#region rolldown:runtime
+var __require = /* @__PURE__ */ (0,external_module_namespaceObject.createRequire)(require("url").pathToFileURL(__filename).href);
+
+//#endregion
+//#region src/utils.ts
+function cleanPath(path) {
+	let normalized = (0,external_path_.normalize)(path);
+	if (normalized.length > 1 && normalized[normalized.length - 1] === external_path_.sep) normalized = normalized.substring(0, normalized.length - 1);
+	return normalized;
+}
+const SLASHES_REGEX = /[\\/]/g;
+function convertSlashes(path, separator) {
+	return path.replace(SLASHES_REGEX, separator);
+}
+const WINDOWS_ROOT_DIR_REGEX = /^[a-z]:[\\/]$/i;
+function isRootDirectory(path) {
+	return path === "/" || WINDOWS_ROOT_DIR_REGEX.test(path);
+}
+function normalizePath(path, options) {
+	const { resolvePaths, normalizePath: normalizePath$1, pathSeparator } = options;
+	const pathNeedsCleaning = process.platform === "win32" && path.includes("/") || path.startsWith(".");
+	if (resolvePaths) path = (0,external_path_.resolve)(path);
+	if (normalizePath$1 || pathNeedsCleaning) path = cleanPath(path);
+	if (path === ".") return "";
+	const needsSeperator = path[path.length - 1] !== pathSeparator;
+	return convertSlashes(needsSeperator ? path + pathSeparator : path, pathSeparator);
+}
+
+//#endregion
+//#region src/api/functions/join-path.ts
+function joinPathWithBasePath(filename, directoryPath) {
+	return directoryPath + filename;
+}
+function joinPathWithRelativePath(root, options) {
+	return function(filename, directoryPath) {
+		const sameRoot = directoryPath.startsWith(root);
+		if (sameRoot) return directoryPath.slice(root.length) + filename;
+		else return convertSlashes((0,external_path_.relative)(root, directoryPath), options.pathSeparator) + options.pathSeparator + filename;
+	};
+}
+function joinPath(filename) {
+	return filename;
+}
+function joinDirectoryPath(filename, directoryPath, separator) {
+	return directoryPath + filename + separator;
+}
+function build$7(root, options) {
+	const { relativePaths, includeBasePath } = options;
+	return relativePaths && root ? joinPathWithRelativePath(root, options) : includeBasePath ? joinPathWithBasePath : joinPath;
+}
+
+//#endregion
+//#region src/api/functions/push-directory.ts
+function pushDirectoryWithRelativePath(root) {
+	return function(directoryPath, paths) {
+		paths.push(directoryPath.substring(root.length) || ".");
+	};
+}
+function pushDirectoryFilterWithRelativePath(root) {
+	return function(directoryPath, paths, filters) {
+		const relativePath = directoryPath.substring(root.length) || ".";
+		if (filters.every((filter) => filter(relativePath, true))) paths.push(relativePath);
+	};
+}
+const pushDirectory = (directoryPath, paths) => {
+	paths.push(directoryPath || ".");
+};
+const pushDirectoryFilter = (directoryPath, paths, filters) => {
+	const path = directoryPath || ".";
+	if (filters.every((filter) => filter(path, true))) paths.push(path);
+};
+const empty$2 = () => {};
+function build$6(root, options) {
+	const { includeDirs, filters, relativePaths } = options;
+	if (!includeDirs) return empty$2;
+	if (relativePaths) return filters && filters.length ? pushDirectoryFilterWithRelativePath(root) : pushDirectoryWithRelativePath(root);
+	return filters && filters.length ? pushDirectoryFilter : pushDirectory;
+}
+
+//#endregion
+//#region src/api/functions/push-file.ts
+const pushFileFilterAndCount = (filename, _paths, counts, filters) => {
+	if (filters.every((filter) => filter(filename, false))) counts.files++;
+};
+const pushFileFilter = (filename, paths, _counts, filters) => {
+	if (filters.every((filter) => filter(filename, false))) paths.push(filename);
+};
+const pushFileCount = (_filename, _paths, counts, _filters) => {
+	counts.files++;
+};
+const pushFile = (filename, paths) => {
+	paths.push(filename);
+};
+const empty$1 = () => {};
+function build$5(options) {
+	const { excludeFiles, filters, onlyCounts } = options;
+	if (excludeFiles) return empty$1;
+	if (filters && filters.length) return onlyCounts ? pushFileFilterAndCount : pushFileFilter;
+	else if (onlyCounts) return pushFileCount;
+	else return pushFile;
+}
+
+//#endregion
+//#region src/api/functions/get-array.ts
+const getArray = (paths) => {
+	return paths;
+};
+const getArrayGroup = () => {
+	return [""].slice(0, 0);
+};
+function build$4(options) {
+	return options.group ? getArrayGroup : getArray;
+}
+
+//#endregion
+//#region src/api/functions/group-files.ts
+const groupFiles = (groups, directory, files) => {
+	groups.push({
+		directory,
+		files,
+		dir: directory
+	});
+};
+const empty = () => {};
+function build$3(options) {
+	return options.group ? groupFiles : empty;
+}
+
+//#endregion
+//#region src/api/functions/resolve-symlink.ts
+const resolveSymlinksAsync = function(path, state, callback$1) {
+	const { queue, fs, options: { suppressErrors } } = state;
+	queue.enqueue();
+	fs.realpath(path, (error, resolvedPath) => {
+		if (error) return queue.dequeue(suppressErrors ? null : error, state);
+		fs.stat(resolvedPath, (error$1, stat) => {
+			if (error$1) return queue.dequeue(suppressErrors ? null : error$1, state);
+			if (stat.isDirectory() && isRecursive(path, resolvedPath, state)) return queue.dequeue(null, state);
+			callback$1(stat, resolvedPath);
+			queue.dequeue(null, state);
+		});
+	});
+};
+const resolveSymlinks = function(path, state, callback$1) {
+	const { queue, fs, options: { suppressErrors } } = state;
+	queue.enqueue();
+	try {
+		const resolvedPath = fs.realpathSync(path);
+		const stat = fs.statSync(resolvedPath);
+		if (stat.isDirectory() && isRecursive(path, resolvedPath, state)) return;
+		callback$1(stat, resolvedPath);
+	} catch (e) {
+		if (!suppressErrors) throw e;
+	}
+};
+function build$2(options, isSynchronous) {
+	if (!options.resolveSymlinks || options.excludeSymlinks) return null;
+	return isSynchronous ? resolveSymlinks : resolveSymlinksAsync;
+}
+function isRecursive(path, resolved, state) {
+	if (state.options.useRealPaths) return isRecursiveUsingRealPaths(resolved, state);
+	let parent = (0,external_path_.dirname)(path);
+	let depth = 1;
+	while (parent !== state.root && depth < 2) {
+		const resolvedPath = state.symlinks.get(parent);
+		const isSameRoot = !!resolvedPath && (resolvedPath === resolved || resolvedPath.startsWith(resolved) || resolved.startsWith(resolvedPath));
+		if (isSameRoot) depth++;
+		else parent = (0,external_path_.dirname)(parent);
+	}
+	state.symlinks.set(path, resolved);
+	return depth > 1;
+}
+function isRecursiveUsingRealPaths(resolved, state) {
+	return state.visited.includes(resolved + state.options.pathSeparator);
+}
+
+//#endregion
+//#region src/api/functions/invoke-callback.ts
+const onlyCountsSync = (state) => {
+	return state.counts;
+};
+const groupsSync = (state) => {
+	return state.groups;
+};
+const defaultSync = (state) => {
+	return state.paths;
+};
+const limitFilesSync = (state) => {
+	return state.paths.slice(0, state.options.maxFiles);
+};
+const onlyCountsAsync = (state, error, callback$1) => {
+	report(error, callback$1, state.counts, state.options.suppressErrors);
+	return null;
+};
+const defaultAsync = (state, error, callback$1) => {
+	report(error, callback$1, state.paths, state.options.suppressErrors);
+	return null;
+};
+const limitFilesAsync = (state, error, callback$1) => {
+	report(error, callback$1, state.paths.slice(0, state.options.maxFiles), state.options.suppressErrors);
+	return null;
+};
+const groupsAsync = (state, error, callback$1) => {
+	report(error, callback$1, state.groups, state.options.suppressErrors);
+	return null;
+};
+function report(error, callback$1, output, suppressErrors) {
+	if (error && !suppressErrors) callback$1(error, output);
+	else callback$1(null, output);
+}
+function build$1(options, isSynchronous) {
+	const { onlyCounts, group, maxFiles } = options;
+	if (onlyCounts) return isSynchronous ? onlyCountsSync : onlyCountsAsync;
+	else if (group) return isSynchronous ? groupsSync : groupsAsync;
+	else if (maxFiles) return isSynchronous ? limitFilesSync : limitFilesAsync;
+	else return isSynchronous ? defaultSync : defaultAsync;
+}
+
+//#endregion
+//#region src/api/functions/walk-directory.ts
+const readdirOpts = { withFileTypes: true };
+const walkAsync = (state, crawlPath, directoryPath, currentDepth, callback$1) => {
+	state.queue.enqueue();
+	if (currentDepth < 0) return state.queue.dequeue(null, state);
+	const { fs } = state;
+	state.visited.push(crawlPath);
+	state.counts.directories++;
+	fs.readdir(crawlPath || ".", readdirOpts, (error, entries = []) => {
+		callback$1(entries, directoryPath, currentDepth);
+		state.queue.dequeue(state.options.suppressErrors ? null : error, state);
+	});
+};
+const walkSync = (state, crawlPath, directoryPath, currentDepth, callback$1) => {
+	const { fs } = state;
+	if (currentDepth < 0) return;
+	state.visited.push(crawlPath);
+	state.counts.directories++;
+	let entries = [];
+	try {
+		entries = fs.readdirSync(crawlPath || ".", readdirOpts);
+	} catch (e) {
+		if (!state.options.suppressErrors) throw e;
+	}
+	callback$1(entries, directoryPath, currentDepth);
+};
+function build(isSynchronous) {
+	return isSynchronous ? walkSync : walkAsync;
+}
+
+//#endregion
+//#region src/api/queue.ts
+/**
+* This is a custom stateless queue to track concurrent async fs calls.
+* It increments a counter whenever a call is queued and decrements it
+* as soon as it completes. When the counter hits 0, it calls onQueueEmpty.
+*/
+var Queue = class {
+	count = 0;
+	constructor(onQueueEmpty) {
+		this.onQueueEmpty = onQueueEmpty;
+	}
+	enqueue() {
+		this.count++;
+		return this.count;
+	}
+	dequeue(error, output) {
+		if (this.onQueueEmpty && (--this.count <= 0 || error)) {
+			this.onQueueEmpty(error, output);
+			if (error) {
+				output.controller.abort();
+				this.onQueueEmpty = void 0;
+			}
+		}
+	}
+};
+
+//#endregion
+//#region src/api/counter.ts
+var Counter = class {
+	_files = 0;
+	_directories = 0;
+	set files(num) {
+		this._files = num;
+	}
+	get files() {
+		return this._files;
+	}
+	set directories(num) {
+		this._directories = num;
+	}
+	get directories() {
+		return this._directories;
+	}
+	/**
+	* @deprecated use `directories` instead
+	*/
+	/* c8 ignore next 3 */
+	get dirs() {
+		return this._directories;
+	}
+};
+
+//#endregion
+//#region src/api/aborter.ts
+/**
+* AbortController is not supported on Node 14 so we use this until we can drop
+* support for Node 14.
+*/
+var Aborter = class {
+	aborted = false;
+	abort() {
+		this.aborted = true;
+	}
+};
+
+//#endregion
+//#region src/api/walker.ts
+var Walker = class {
+	root;
+	isSynchronous;
+	state;
+	joinPath;
+	pushDirectory;
+	pushFile;
+	getArray;
+	groupFiles;
+	resolveSymlink;
+	walkDirectory;
+	callbackInvoker;
+	constructor(root, options, callback$1) {
+		this.isSynchronous = !callback$1;
+		this.callbackInvoker = build$1(options, this.isSynchronous);
+		this.root = normalizePath(root, options);
+		this.state = {
+			root: isRootDirectory(this.root) ? this.root : this.root.slice(0, -1),
+			paths: [""].slice(0, 0),
+			groups: [],
+			counts: new Counter(),
+			options,
+			queue: new Queue((error, state) => this.callbackInvoker(state, error, callback$1)),
+			symlinks: /* @__PURE__ */ new Map(),
+			visited: [""].slice(0, 0),
+			controller: new Aborter(),
+			fs: options.fs || external_fs_namespaceObject
+		};
+		this.joinPath = build$7(this.root, options);
+		this.pushDirectory = build$6(this.root, options);
+		this.pushFile = build$5(options);
+		this.getArray = build$4(options);
+		this.groupFiles = build$3(options);
+		this.resolveSymlink = build$2(options, this.isSynchronous);
+		this.walkDirectory = build(this.isSynchronous);
+	}
+	start() {
+		this.pushDirectory(this.root, this.state.paths, this.state.options.filters);
+		this.walkDirectory(this.state, this.root, this.root, this.state.options.maxDepth, this.walk);
+		return this.isSynchronous ? this.callbackInvoker(this.state, null) : null;
+	}
+	walk = (entries, directoryPath, depth) => {
+		const { paths, options: { filters, resolveSymlinks: resolveSymlinks$1, excludeSymlinks, exclude, maxFiles, signal, useRealPaths, pathSeparator }, controller } = this.state;
+		if (controller.aborted || signal && signal.aborted || maxFiles && paths.length > maxFiles) return;
+		const files = this.getArray(this.state.paths);
+		for (let i = 0; i < entries.length; ++i) {
+			const entry = entries[i];
+			if (entry.isFile() || entry.isSymbolicLink() && !resolveSymlinks$1 && !excludeSymlinks) {
+				const filename = this.joinPath(entry.name, directoryPath);
+				this.pushFile(filename, files, this.state.counts, filters);
+			} else if (entry.isDirectory()) {
+				let path = joinDirectoryPath(entry.name, directoryPath, this.state.options.pathSeparator);
+				if (exclude && exclude(entry.name, path)) continue;
+				this.pushDirectory(path, paths, filters);
+				this.walkDirectory(this.state, path, path, depth - 1, this.walk);
+			} else if (this.resolveSymlink && entry.isSymbolicLink()) {
+				let path = joinPathWithBasePath(entry.name, directoryPath);
+				this.resolveSymlink(path, this.state, (stat, resolvedPath) => {
+					if (stat.isDirectory()) {
+						resolvedPath = normalizePath(resolvedPath, this.state.options);
+						if (exclude && exclude(entry.name, useRealPaths ? resolvedPath : path + pathSeparator)) return;
+						this.walkDirectory(this.state, resolvedPath, useRealPaths ? resolvedPath : path + pathSeparator, depth - 1, this.walk);
+					} else {
+						resolvedPath = useRealPaths ? resolvedPath : path;
+						const filename = (0,external_path_.basename)(resolvedPath);
+						const directoryPath$1 = normalizePath((0,external_path_.dirname)(resolvedPath), this.state.options);
+						resolvedPath = this.joinPath(filename, directoryPath$1);
+						this.pushFile(resolvedPath, files, this.state.counts, filters);
+					}
+				});
+			}
+		}
+		this.groupFiles(this.state.groups, directoryPath, files);
+	};
+};
+
+//#endregion
+//#region src/api/async.ts
+function promise(root, options) {
+	return new Promise((resolve$1, reject) => {
+		callback(root, options, (err, output) => {
+			if (err) return reject(err);
+			resolve$1(output);
+		});
+	});
+}
+function callback(root, options, callback$1) {
+	let walker = new Walker(root, options, callback$1);
+	walker.start();
+}
+
+//#endregion
+//#region src/api/sync.ts
+function sync(root, options) {
+	const walker = new Walker(root, options);
+	return walker.start();
+}
+
+//#endregion
+//#region src/builder/api-builder.ts
+var APIBuilder = class {
+	constructor(root, options) {
+		this.root = root;
+		this.options = options;
+	}
+	withPromise() {
+		return promise(this.root, this.options);
+	}
+	withCallback(cb) {
+		callback(this.root, this.options, cb);
+	}
+	sync() {
+		return sync(this.root, this.options);
+	}
+};
+
+//#endregion
+//#region src/builder/index.ts
+let pm = null;
+/* c8 ignore next 6 */
+try {
+	__require.resolve("picomatch");
+	pm = __require("picomatch");
+} catch {}
+var Builder = class {
+	globCache = {};
+	options = {
+		maxDepth: Infinity,
+		suppressErrors: true,
+		pathSeparator: external_path_.sep,
+		filters: []
+	};
+	globFunction;
+	constructor(options) {
+		this.options = {
+			...this.options,
+			...options
+		};
+		this.globFunction = this.options.globFunction;
+	}
+	group() {
+		this.options.group = true;
+		return this;
+	}
+	withPathSeparator(separator) {
+		this.options.pathSeparator = separator;
+		return this;
+	}
+	withBasePath() {
+		this.options.includeBasePath = true;
+		return this;
+	}
+	withRelativePaths() {
+		this.options.relativePaths = true;
+		return this;
+	}
+	withDirs() {
+		this.options.includeDirs = true;
+		return this;
+	}
+	withMaxDepth(depth) {
+		this.options.maxDepth = depth;
+		return this;
+	}
+	withMaxFiles(limit) {
+		this.options.maxFiles = limit;
+		return this;
+	}
+	withFullPaths() {
+		this.options.resolvePaths = true;
+		this.options.includeBasePath = true;
+		return this;
+	}
+	withErrors() {
+		this.options.suppressErrors = false;
+		return this;
+	}
+	withSymlinks({ resolvePaths = true } = {}) {
+		this.options.resolveSymlinks = true;
+		this.options.useRealPaths = resolvePaths;
+		return this.withFullPaths();
+	}
+	withAbortSignal(signal) {
+		this.options.signal = signal;
+		return this;
+	}
+	normalize() {
+		this.options.normalizePath = true;
+		return this;
+	}
+	filter(predicate) {
+		this.options.filters.push(predicate);
+		return this;
+	}
+	onlyDirs() {
+		this.options.excludeFiles = true;
+		this.options.includeDirs = true;
+		return this;
+	}
+	exclude(predicate) {
+		this.options.exclude = predicate;
+		return this;
+	}
+	onlyCounts() {
+		this.options.onlyCounts = true;
+		return this;
+	}
+	crawl(root) {
+		return new APIBuilder(root || ".", this.options);
+	}
+	withGlobFunction(fn) {
+		this.globFunction = fn;
+		return this;
+	}
+	/**
+	* @deprecated Pass options using the constructor instead:
+	* ```ts
+	* new fdir(options).crawl("/path/to/root");
+	* ```
+	* This method will be removed in v7.0
+	*/
+	/* c8 ignore next 4 */
+	crawlWithOptions(root, options) {
+		this.options = {
+			...this.options,
+			...options
+		};
+		return new APIBuilder(root || ".", this.options);
+	}
+	glob(...patterns) {
+		if (this.globFunction) return this.globWithOptions(patterns);
+		return this.globWithOptions(patterns, ...[{ dot: true }]);
+	}
+	globWithOptions(patterns, ...options) {
+		const globFn = this.globFunction || pm;
+		/* c8 ignore next 5 */
+		if (!globFn) throw new Error("Please specify a glob function to use glob matching.");
+		var isMatch = this.globCache[patterns.join("\0")];
+		if (!isMatch) {
+			isMatch = globFn(patterns, ...options);
+			this.globCache[patterns.join("\0")] = isMatch;
+		}
+		this.options.filters.push((path) => isMatch(path));
+		return this;
+	}
+};
+
+//#endregion
+
 // EXTERNAL MODULE: ./node_modules/yaml/dist/index.js
 var yaml_dist = __nccwpck_require__(8815);
-// EXTERNAL MODULE: ./node_modules/glob/node_modules/brace-expansion/index.js
-var brace_expansion = __nccwpck_require__(8497);
+;// CONCATENATED MODULE: ./node_modules/@isaacs/balanced-match/dist/esm/index.js
+const balanced = (a, b, str) => {
+    const ma = a instanceof RegExp ? maybeMatch(a, str) : a;
+    const mb = b instanceof RegExp ? maybeMatch(b, str) : b;
+    const r = ma !== null && mb != null && range(ma, mb, str);
+    return (r && {
+        start: r[0],
+        end: r[1],
+        pre: str.slice(0, r[0]),
+        body: str.slice(r[0] + ma.length, r[1]),
+        post: str.slice(r[1] + mb.length),
+    });
+};
+const maybeMatch = (reg, str) => {
+    const m = str.match(reg);
+    return m ? m[0] : null;
+};
+const range = (a, b, str) => {
+    let begs, beg, left, right = undefined, result;
+    let ai = str.indexOf(a);
+    let bi = str.indexOf(b, ai + 1);
+    let i = ai;
+    if (ai >= 0 && bi > 0) {
+        if (a === b) {
+            return [ai, bi];
+        }
+        begs = [];
+        left = str.length;
+        while (i >= 0 && !result) {
+            if (i === ai) {
+                begs.push(i);
+                ai = str.indexOf(a, i + 1);
+            }
+            else if (begs.length === 1) {
+                const r = begs.pop();
+                if (r !== undefined)
+                    result = [r, bi];
+            }
+            else {
+                beg = begs.pop();
+                if (beg !== undefined && beg < left) {
+                    left = beg;
+                    right = bi;
+                }
+                bi = str.indexOf(b, i + 1);
+            }
+            i = ai < bi && ai >= 0 ? ai : bi;
+        }
+        if (begs.length && right !== undefined) {
+            result = [left, right];
+        }
+    }
+    return result;
+};
+//# sourceMappingURL=index.js.map
+;// CONCATENATED MODULE: ./node_modules/@isaacs/brace-expansion/dist/esm/index.js
+
+const escSlash = '\0SLASH' + Math.random() + '\0';
+const escOpen = '\0OPEN' + Math.random() + '\0';
+const escClose = '\0CLOSE' + Math.random() + '\0';
+const escComma = '\0COMMA' + Math.random() + '\0';
+const escPeriod = '\0PERIOD' + Math.random() + '\0';
+const escSlashPattern = new RegExp(escSlash, 'g');
+const escOpenPattern = new RegExp(escOpen, 'g');
+const escClosePattern = new RegExp(escClose, 'g');
+const escCommaPattern = new RegExp(escComma, 'g');
+const escPeriodPattern = new RegExp(escPeriod, 'g');
+const slashPattern = /\\\\/g;
+const openPattern = /\\{/g;
+const closePattern = /\\}/g;
+const commaPattern = /\\,/g;
+const periodPattern = /\\./g;
+function numeric(str) {
+    return !isNaN(str) ? parseInt(str, 10) : str.charCodeAt(0);
+}
+function escapeBraces(str) {
+    return str
+        .replace(slashPattern, escSlash)
+        .replace(openPattern, escOpen)
+        .replace(closePattern, escClose)
+        .replace(commaPattern, escComma)
+        .replace(periodPattern, escPeriod);
+}
+function unescapeBraces(str) {
+    return str
+        .replace(escSlashPattern, '\\')
+        .replace(escOpenPattern, '{')
+        .replace(escClosePattern, '}')
+        .replace(escCommaPattern, ',')
+        .replace(escPeriodPattern, '.');
+}
+/**
+ * Basically just str.split(","), but handling cases
+ * where we have nested braced sections, which should be
+ * treated as individual members, like {a,{b,c},d}
+ */
+function parseCommaParts(str) {
+    if (!str) {
+        return [''];
+    }
+    const parts = [];
+    const m = balanced('{', '}', str);
+    if (!m) {
+        return str.split(',');
+    }
+    const { pre, body, post } = m;
+    const p = pre.split(',');
+    p[p.length - 1] += '{' + body + '}';
+    const postParts = parseCommaParts(post);
+    if (post.length) {
+        ;
+        p[p.length - 1] += postParts.shift();
+        p.push.apply(p, postParts);
+    }
+    parts.push.apply(parts, p);
+    return parts;
+}
+function expand(str) {
+    if (!str) {
+        return [];
+    }
+    // I don't know why Bash 4.3 does this, but it does.
+    // Anything starting with {} will have the first two bytes preserved
+    // but *only* at the top level, so {},a}b will not expand to anything,
+    // but a{},b}c will be expanded to [a}c,abc].
+    // One could argue that this is a bug in Bash, but since the goal of
+    // this module is to match Bash's rules, we escape a leading {}
+    if (str.slice(0, 2) === '{}') {
+        str = '\\{\\}' + str.slice(2);
+    }
+    return expand_(escapeBraces(str), true).map(unescapeBraces);
+}
+function embrace(str) {
+    return '{' + str + '}';
+}
+function isPadded(el) {
+    return /^-?0\d/.test(el);
+}
+function lte(i, y) {
+    return i <= y;
+}
+function gte(i, y) {
+    return i >= y;
+}
+function expand_(str, isTop) {
+    /** @type {string[]} */
+    const expansions = [];
+    const m = balanced('{', '}', str);
+    if (!m)
+        return [str];
+    // no need to expand pre, since it is guaranteed to be free of brace-sets
+    const pre = m.pre;
+    const post = m.post.length ? expand_(m.post, false) : [''];
+    if (/\$$/.test(m.pre)) {
+        for (let k = 0; k < post.length; k++) {
+            const expansion = pre + '{' + m.body + '}' + post[k];
+            expansions.push(expansion);
+        }
+    }
+    else {
+        const isNumericSequence = /^-?\d+\.\.-?\d+(?:\.\.-?\d+)?$/.test(m.body);
+        const isAlphaSequence = /^[a-zA-Z]\.\.[a-zA-Z](?:\.\.-?\d+)?$/.test(m.body);
+        const isSequence = isNumericSequence || isAlphaSequence;
+        const isOptions = m.body.indexOf(',') >= 0;
+        if (!isSequence && !isOptions) {
+            // {a},b}
+            if (m.post.match(/,(?!,).*\}/)) {
+                str = m.pre + '{' + m.body + escClose + m.post;
+                return expand_(str);
+            }
+            return [str];
+        }
+        let n;
+        if (isSequence) {
+            n = m.body.split(/\.\./);
+        }
+        else {
+            n = parseCommaParts(m.body);
+            if (n.length === 1 && n[0] !== undefined) {
+                // x{{a,b}}y ==> x{a}y x{b}y
+                n = expand_(n[0], false).map(embrace);
+                //XXX is this necessary? Can't seem to hit it in tests.
+                /* c8 ignore start */
+                if (n.length === 1) {
+                    return post.map(p => m.pre + n[0] + p);
+                }
+                /* c8 ignore stop */
+            }
+        }
+        // at this point, n is the parts, and we know it's not a comma set
+        // with a single entry.
+        let N;
+        if (isSequence && n[0] !== undefined && n[1] !== undefined) {
+            const x = numeric(n[0]);
+            const y = numeric(n[1]);
+            const width = Math.max(n[0].length, n[1].length);
+            let incr = n.length === 3 && n[2] !== undefined ? Math.abs(numeric(n[2])) : 1;
+            let test = lte;
+            const reverse = y < x;
+            if (reverse) {
+                incr *= -1;
+                test = gte;
+            }
+            const pad = n.some(isPadded);
+            N = [];
+            for (let i = x; test(i, y); i += incr) {
+                let c;
+                if (isAlphaSequence) {
+                    c = String.fromCharCode(i);
+                    if (c === '\\') {
+                        c = '';
+                    }
+                }
+                else {
+                    c = String(i);
+                    if (pad) {
+                        const need = width - c.length;
+                        if (need > 0) {
+                            const z = new Array(need + 1).join('0');
+                            if (i < 0) {
+                                c = '-' + z + c.slice(1);
+                            }
+                            else {
+                                c = z + c;
+                            }
+                        }
+                    }
+                }
+                N.push(c);
+            }
+        }
+        else {
+            N = [];
+            for (let j = 0; j < n.length; j++) {
+                N.push.apply(N, expand_(n[j], false));
+            }
+        }
+        for (let j = 0; j < N.length; j++) {
+            for (let k = 0; k < post.length; k++) {
+                const expansion = pre + N[j] + post[k];
+                if (!isTop || isSequence || expansion) {
+                    expansions.push(expansion);
+                }
+            }
+        }
+    }
+    return expansions;
+}
+//# sourceMappingURL=index.js.map
 ;// CONCATENATED MODULE: ./node_modules/glob/node_modules/minimatch/dist/esm/assert-valid-pattern.js
 const MAX_PATTERN_LENGTH = 1024 * 64;
 const assertValidPattern = (pattern) => {
@@ -62579,7 +62430,7 @@ const braceExpand = (pattern, options = {}) => {
         // shortcut. no need to expand.
         return [pattern];
     }
-    return brace_expansion(pattern);
+    return expand(pattern);
 };
 minimatch.braceExpand = braceExpand;
 // parse a component of the expanded set.
@@ -63436,18 +63287,20 @@ const external_node_url_namespaceObject = require("node:url");
 /**
  * @module LRUCache
  */
-const perf = typeof performance === 'object' &&
+const defaultPerf = (typeof performance === 'object' &&
     performance &&
-    typeof performance.now === 'function'
-    ? performance
+    typeof performance.now === 'function') ?
+    performance
     : Date;
 const warned = new Set();
 /* c8 ignore start */
-const PROCESS = (typeof process === 'object' && !!process ? process : {});
+const PROCESS = (typeof process === 'object' && !!process ?
+    process
+    : {});
 /* c8 ignore start */
 const emitWarning = (msg, type, code, fn) => {
-    typeof PROCESS.emitWarning === 'function'
-        ? PROCESS.emitWarning(msg, type, code, fn)
+    typeof PROCESS.emitWarning === 'function' ?
+        PROCESS.emitWarning(msg, type, code, fn)
         : console.error(`[${code}] ${type}: ${msg}`);
 };
 let AC = globalThis.AbortController;
@@ -63511,16 +63364,11 @@ const isPosInt = (n) => n && n === Math.floor(n) && n > 0 && isFinite(n);
 // zeroes at init time is brutal when you get that big.
 // But why not be complete?
 // Maybe in the future, these limits will have expanded.
-const getUintArray = (max) => !isPosInt(max)
-    ? null
-    : max <= Math.pow(2, 8)
-        ? Uint8Array
-        : max <= Math.pow(2, 16)
-            ? Uint16Array
-            : max <= Math.pow(2, 32)
-                ? Uint32Array
-                : max <= Number.MAX_SAFE_INTEGER
-                    ? ZeroArray
+const getUintArray = (max) => !isPosInt(max) ? null
+    : max <= Math.pow(2, 8) ? Uint8Array
+        : max <= Math.pow(2, 16) ? Uint16Array
+            : max <= Math.pow(2, 32) ? Uint32Array
+                : max <= Number.MAX_SAFE_INTEGER ? ZeroArray
                     : null;
 /* c8 ignore stop */
 class ZeroArray extends Array {
@@ -63583,6 +63431,13 @@ class LRUCache {
     #disposeAfter;
     #fetchMethod;
     #memoMethod;
+    #perf;
+    /**
+     * {@link LRUCache.OptionsBase.perf}
+     */
+    get perf() {
+        return this.#perf;
+    }
     /**
      * {@link LRUCache.OptionsBase.ttl}
      */
@@ -63751,7 +63606,13 @@ class LRUCache {
         return this.#disposeAfter;
     }
     constructor(options) {
-        const { max = 0, ttl, ttlResolution = 1, ttlAutopurge, updateAgeOnGet, updateAgeOnHas, allowStale, dispose, onInsert, disposeAfter, noDisposeOnSet, noUpdateTTL, maxSize = 0, maxEntrySize = 0, sizeCalculation, fetchMethod, memoMethod, noDeleteOnFetchRejection, noDeleteOnStaleGet, allowStaleOnFetchRejection, allowStaleOnFetchAbort, ignoreFetchAbort, } = options;
+        const { max = 0, ttl, ttlResolution = 1, ttlAutopurge, updateAgeOnGet, updateAgeOnHas, allowStale, dispose, onInsert, disposeAfter, noDisposeOnSet, noUpdateTTL, maxSize = 0, maxEntrySize = 0, sizeCalculation, fetchMethod, memoMethod, noDeleteOnFetchRejection, noDeleteOnStaleGet, allowStaleOnFetchRejection, allowStaleOnFetchAbort, ignoreFetchAbort, perf, } = options;
+        if (perf !== undefined) {
+            if (typeof perf?.now !== 'function') {
+                throw new TypeError('perf option must have a now() method if specified');
+            }
+        }
+        this.#perf = perf ?? defaultPerf;
         if (max !== 0 && !isPosInt(max)) {
             throw new TypeError('max option must be a nonnegative integer');
         }
@@ -63832,8 +63693,8 @@ class LRUCache {
         this.updateAgeOnGet = !!updateAgeOnGet;
         this.updateAgeOnHas = !!updateAgeOnHas;
         this.ttlResolution =
-            isPosInt(ttlResolution) || ttlResolution === 0
-                ? ttlResolution
+            isPosInt(ttlResolution) || ttlResolution === 0 ?
+                ttlResolution
                 : 1;
         this.ttlAutopurge = !!ttlAutopurge;
         this.ttl = ttl || 0;
@@ -63869,7 +63730,7 @@ class LRUCache {
         const starts = new ZeroArray(this.#max);
         this.#ttls = ttls;
         this.#starts = starts;
-        this.#setItemTTL = (index, ttl, start = perf.now()) => {
+        this.#setItemTTL = (index, ttl, start = this.#perf.now()) => {
             starts[index] = ttl !== 0 ? start : 0;
             ttls[index] = ttl;
             if (ttl !== 0 && this.ttlAutopurge) {
@@ -63887,7 +63748,7 @@ class LRUCache {
             }
         };
         this.#updateItemAge = index => {
-            starts[index] = ttls[index] !== 0 ? perf.now() : 0;
+            starts[index] = ttls[index] !== 0 ? this.#perf.now() : 0;
         };
         this.#statusTTL = (status, index) => {
             if (ttls[index]) {
@@ -63907,7 +63768,7 @@ class LRUCache {
         // that costly call repeatedly.
         let cachedNow = 0;
         const getNow = () => {
-            const n = perf.now();
+            const n = this.#perf.now();
             if (this.ttlResolution > 0) {
                 cachedNow = n;
                 const t = setTimeout(() => (cachedNow = 0), this.ttlResolution);
@@ -64144,9 +64005,7 @@ class LRUCache {
     find(fn, getOptions = {}) {
         for (const i of this.#indexes()) {
             const v = this.#valList[i];
-            const value = this.#isBackgroundFetch(v)
-                ? v.__staleWhileFetching
-                : v;
+            const value = this.#isBackgroundFetch(v) ? v.__staleWhileFetching : v;
             if (value === undefined)
                 continue;
             if (fn(value, this.#keyList[i], this)) {
@@ -64168,9 +64027,7 @@ class LRUCache {
     forEach(fn, thisp = this) {
         for (const i of this.#indexes()) {
             const v = this.#valList[i];
-            const value = this.#isBackgroundFetch(v)
-                ? v.__staleWhileFetching
-                : v;
+            const value = this.#isBackgroundFetch(v) ? v.__staleWhileFetching : v;
             if (value === undefined)
                 continue;
             fn.call(thisp, value, this.#keyList[i], this);
@@ -64183,9 +64040,7 @@ class LRUCache {
     rforEach(fn, thisp = this) {
         for (const i of this.#rindexes()) {
             const v = this.#valList[i];
-            const value = this.#isBackgroundFetch(v)
-                ? v.__staleWhileFetching
-                : v;
+            const value = this.#isBackgroundFetch(v) ? v.__staleWhileFetching : v;
             if (value === undefined)
                 continue;
             fn.call(thisp, value, this.#keyList[i], this);
@@ -64222,17 +64077,18 @@ class LRUCache {
         if (i === undefined)
             return undefined;
         const v = this.#valList[i];
-        const value = this.#isBackgroundFetch(v)
-            ? v.__staleWhileFetching
-            : v;
+        /* c8 ignore start - this isn't tested for the info function,
+         * but it's the same logic as found in other places. */
+        const value = this.#isBackgroundFetch(v) ? v.__staleWhileFetching : v;
         if (value === undefined)
             return undefined;
+        /* c8 ignore end */
         const entry = { value };
         if (this.#ttls && this.#starts) {
             const ttl = this.#ttls[i];
             const start = this.#starts[i];
             if (ttl && start) {
-                const remain = ttl - (perf.now() - start);
+                const remain = ttl - (this.#perf.now() - start);
                 entry.ttl = remain;
                 entry.start = Date.now();
             }
@@ -64260,9 +64116,7 @@ class LRUCache {
         for (const i of this.#indexes({ allowStale: true })) {
             const key = this.#keyList[i];
             const v = this.#valList[i];
-            const value = this.#isBackgroundFetch(v)
-                ? v.__staleWhileFetching
-                : v;
+            const value = this.#isBackgroundFetch(v) ? v.__staleWhileFetching : v;
             if (value === undefined || key === undefined)
                 continue;
             const entry = { value };
@@ -64270,7 +64124,7 @@ class LRUCache {
                 entry.ttl = this.#ttls[i];
                 // always dump the start relative to a portable timestamp
                 // it's ok for this to be a bit slow, it's a rare operation.
-                const age = perf.now() - this.#starts[i];
+                const age = this.#perf.now() - this.#starts[i];
                 entry.start = Math.floor(Date.now() - age);
             }
             if (this.#sizes) {
@@ -64300,7 +64154,7 @@ class LRUCache {
                 //
                 // it's ok for this to be a bit slow, it's a rare operation.
                 const age = Date.now() - entry.start;
-                entry.start = perf.now() - age;
+                entry.start = this.#perf.now() - age;
             }
             this.set(key, entry.value, entry);
         }
@@ -64357,12 +64211,9 @@ class LRUCache {
         let index = this.#size === 0 ? undefined : this.#keyMap.get(k);
         if (index === undefined) {
             // addition
-            index = (this.#size === 0
-                ? this.#tail
-                : this.#free.length !== 0
-                    ? this.#free.pop()
-                    : this.#size === this.#max
-                        ? this.#evict(false)
+            index = (this.#size === 0 ? this.#tail
+                : this.#free.length !== 0 ? this.#free.pop()
+                    : this.#size === this.#max ? this.#evict(false)
                         : this.#size);
             this.#keyList[index] = k;
             this.#valList[index] = v;
@@ -64409,8 +64260,8 @@ class LRUCache {
                 this.#valList[index] = v;
                 if (status) {
                     status.set = 'replace';
-                    const oldValue = oldVal && this.#isBackgroundFetch(oldVal)
-                        ? oldVal.__staleWhileFetching
+                    const oldValue = oldVal && this.#isBackgroundFetch(oldVal) ?
+                        oldVal.__staleWhileFetching
                         : oldVal;
                     if (oldValue !== undefined)
                         status.oldValue = oldValue;
@@ -64602,9 +64453,13 @@ class LRUCache {
             }
             // either we didn't abort, and are still here, or we did, and ignored
             const bf = p;
-            if (this.#valList[index] === p) {
+            // if nothing else has been written there but we're set to update the
+            // cache and ignore the abort, or if it's still pending on this specific
+            // background request, then write it to the cache.
+            const vl = this.#valList[index];
+            if (vl === p || ignoreAbort && updateCache && vl === undefined) {
                 if (v === undefined) {
-                    if (bf.__staleWhileFetching) {
+                    if (bf.__staleWhileFetching !== undefined) {
                         this.#valList[index] = bf.__staleWhileFetching;
                     }
                     else {
@@ -69317,14 +69172,14 @@ const iterateSync = globIterateSync;
 const iterate = Object.assign(globIterate, {
     sync: globIterateSync,
 });
-const sync = Object.assign(globSync, {
+const esm_sync = Object.assign(globSync, {
     stream: globStreamSync,
     iterate: globIterateSync,
 });
 const glob = Object.assign(glob_, {
     glob: glob_,
     globSync,
-    sync,
+    sync: esm_sync,
     globStream,
     stream,
     globStreamSync,
@@ -69340,7 +69195,11 @@ const glob = Object.assign(glob_, {
 });
 glob.glob = glob;
 //# sourceMappingURL=index.js.map
+// EXTERNAL MODULE: ./node_modules/picomatch/index.js
+var picomatch = __nccwpck_require__(4006);
+var picomatch_default = /*#__PURE__*/__nccwpck_require__.n(picomatch);
 ;// CONCATENATED MODULE: ./src/functions/json-validator.js
+
 
 
 
@@ -69495,8 +69354,9 @@ async function jsonValidator(exclude) {
     core.debug(`using baseDir: ${baseDirSanitized}`)
     core.debug(`using glob: ${glob}`)
 
-    files = await new fdir_dist.fdir()
+    files = await new Builder()
       .withBasePath()
+      .withGlobFunction((picomatch_default()))
       .globWithOptions([glob], {cwd: baseDirSanitized, dot: useDotMatch})
       .crawl(baseDirSanitized)
       .withPromise()
@@ -69659,6 +69519,7 @@ var yaml_schema_validator_default = /*#__PURE__*/__nccwpck_require__.n(yaml_sche
 
 
 
+
 // Constants
 const INVALID_YAML_MESSAGE = 'Invalid YAML'
 
@@ -69713,8 +69574,9 @@ async function yamlValidator(exclude) {
     core.debug(`using baseDir: ${baseDirSanitized}`)
     core.debug(`using glob: ${glob}`)
 
-    files = await new fdir_dist.fdir()
+    files = await new Builder()
       .withBasePath()
+      .withGlobFunction((picomatch_default()))
       .globWithOptions([glob], {cwd: baseDirSanitized, dot: useDotMatch})
       .crawl(baseDirSanitized)
       .withPromise()
