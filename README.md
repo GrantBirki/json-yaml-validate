@@ -28,7 +28,7 @@ Here is a quick example of how to install this action in any workflow:
 
 ```yaml
 # checkout the repository (required for this Action to work)
-- uses: actions/checkout@v4
+- uses: actions/checkout@v5
 
 # validate JSON and YAML files
 - name: json-yaml-validate
@@ -91,7 +91,7 @@ jobs:
   json-yaml-validate:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: json-yaml-validate
         id: json-yaml-validate
@@ -119,7 +119,7 @@ jobs:
   json-yaml-validate:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: json-yaml-validate
         id: json-yaml-validate
@@ -160,7 +160,7 @@ Here is an example of how to use this feature:
 
 ```yaml
 # checkout the repository
-- uses: actions/checkout@v4
+- uses: actions/checkout@v5
 
 - name: json-yaml-validate
   uses: GrantBirki/json-yaml-validate@vX.X.X # replace with the latest version
@@ -355,7 +355,7 @@ If the file path to your `exclude_file` is `exclude.txt`, you would set the `exc
 
 ```yaml
 # checkout the repository
-- uses: actions/checkout@v4
+- uses: actions/checkout@v5
 
 - name: json-yaml-validate
   uses: GrantBirki/json-yaml-validate@vX.X.X # replace with the latest version
