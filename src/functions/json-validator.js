@@ -8,6 +8,7 @@ import {readFileSync} from 'fs'
 import {fdir} from 'fdir'
 import {parse, parseAllDocuments} from 'yaml'
 import {globSync} from 'glob'
+import picomatch from 'picomatch'
 
 // Constants
 const DRAFT_07 = 'draft-07'
@@ -155,6 +156,7 @@ export async function jsonValidator(exclude) {
 
     files = await new fdir()
       .withBasePath()
+      .withGlobFunction(picomatch)
       .globWithOptions([glob], {cwd: baseDirSanitized, dot: useDotMatch})
       .crawl(baseDirSanitized)
       .withPromise()
