@@ -456,3 +456,83 @@ test('skips json files when yaml_as_json is false', async () => {
     "the yaml-validator found a json file so it will be skipped here: '__tests__/fixtures/json/valid/json1.json'"
   )
 })
+
+test('falls back to base_dir discovery when explicit yaml file globs match nothing', async () => {
+  process.env.INPUT_FILES = '__tests__/fixtures/does-not-exist/**/*.yaml'
+  process.env.INPUT_BASE_DIR = '__tests__/fixtures/yaml/valid'
+
+  expect(await yamlValidator(excludeMock)).toStrictEqual({
+    failed: 0,
+    passed: 1,
+    skipped: 0,
+    success: true,
+    violations: []
+  })
+})
+
+test('files input validates yaml outside base_dir', async () => {
+  process.env.INPUT_YAML_SCHEMA = ''
+  process.env.INPUT_BASE_DIR = '__tests__/fixtures/json/valid'
+  process.env.INPUT_FILES = '__tests__/fixtures/yaml/valid/yaml1.yaml'
+
+  expect(await yamlValidator(excludeMock)).toStrictEqual({
+    failed: 0,
+    passed: 1,
+    skipped: 0,
+    success: true,
+    violations: []
+  })
+})
+
+test('discovers yaml files with custom extensions', async () => {
+  const fs = require('fs')
+  const os = require('os')
+  const path = require('path')
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'yaml-custom-ext-'))
+  fs.writeFileSync(path.join(tempDir, 'config.yamlx'), 'person:\n  age: 1')
+  fs.writeFileSync(path.join(tempDir, 'other.ymlx'), 'person:\n  age: 2')
+
+  process.env.INPUT_YAML_SCHEMA = ''
+  process.env.INPUT_YAML_EXTENSION = '.yamlx'
+  process.env.INPUT_YAML_EXTENSION_SHORT = '.ymlx'
+  process.env.INPUT_BASE_DIR = tempDir
+
+  expect(await yamlValidator(excludeMock)).toStrictEqual({
+    failed: 0,
+    passed: 2,
+    skipped: 0,
+    success: true,
+    violations: []
+  })
+
+  fs.rmSync(tempDir, {recursive: true, force: true})
+})
+
+test('multi-document yaml skips schema validation after syntax validation', async () => {
+  process.env.INPUT_ALLOW_MULTIPLE_DOCUMENTS = 'true'
+  process.env.INPUT_YAML_SCHEMA = '__tests__/fixtures/schemas/schema2.yml'
+  process.env.INPUT_FILES = '__tests__/fixtures/yaml/multiple/yaml1.yaml'
+  process.env.INPUT_BASE_DIR = '.'
+
+  expect(await yamlValidator(excludeMock)).toStrictEqual({
+    failed: 0,
+    passed: 1,
+    skipped: 0,
+    success: true,
+    violations: []
+  })
+})
+
+test('yaml_as_json causes explicit json files to be counted as skipped by yaml validator', async () => {
+  process.env.INPUT_YAML_AS_JSON = 'true'
+  process.env.INPUT_FILES = '__tests__/fixtures/json/valid/json1.json'
+  process.env.INPUT_BASE_DIR = '.'
+
+  expect(await yamlValidator(excludeMock)).toStrictEqual({
+    failed: 0,
+    passed: 0,
+    skipped: 1,
+    success: true,
+    violations: []
+  })
+})

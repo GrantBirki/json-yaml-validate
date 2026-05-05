@@ -358,6 +358,19 @@ For behavior changes, prefer adding or modifying fixtures under
 Tiny temporary files are used in a few edge-case tests today, but fixtures are
 easier to audit and safer for future maintenance.
 
+When replacing discovery dependencies, keep the hardened unit tests around these
+behaviors green:
+
+- explicit `files` input bypasses `base_dir` and validates matching files from
+  anywhere in the workspace
+- if `files` is provided but all glob patterns are unmatched, validators fall
+  back to crawler discovery under `base_dir`
+- custom JSON and YAML extensions are discovered through crawler mode
+- `yaml_as_json` parse failures are reported as `Invalid JSON` for
+  compatibility
+- multi-document YAML syntax validation skips native YAML schema validation
+- custom exclude files use gitignore-style negation and directory patterns
+
 ## CI Workflows
 
 - `test.yml`: installs with `npm ci` and runs `npm run ci-test`.

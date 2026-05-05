@@ -930,3 +930,106 @@ test('edge case: malformed JSON in real file', async () => {
   // Cleanup
   fs.unlinkSync(tempFile)
 })
+
+test('falls back to base_dir discovery when explicit json file globs match nothing', async () => {
+  process.env.INPUT_JSON_SCHEMA = ''
+  process.env.INPUT_FILES = '__tests__/fixtures/does-not-exist/**/*.json'
+  process.env.INPUT_BASE_DIR = '__tests__/fixtures/json/valid'
+
+  expect(await jsonValidator(excludeMock)).toStrictEqual({
+    failed: 0,
+    passed: 1,
+    skipped: 0,
+    success: true,
+    violations: []
+  })
+})
+
+test('files input validates json outside base_dir', async () => {
+  process.env.INPUT_JSON_SCHEMA = ''
+  process.env.INPUT_BASE_DIR = '__tests__/fixtures/yaml/valid'
+  process.env.INPUT_FILES = '__tests__/fixtures/json/valid/json1.json'
+
+  expect(await jsonValidator(excludeMock)).toStrictEqual({
+    failed: 0,
+    passed: 1,
+    skipped: 0,
+    success: true,
+    violations: []
+  })
+})
+
+test('discovers json files with a custom extension', async () => {
+  const fs = require('fs')
+  const os = require('os')
+  const path = require('path')
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'json-custom-ext-'))
+  const tempFile = path.join(tempDir, 'config.jsonc')
+  fs.writeFileSync(tempFile, '{"foo": 1}')
+
+  process.env.INPUT_JSON_SCHEMA = ''
+  process.env.INPUT_JSON_EXTENSION = '.jsonc'
+  process.env.INPUT_BASE_DIR = tempDir
+
+  expect(await jsonValidator(excludeMock)).toStrictEqual({
+    failed: 0,
+    passed: 1,
+    skipped: 0,
+    success: true,
+    violations: []
+  })
+
+  fs.rmSync(tempDir, {recursive: true, force: true})
+})
+
+test('yaml_as_json reports invalid yaml parse errors as invalid json', async () => {
+  const fs = require('fs')
+  const os = require('os')
+  const path = require('path')
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'yaml-as-json-bad-'))
+  const tempFile = path.join(tempDir, 'bad.yaml')
+  fs.writeFileSync(tempFile, 'person: { name: mona: lisa }')
+
+  process.env.INPUT_JSON_SCHEMA = ''
+  process.env.INPUT_YAML_AS_JSON = 'true'
+  process.env.INPUT_BASE_DIR = tempDir
+
+  expect(await jsonValidator(excludeMock)).toStrictEqual({
+    failed: 1,
+    passed: 0,
+    skipped: 0,
+    success: false,
+    violations: [
+      {
+        file: tempFile,
+        errors: [
+          {
+            path: null,
+            message: 'Invalid JSON'
+          }
+        ]
+      }
+    ]
+  })
+
+  fs.rmSync(tempDir, {recursive: true, force: true})
+})
+
+test('json schema path is skipped when discovered through explicit files', async () => {
+  process.env.INPUT_JSON_SCHEMA = '__tests__/fixtures/schemas/schema1.json'
+  process.env.INPUT_FILES =
+    '__tests__/fixtures/schemas/schema1.json\n__tests__/fixtures/json/valid/json1.json'
+  process.env.INPUT_BASE_DIR = '__tests__/fixtures/json/invalid'
+
+  expect(await jsonValidator(excludeMock)).toStrictEqual({
+    failed: 0,
+    passed: 1,
+    skipped: 0,
+    success: true,
+    violations: []
+  })
+
+  expect(debugMock).toHaveBeenCalledWith(
+    'skipping json schema file: __tests__/fixtures/schemas/schema1.json'
+  )
+})

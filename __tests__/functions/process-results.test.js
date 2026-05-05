@@ -7,6 +7,7 @@ const warningMock = jest.spyOn(core, 'warning').mockImplementation(() => {})
 const errorMock = jest.spyOn(core, 'error').mockImplementation(() => {})
 const setFailedMock = jest.spyOn(core, 'setFailed').mockImplementation(() => {})
 const setOutputMock = jest.spyOn(core, 'setOutput').mockImplementation(() => {})
+const createCommentMock = jest.fn()
 
 const jsonViolations = [
   {
@@ -74,7 +75,7 @@ beforeEach(() => {
     return {
       rest: {
         issues: {
-          createComment: jest.fn().mockReturnValueOnce({
+          createComment: createCommentMock.mockReturnValueOnce({
             data: {}
           })
         }
@@ -285,6 +286,75 @@ test('tests constructBody function with JSON failures only (covers lines 50-67)'
   expect(infoMock).toHaveBeenCalledWith(
     expect.stringMatching('📝 adding comment to PR')
   )
+})
+
+test('does not comment when comment mode is enabled outside a pull request', async () => {
+  process.env.INPUT_COMMENT = 'true'
+  github.context.payload = {
+    push: {
+      ref: 'refs/heads/main'
+    }
+  }
+
+  expect(
+    await processResults(
+      {
+        success: false,
+        failed: 1,
+        passed: 0,
+        skipped: 0,
+        violations: jsonViolations
+      },
+      {success: true, failed: 0, passed: 1, skipped: 0, violations: []}
+    )
+  ).toBe(false)
+
+  expect(github.getOctokit).not.toHaveBeenCalled()
+  expect(createCommentMock).not.toHaveBeenCalled()
+  expect(setFailedMock).toHaveBeenCalledWith(
+    '❌ JSON or YAML files failed validation'
+  )
+})
+
+test('constructs a pull request comment body with both violation sections', async () => {
+  process.env.INPUT_COMMENT = 'true'
+
+  expect(
+    await processResults(
+      {
+        success: false,
+        failed: 2,
+        passed: 1,
+        skipped: 3,
+        violations: jsonViolations
+      },
+      {
+        success: false,
+        failed: 1,
+        passed: 4,
+        skipped: 5,
+        violations: yamlViolations
+      }
+    )
+  ).toBe(false)
+
+  expect(createCommentMock).toHaveBeenCalledWith({
+    owner: 'corp',
+    repo: 'test',
+    issue_number: 123,
+    body: expect.stringContaining('## JSON and YAML Validation Results')
+  })
+  const commentBody = createCommentMock.mock.calls[0][0].body
+  expect(commentBody).toContain('### JSON Validation Results')
+  expect(commentBody).toContain('- ✅ File(s) Passed: 1')
+  expect(commentBody).toContain('- ❌ File(s) Failed: 2')
+  expect(commentBody).toContain('- ⏭️ File(s) Skipped: 3')
+  expect(commentBody).toContain(JSON.stringify(jsonViolations, null, 2))
+  expect(commentBody).toContain('### YAML Validation Results')
+  expect(commentBody).toContain('- ✅ File(s) Passed: 4')
+  expect(commentBody).toContain('- ❌ File(s) Failed: 1')
+  expect(commentBody).toContain('- ⏭️ File(s) Skipped: 5')
+  expect(commentBody).toContain(JSON.stringify(yamlViolations, null, 2))
 })
 
 test('tests constructBody function with YAML failures only (covers lines 69-86)', async () => {

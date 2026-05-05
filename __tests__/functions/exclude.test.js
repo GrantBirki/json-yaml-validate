@@ -99,3 +99,32 @@ test('fails to read the .gitignore file', () => {
     `error reading .gitignore file: Error: ENOENT: no such file or directory, open 'does-not-exist'`
   )
 })
+
+test('supports gitignore-style negation in custom exclude files', () => {
+  const fs = require('fs')
+  const os = require('os')
+  const path = require('path')
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'exclude-negation-'))
+  const tempFile = path.join(tempDir, 'exclude.txt')
+  fs.writeFileSync(tempFile, '*.json\n!important.json\nnested/\n')
+
+  process.env.INPUT_EXCLUDE_FILE = tempFile
+  process.env.INPUT_USE_GITIGNORE = 'false'
+
+  const exclude = new Exclude()
+  expect(exclude.isExcluded('skip.json')).toBe(true)
+  expect(exclude.isExcluded('important.json')).toBe(false)
+  expect(exclude.isExcluded('nested/file.yaml')).toBe(true)
+
+  fs.rmSync(tempDir, {recursive: true, force: true})
+})
+
+test('does not read git_ignore_path when use_gitignore is false', () => {
+  process.env.INPUT_EXCLUDE_FILE = ''
+  process.env.INPUT_USE_GITIGNORE = 'false'
+  process.env.INPUT_GIT_IGNORE_PATH = 'does-not-exist'
+
+  const exclude = new Exclude()
+  expect(exclude.isExcluded('tmp/test.json')).toBe(false)
+  expect(warningMock).not.toHaveBeenCalled()
+})
