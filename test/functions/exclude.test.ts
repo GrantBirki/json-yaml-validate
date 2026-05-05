@@ -1,5 +1,5 @@
-import * as core from '@actions/core'
-import {Exclude} from '../../src/functions/exclude'
+import {core} from '../../src/actions-core.js'
+import {Exclude} from '../../src/functions/exclude.js'
 
 const warningMock = jest.spyOn(core, 'warning').mockImplementation(() => {})
 const setFailedMock = jest.spyOn(core, 'setFailed').mockImplementation(() => {})

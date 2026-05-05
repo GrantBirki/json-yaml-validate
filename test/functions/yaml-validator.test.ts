@@ -1,5 +1,5 @@
-import {yamlValidator} from '../../src/functions/yaml-validator'
-import * as core from '@actions/core'
+import {yamlValidator} from '../../src/functions/yaml-validator.js'
+import {core} from '../../src/actions-core.js'
 
 const debugMock = jest.spyOn(core, 'debug').mockImplementation(() => {})
 const infoMock = jest.spyOn(core, 'info').mockImplementation(() => {})
@@ -21,7 +21,7 @@ beforeEach(() => {
   process.env.INPUT_YAML_EXTENSION = '.yaml'
   process.env.INPUT_YAML_EXTENSION_SHORT = '.yml'
   process.env.INPUT_YAML_EXCLUDE_REGEX = '.*bad.*\\.yaml'
-  process.env.INPUT_YAML_AS_JSON = false
+  process.env.INPUT_YAML_AS_JSON = 'false'
   process.env.INPUT_USE_DOT_MATCH = 'true'
   process.env.INPUT_FILES = ''
   process.env.INPUT_ALLOW_MULTIPLE_DOCUMENTS = 'false'
@@ -210,7 +210,7 @@ test('fails to validate one yaml file with an incorrect schema and succeeds on t
 })
 
 test('skips all files when yaml_as_json is true', async () => {
-  process.env.INPUT_YAML_AS_JSON = true
+  process.env.INPUT_YAML_AS_JSON = 'true'
   expect(await yamlValidator(excludeMock)).toStrictEqual({
     failed: 0,
     passed: 0,
@@ -225,7 +225,7 @@ test('skips all files when yaml_as_json is true', async () => {
 })
 
 test('skips all files when yaml_as_json is true, even invalid ones', async () => {
-  process.env.INPUT_YAML_AS_JSON = true
+  process.env.INPUT_YAML_AS_JSON = 'true'
   process.env.INPUT_BASE_DIR = '__tests__/fixtures/yaml/invalid'
   expect(await yamlValidator(excludeMock)).toStrictEqual({
     failed: 0,

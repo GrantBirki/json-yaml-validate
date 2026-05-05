@@ -1,5 +1,5 @@
-import {jsonValidator} from '../../src/functions/json-validator'
-import * as core from '@actions/core'
+import {jsonValidator} from '../../src/functions/json-validator.js'
+import {core} from '../../src/actions-core.js'
 
 const debugMock = jest.spyOn(core, 'debug').mockImplementation(() => {})
 const infoMock = jest.spyOn(core, 'info').mockImplementation(() => {})
@@ -22,7 +22,7 @@ beforeEach(() => {
   process.env.INPUT_JSON_EXCLUDE_REGEX = '.*bad.*\\.json'
   process.env.INPUT_YAML_AS_JSON = 'false'
   process.env.INPUT_USE_DOT_MATCH = 'true'
-  process.env.INPUT_USE_AJV_FORMATS = true
+  process.env.INPUT_USE_AJV_FORMATS = 'true'
   process.env.INPUT_YAML_EXTENSION = '.yaml'
   process.env.INPUT_YAML_EXTENSION_SHORT = '.yml'
   process.env.INPUT_FILES = ''
@@ -78,7 +78,7 @@ test('successfully validates a json file without using a schema', async () => {
 
 test('successfully validates a json file without using a schema or ajv-formats', async () => {
   process.env.INPUT_JSON_SCHEMA = ''
-  process.env.INPUT_USE_AJV_FORMATS = false
+  process.env.INPUT_USE_AJV_FORMATS = 'false'
   expect(await jsonValidator(excludeMock)).toStrictEqual({
     failed: 0,
     passed: 1,

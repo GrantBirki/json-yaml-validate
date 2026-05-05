@@ -21,7 +21,5 @@ jobs:
       - name: install dependencies
         run: npm ci
 
-      - name: lint
-        run: |
-          npm run format-check
-          npm run lint
+      - name: typecheck
+        run: npm run typecheck

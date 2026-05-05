@@ -1,5 +1,5 @@
-import * as core from '@actions/core'
-import {processResults} from '../../src/functions/process-results'
+import {core} from '../../src/actions-core.js'
+import {processResults} from '../../src/functions/process-results.js'
 
 const fs = require('fs')
 const os = require('os')

@@ -1,6 +1,6 @@
 # Agent Guide
 
-This repository is a JavaScript GitHub Action named `json-yaml-validate`. It
+This repository is a TypeScript GitHub Action named `json-yaml-validate`. It
 validates JSON and YAML files in a checked-out repository, optionally against
 schemas, and can report failures in logs, action outputs, and pull request
 comments. Treat changes here as high-impact maintenance work: the action is
@@ -9,24 +9,29 @@ public, has many dependents, and small behavior shifts can break downstream CI.
 ## Repository Map
 
 - `action.yml` defines the public GitHub Action contract. It runs on `node24`
-  and points to `dist/index.js`.
-- `src/main.js` is the action entrypoint. It constructs exclude matchers, runs
+  and points to the committed bundle at `dist/index.js`.
+- `src/main.ts` is the action entrypoint. It constructs exclude matchers, runs
   JSON and YAML validators, then processes the combined result.
-- `src/functions/json-validator.js` handles JSON parsing, JSON Schema
-  validation through AJV, `yaml_as_json`, custom AJV formats, and JSON file
-  discovery.
-- `src/functions/yaml-validator.js` handles YAML parsing, optional YAML schema
+- `src/actions-core.ts` is a small native replacement for the subset of
+  `@actions/core` used by this action: inputs, multiline inputs, boolean inputs,
+  logs, warnings, errors, outputs, and failures.
+- `src/types.ts` contains shared result and context interfaces.
+- `src/functions/json-validator.ts` handles JSON parsing, JSON Schema
+  validation through AJV, `yaml_as_json`, custom AJV formats, explicit `files`
+  glob expansion, and JSON file discovery.
+- `src/functions/yaml-validator.ts` handles YAML parsing, optional YAML schema
   validation through `yaml-schema-validator`, multi-document YAML syntax checks,
-  and YAML file discovery.
-- `src/functions/file-discovery.js` provides native recursive crawler-mode
-  discovery for JSON and YAML extensions. Explicit `files` input patterns still
-  use `glob` for compatibility with existing user workflows.
-- `src/functions/exclude.js` loads `exclude_file` patterns and `.gitignore`
+  explicit `files` glob expansion, and YAML file discovery.
+- `src/functions/file-discovery.ts` provides native recursive crawler-mode
+  discovery for JSON and YAML extensions.
+- `src/functions/exclude.ts` loads `exclude_file` patterns and `.gitignore`
   patterns using the `ignore` package.
-- `src/functions/process-results.js` summarizes validation results, sets the
-  `success` output, creates optional PR comments with the native Node `fetch`
-  API, and applies `fail` or `warn` mode behavior.
-- `__tests__/functions/` contains focused Jest tests for each function module.
+- `src/functions/process-results.ts` summarizes validation results, sets the
+  `success` output, creates optional PR comments with native `fetch`, and
+  applies `fail` or `warn` mode behavior.
+- `test/` contains unit tests run by Node's built-in test runner through `tsx`.
+  `test/setup.ts` provides a small Jest-compatible test helper so the tests can
+  keep high-signal spy and matcher assertions without depending on Jest.
 - `__tests__/fixtures/` contains JSON, YAML, schema, exclude, and real-world
   fixture data for unit tests.
 - `__tests__/acceptance/` contains files used by the repository's self-test
@@ -45,62 +50,40 @@ Action structure, testing, and maintenance:
 - `/Users/birki/code/branch-deploy`
 - `/Users/birki/code/comment`
 
-Use them as comparison points when doing cleanup, test improvements, bug fixes,
-or security hardening in this repo.
-
 Useful patterns from `branch-deploy`:
 
-- Large actions are split into many small helper modules under `src/functions/`,
-  each with a matching focused test file under `__tests__/functions/`.
+- Large actions are split into small helper modules under `src/functions/`,
+  each with matching focused tests.
 - `src/functions/inputs.js` centralizes input collection and validates enum and
   integer inputs before runtime behavior proceeds.
-- `vitest.config.js` enforces 100% coverage for lines, functions, branches, and
-  statements. This repo currently enforces 100% lines only through Jest.
-- `__tests__/setup.js` globally mocks `@actions/core`, then individual tests
-  spy on calls they care about. This keeps test output quiet while preserving
-  assertions on logs, outputs, failures, and saved state.
 - Main action flow returns explicit status strings such as `success`,
   `safe-exit`, and `failure`, which makes orchestration tests easier to read.
-- The workflows use explicit `permissions:` blocks and checkout with
+- Workflows use explicit `permissions:` blocks and checkout with
   `persist-credentials: false` for read-only CI jobs.
-- The repo validates action configuration with this action itself in
-  `.github/workflows/actions-config-validation.yml`, using a schema and an
-  exclude file.
 - Dependabot uses grouped monthly updates with cooldowns, which reduces churn
   for public action maintenance.
 
 Useful patterns from `comment`:
 
-- `src/main.ts` is only a tiny entrypoint; real behavior lives in
-  `src/comment.ts`.
-- The action uses strict TypeScript with explicit interfaces for `@actions/core`,
-  GitHub context, and Octokit. Tests inject fake implementations rather than
-  mutating global modules.
+- `src/main.ts` is only a tiny entrypoint; real behavior lives in focused
+  modules.
+- The action uses strict TypeScript with explicit interfaces and injected test
+  dependencies.
 - `sanitizeInputs()` masks token values before debug logging. Preserve this
-  style for any future logging of structured inputs in this repo.
+  style for any future structured input logging here.
 - `SafeTemplateLoader` is a strong example of treating file paths from action
-  inputs as security-sensitive: it uses `path.resolve`, `fs.realpathSync`,
-  directory-relative checks, `stats.isFile()`, and tests for absolute includes,
-  traversal, sibling-prefix escapes, symlink escapes, and missing files.
-- The unit test suite is compact but high-signal, with local helpers like
-  `makeCore()`, `makeOctokit()`, and `makeGithubClient()` that record calls and
-  avoid network access.
-- The acceptance workflow exercises the action through `uses: ./` and then
-  verifies live GitHub API side effects with `gh api`.
-- Workflows pin third-party actions to full commit SHAs with `# pin@vX`
-  comments.
-- The release-tag workflow validates workflow-dispatch inputs before using them
-  in tag commands.
+  inputs as security-sensitive: it uses resolved paths, real paths,
+  directory-relative checks, `stats.isFile()`, and tests for traversal and
+  symlink escapes.
+- Acceptance tests exercise the action through `uses: ./`.
 
 Practical implications for `json-yaml-validate`:
 
-- Consider centralizing input parsing and validation if more inputs are added or
-  if current input handling becomes harder to reason about across validators.
-- If test tooling is revisited, match `branch-deploy`'s stricter coverage bar
-  for branches, functions, statements, and lines.
-- For security hardening, prefer the `comment` style: explicit validation,
-  narrowly scoped file access, token redaction, and dedicated tests for hostile
-  path or input cases.
+- Keep the TypeScript entrypoint thin and push behavior into focused modules.
+- Prefer explicit interfaces and dependency injection where it improves test
+  clarity.
+- For security hardening, prefer explicit validation, narrowly scoped file
+  access, token redaction, and dedicated tests for hostile path or input cases.
 - Keep CI and maintenance workflow improvements aligned with both repos:
   explicit permissions, package freshness checks, generated bundle verification,
   and low-churn dependency update policy.
@@ -118,16 +101,20 @@ npm ci
 Main commands:
 
 ```bash
-npm run ci-test        # Jest only, sets LOCAL_ACTIONS_CI_TEST=true
-npm run test           # Jest plus coverage badge regeneration
-npm run format-check   # Prettier check for JS files
-npm run lint           # ESLint over src/**/*.js
-npm run bundle         # Format source and rebuild dist/
-npm run all            # Format, lint, and rebuild dist/
+npm run typecheck     # strict TypeScript compile check for src/
+npm run lint          # alias for npm run typecheck
+npm run ci-test       # Node test runner + tsx + native coverage, 100% lines
+npm run test          # ci-test plus coverage badge regeneration
+npm run package       # rebuild dist/ with @vercel/ncc
+npm run bundle        # alias for npm run package
+npm run all           # typecheck, tests, then package
 ```
 
-`npm run test` regenerates `badges/coverage.svg` and can be noisier than
-`npm run ci-test`. CI uses `npm run ci-test` in the `test` workflow.
+This repo intentionally does not use Jest, Babel, ESLint, or Prettier. Do not
+reintroduce those tools casually; the current goal is a small supply-chain
+surface with native TypeScript and Node functionality. Keep formatting
+consistent with the existing source: ES modules, no semicolons, single quotes,
+2-space indentation, and focused files.
 
 When changing `src/`, `package.json`, `package-lock.json`, or runtime
 dependencies, rebuild and commit `dist/`:
@@ -137,8 +124,11 @@ npm run bundle
 git diff --ignore-space-at-eol dist/
 ```
 
-The `package-check` workflow rebuilds `dist/` and fails if the generated bundle
-differs from the committed version.
+The `package-check` workflow rebuilds `dist/` and fails if generated bundle
+files differ from the committed version, including untracked generated files.
+The ESM bundle currently generates `dist/index.js`, `dist/index.js.map`,
+`dist/licenses.txt`, `dist/schema.json`, `dist/package.json`, and
+`dist/sourcemap-register.cjs`.
 
 ## Public Action Contract
 
@@ -155,7 +145,7 @@ Important inputs:
 - `base_dir`: base directory for crawler-based discovery when `files` is empty.
   A single trailing slash is removed.
 - `files`: newline-delimited glob patterns. When present, validators expand
-  these patterns with `globSync` instead of crawling `base_dir`.
+  patterns with Node's native `fs.globSync` instead of crawling `base_dir`.
 - `use_dot_match`: controls whether crawled discovery includes dot paths such
   as `.github`.
 - `json_schema`: optional JSON Schema path for AJV. If empty, AJV compiles
@@ -184,18 +174,18 @@ The only output is `success`, set to string `"true"` or `"false"`.
 
 ## Execution Flow
 
-`src/main.js` runs:
+`src/main.ts` runs:
 
 1. `jsonValidator(new Exclude())`
 2. `yamlValidator(new Exclude())`
 3. `processResults(jsonResults, yamlResults)`
 
 There are intentionally two `Exclude` instances today. If you change this,
-verify behavior around input reads, `.gitignore` warnings, and test mocks.
+verify behavior around input reads, `.gitignore` warnings, and test spies.
 
 Both validators return this result shape:
 
-```js
+```ts
 {
   success: true,
   passed: 0,
@@ -207,16 +197,43 @@ Both validators return this result shape:
 
 Do not change this shape casually. Tests and user-facing comments depend on it.
 
+## Native Actions Core Shim
+
+`src/actions-core.ts` replaces `@actions/core` for this action. It deliberately
+implements only the APIs this repository uses:
+
+- `getInput`
+- `getBooleanInput`
+- `getMultilineInput`
+- `debug`, `info`, `warning`, `error`
+- `setOutput`
+- `setFailed`
+
+Behavior to preserve:
+
+- Inputs are read from `INPUT_<NAME>`, with spaces normalized to underscores and
+  names uppercased.
+- String inputs trim whitespace by default unless `trimWhitespace: false` is
+  passed.
+- Boolean inputs accept `true`, `True`, `TRUE`, `false`, `False`, and `FALSE`.
+  Empty optional boolean inputs return false.
+- `setOutput` writes to `GITHUB_OUTPUT` when present and falls back to the
+  legacy command form otherwise.
+- `setFailed` sets `process.exitCode = 1` and emits an error command.
+
+Keep `test/actions-core.test.ts` updated for any shim change. This file is the
+guardrail that lets the project avoid a runtime dependency on `@actions/core`.
+
 ## JSON Validator Details
 
-`json-validator.js` does three jobs: file discovery, parsing, and schema
+`json-validator.ts` does three jobs: file discovery, parsing, and schema
 validation.
 
 Discovery:
 
-- If `files` has lines, each line is expanded with `globSync(pattern)`.
-- Otherwise `file-discovery.js` recursively crawls `base_dir` with Node `fs`.
-- Default JSON glob is based on `json_extension`.
+- If `files` has lines, each line is expanded with `fs.globSync(pattern)`.
+- Otherwise `file-discovery.ts` recursively crawls `base_dir` with Node `fs`.
+- Default JSON matching is based on `json_extension`.
 - When `yaml_as_json` is true, the JSON validator also discovers files matching
   `yaml_extension` and `yaml_extension_short`.
 - A `Set` prevents duplicate file processing when patterns overlap.
@@ -252,13 +269,13 @@ Security-sensitive areas:
 
 ## YAML Validator Details
 
-`yaml-validator.js` also performs discovery, parsing, and optional schema
+`yaml-validator.ts` also performs discovery, parsing, and optional schema
 validation.
 
 Discovery:
 
-- If `files` has lines, each line is expanded with `globSync(pattern)`.
-- Otherwise `file-discovery.js` recursively crawls `base_dir` with Node `fs`
+- If `files` has lines, each line is expanded with `fs.globSync(pattern)`.
+- Otherwise `file-discovery.ts` recursively crawls `base_dir` with Node `fs`
   and filters files by `yaml_extension` and `yaml_extension_short`.
 - A `Set` prevents duplicate file processing.
 
@@ -286,30 +303,9 @@ Validation:
 Be careful not to confuse native YAML schema validation with JSON Schema. Users
 who need JSON Schema behavior for YAML should use `yaml_as_json`.
 
-## Exclusion Behavior
-
-`Exclude` loads two possible pattern sources into one `ignore()` instance:
-
-- `exclude_file`, if configured.
-- `.gitignore`, when `use_gitignore` is true.
-
-The input name `use_gitignore` is the public behavior. Internally the property
-is currently named `gitTrackedOnly`, but it means "load `.gitignore` patterns",
-not "ask git which files are tracked."
-
-Patterns are tested against the validator's `fullPath` string. If changing path
-normalization, add tests for:
-
-- files under `base_dir`
-- explicit `files` input
-- nested directories
-- dot directories
-- schema-file skipping
-- `.gitignore` directory patterns with trailing slashes
-
 ## Result Processing And Comments
 
-`process-results.js` first evaluates JSON and YAML independently:
+`process-results.ts` first evaluates JSON and YAML independently:
 
 - If no files were detected for a type, that type passes.
 - If all detected files passed, that type passes.
@@ -333,38 +329,51 @@ docs, and user expectations are updated together.
 
 ## Testing Strategy
 
-Jest tests mock GitHub Actions inputs by setting `process.env.INPUT_*` values.
-When adding tests, reset all relevant input env vars in `beforeEach`; stale
-inputs are a common source of misleading failures.
+Unit tests live in `test/` and run through Node's built-in test runner:
+
+```bash
+npm run ci-test
+```
+
+`test/setup.ts` installs global `test`, `beforeEach`, `afterEach`, `expect`, and
+`jest` compatibility helpers. This is a local test helper, not the Jest package.
+The helper implements only the matcher and spy surface used by this repository.
+If tests need new matcher behavior, extend the helper narrowly and test the
+real production behavior it supports.
+
+Tests mock GitHub Actions inputs by setting `process.env.INPUT_*` values. When
+adding tests, reset all relevant input env vars in `beforeEach`; stale inputs
+are a common source of misleading failures.
 
 Current test organization:
 
-- `__tests__/functions/json-validator.test.js` covers AJV schema versions,
-  strict mode, custom formats, syntax failures, schema failures, `files`, glob
-  duplicates, exclude regex, schema skipping, and `yaml_as_json`.
-- `__tests__/functions/yaml-validator.test.js` covers YAML syntax, schema
-  validation, multi-document parsing, schema skipping, `yaml_as_json` skipping,
-  exclude regex, custom extensions, explicit files, and JSON-file skipping.
-- `__tests__/functions/exclude.test.js` covers custom exclude files, missing
-  exclude files, optional missing files, `.gitignore` loading, and ignore
-  pattern matches.
-- `__tests__/functions/process-results.test.js` covers success, no-file
-  success, failure, warn mode, unknown mode, and native GitHub API PR comment
-  paths.
-- `__tests__/main.test.js` covers orchestration with mocked validators.
-- `__tests__/main-execution.test.js` covers the environment gate around direct
-  execution.
+- `test/actions-core.test.ts` covers the native Actions core shim.
+- `test/functions/json-validator.test.ts` covers AJV schema versions, strict
+  mode, custom formats, syntax failures, schema failures, `files`, native glob
+  expansion, duplicates, exclude regex, schema skipping, and `yaml_as_json`.
+- `test/functions/yaml-validator.test.ts` covers YAML syntax, schema validation,
+  multi-document parsing, schema skipping, `yaml_as_json` skipping, exclude
+  regex, custom extensions, explicit files, and JSON-file skipping.
+- `test/functions/exclude.test.ts` covers custom exclude files, missing exclude
+  files, optional missing files, `.gitignore` loading, and ignore pattern
+  matches.
+- `test/functions/process-results.test.ts` covers success, no-file success,
+  failure, warn mode, unknown mode, and native GitHub API PR comment paths.
+- `test/main.test.ts` covers orchestration with injectable dependencies.
 
-The project requires 100% line coverage globally through Jest configuration in
-`package.json`. Do not lower coverage thresholds to make a change pass.
+The project requires 100% source line coverage through Node's native coverage
+threshold in `package.json`. Do not lower the threshold to make a change pass.
+There are a few `node:coverage` ignore comments around TypeScript/source-map
+artifacts where the behavior is covered but Node reports phantom uncovered
+lines; do not use ignore comments to hide real untested behavior.
 
 For behavior changes, prefer adding or modifying fixtures under
 `__tests__/fixtures/` instead of constructing large inline JSON/YAML strings.
 Tiny temporary files are used in a few edge-case tests today, but fixtures are
 easier to audit and safer for future maintenance.
 
-When replacing discovery dependencies, keep the hardened unit tests around these
-behaviors green:
+When replacing discovery dependencies or changing file matching, keep the
+hardened unit tests around these behaviors green:
 
 - explicit `files` input bypasses `base_dir` and validates matching files from
   anywhere in the workspace
@@ -390,14 +399,16 @@ directory.
 ## CI Workflows
 
 - `test.yml`: installs with `npm ci` and runs `npm run ci-test`.
-- `lint.yml`: runs `npm run format-check` and `npm run lint`.
-- `package-check.yml`: runs `npm run bundle` and fails if `dist/` changes.
+- `lint.yml`: installs with `npm ci` and runs `npm run typecheck`.
+- `package-check.yml`: runs `npm run bundle` and fails if tracked or untracked
+  generated `dist/` files change.
 - `acceptance.yml`: uses this action from the repository root (`uses: ./`) on
   representative files and options, including PR comments, `files`, custom AJV
   formats, flat YAML schemas, multi-document YAML-as-JSON, Helm-chart
   exclusions, custom extensions, exclude-file negation, warn mode, and
   expected-failure checks for invalid syntax and schema errors.
-- `codeql-analysis.yml`: JavaScript CodeQL scan on `main` and weekly schedule.
+- `codeql-analysis.yml`: JavaScript/TypeScript CodeQL scan on `main` and weekly
+  schedule.
 - `update-latest-release-tag.yml`: manual workflow to force-update major
   release tags such as `v8`.
 - `copilot-setup-steps.yml`: setup workflow for Copilot-style coding agents.
@@ -410,56 +421,57 @@ ready.
 ## Dependency Notes
 
 The project intentionally keeps the runtime dependency surface small because the
-action runs in other repositories' CI. Current native replacements:
+action runs in other repositories' CI.
 
+Current runtime dependencies:
+
+- `ajv`, `ajv-draft-04`, and `ajv-formats` for JSON Schema support across the
+  public `json_schema_version` options and optional format validation.
+- `yaml` for YAML parsing and multi-document parsing.
+- `yaml-schema-validator` for the action's legacy native YAML schema support.
+- `ignore` for gitignore-style exclude files and `.gitignore` behavior.
+
+Current native replacements:
+
+- GitHub Action input/log/output/failure handling uses `src/actions-core.ts`,
+  not `@actions/core`.
 - PR comments use the Actions event payload from `GITHUB_EVENT_PATH`,
   `GITHUB_REPOSITORY`, `GITHUB_API_URL`, and native `fetch`, not
   `@actions/github` or Octokit.
+- Explicit `files` patterns use Node's native `fs.globSync`, not the `glob`
+  package.
+- Crawler-mode JSON/YAML discovery uses `file-discovery.ts` and Node `fs`
+  recursion, not `fdir` or `picomatch`.
 - PR comment body formatting is built with arrays and template strings, not
   `dedent-js`.
-- Crawler-mode JSON/YAML discovery uses `file-discovery.js` and Node `fs`
-  recursion, not `fdir` or `picomatch`.
+- Unit tests use Node's built-in test runner and `test/setup.ts`, not Jest.
+- TypeScript compiles directly through `tsc`, `tsx`, and `@vercel/ncc`; there is
+  no Babel transform.
+- Type checking replaces the old ESLint/Prettier workflow. There is no npm
+  `overrides` entry because the removed tooling no longer pulls the vulnerable
+  transitive chains that required it.
 - Coverage badge generation uses `scripts/coverage-badge.js`, not
   `make-coverage-badge`.
-- `@actions/core` is on v3, which is ESM-only. Jest maps `@actions/core` to
-  `test-helpers/actions-core.js` so unit tests do not load the real Actions
-  runtime package.
-- `package.json` uses an npm `overrides` entry for `brace-expansion` to keep
-  ESLint's transitive minimatch chain on a patched version.
-- ESLint is on the flat-config path. Keep lint configuration in
-  `eslint.config.js`; `.eslintrc.json` and `.eslintignore` are intentionally not
-  used with ESLint 10.
 
-Keep `glob` for explicit `files` input compatibility unless you are prepared to
-match common glob behavior in detail and run both unit and acceptance suites.
-
-## Release Notes
-
-`script/release` is an interactive helper that:
-
-1. Shows the latest tag.
-2. Prompts for a new `vX.X.X` tag.
-3. Creates an annotated tag.
-4. Pushes tags.
-
-Major-version tags are updated separately through
-`.github/workflows/update-latest-release-tag.yml`.
+Keep `@vercel/ncc` as a dev dependency. GitHub Actions execute the committed
+bundle, and `tsc` alone does not bundle runtime dependencies into `dist/`.
 
 ## Coding Style
 
-- Use ES module syntax, matching the existing `import` and named export style.
-- Keep Prettier defaults from `.prettierrc.json`: no semicolons, single quotes,
-  trailing commas disabled, 2-space indentation, 80-column print width.
+- Use strict TypeScript and ES module syntax.
 - Keep implementation changes focused and small. This action is depended on by
   many repositories.
 - Prefer descriptive constants for repeated strings.
-- Do not introduce TypeScript, transpiler changes, or new frameworks without a
-  specific need.
-- Use `@actions/core` APIs for inputs, outputs, logs, warnings, and failures.
+- Use shared interfaces from `src/types.ts` when result or PR context shapes are
+  involved.
+- Use the local `core` shim from `src/actions-core.ts` for action inputs,
+  outputs, logs, warnings, and failures.
 - Maintain existing public result shapes and log semantics unless the change is
   intentionally breaking and documented.
 - Do not edit generated `dist/` files directly; modify `src/` and run the
   bundle command.
+- Do not introduce new dependencies when native Node or TypeScript functionality
+  is sufficient and clear.
 
 ## Documentation Rules
 
@@ -468,8 +480,9 @@ Update docs when behavior changes:
 - `action.yml` for the formal input/output contract.
 - `README.md` for user-facing setup, input tables, and examples.
 - `docs/` for deeper feature-specific notes.
-- `.github/copilot-instructions.md` only if the generic agent workflow changes.
-- `AGENTS.md` when architecture, workflows, or maintenance hazards change.
+- `.github/copilot-instructions.md` if the generic agent workflow changes.
+- `AGENTS.md` when architecture, workflows, dependencies, or maintenance hazards
+  change.
 
 If adding an input, include:
 
@@ -520,7 +533,7 @@ Adding a new validation option:
 3. Add constants for repeated strings.
 4. Add focused unit tests and fixtures.
 5. Update README docs.
-6. Run tests, lint, and bundle.
+6. Run `npm run all`.
 
 Changing file discovery:
 
@@ -542,8 +555,7 @@ Updating dependencies:
 
 1. Use `npm install` or `npm update` in a way that updates `package-lock.json`.
 2. Review runtime dependency changes carefully; they are bundled into `dist/`.
-3. Run `npm run ci-test`, `npm run format-check`, `npm run lint`, and
-   `npm run bundle`.
+3. Run `npm run all`.
 4. Inspect `dist/licenses.txt` and the generated bundle diff for unexpected
    dependency churn.
 
@@ -558,6 +570,8 @@ Preparing a PR:
 
 - `files` mode bypasses `base_dir` discovery but both validators still receive
   the expanded file list and must skip files they do not own.
+- If every explicit `files` pattern expands to zero files, validators fall back
+  to crawler discovery under `base_dir`.
 - JSON schema skipping uses substring matching; YAML schema skipping uses exact
   path equality.
 - Native YAML multi-document mode does not run YAML schema validation after a
@@ -568,8 +582,10 @@ Preparing a PR:
   regex evaluation over large file sets.
 - `.gitignore` directory patterns should include trailing slashes for reliable
   matching in this action.
-- `dist/index1.js` and other files under `dist/` are generated artifacts; do
-  not infer source structure from them.
+- Node's native coverage with TypeScript source maps can report phantom
+  uncovered lines around type-only or formatting-only source spans. Use tests
+  first; use `node:coverage` ignore comments only when behavior is already
+  covered.
 
 When in doubt, start from the tests and fixtures. This repository has extensive
 unit coverage, and the safest changes are the ones that make the intended

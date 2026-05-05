@@ -20,7 +20,7 @@ If you have a repository containing JSON or YAML files and want to validate them
 
 You can provide schemas to check against, or just validate the syntax of the files. This comes very handy when you want to ensure that your JSON and YAML files are valid before committing them to your repository, especially from pull requests.
 
-This Action is also designed to stay fast while keeping its dependency surface small. It uses native recursive directory discovery for normal scans and only uses glob expansion when the `files` input is provided.
+This Action is also designed to stay fast while keeping its dependency surface small. It uses native recursive directory discovery for normal scans and Node's native glob expansion when the `files` input is provided.
 
 ## Installation 📦
 
