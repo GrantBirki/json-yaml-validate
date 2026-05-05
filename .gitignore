@@ -4,15 +4,12 @@
 # Dependency directory
 node_modules/
 
-# Coverage directory used by tools like istanbul
+# Coverage output from local test tooling
 coverage/
 *.lcov
 
 # Optional npm cache directory
 .npm/
-
-# Optional eslint cache
-.eslintcache/
 
 # dotenv environment variables file
 .env

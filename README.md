@@ -11,16 +11,16 @@ A GitHub Action to quickly validate JSON and YAML files in a repository
 
 ## About 💡
 
-This action comes pre-packaged with two different common JSON and YAML validators:
+This action comes pre-packaged with JSON and YAML validation support:
 
 - JSON validation with [ajv](https://github.com/ajv-validator/ajv) - The fastest NodeJS JSON validator
-- YAML validation with [yaml-schema-validator](https://github.com/ketanSaxena/schema-validator)
+- YAML parsing and legacy YAML schema validation implemented in native TypeScript
 
 If you have a repository containing JSON or YAML files and want to validate them extremely quickly, this action is for you!
 
 You can provide schemas to check against, or just validate the syntax of the files. This comes very handy when you want to ensure that your JSON and YAML files are valid before committing them to your repository, especially from pull requests.
 
-This Action is also designed to stay fast while keeping its dependency surface small. It uses native recursive directory discovery for normal scans and only uses glob expansion when the `files` input is provided.
+This Action is also designed to stay fast while keeping its dependency surface small. It uses native recursive directory discovery for normal scans and Node's native glob expansion when the `files` input is provided.
 
 ## Installation 📦
 
@@ -136,12 +136,11 @@ The resulting comment will look like this:
 
 This Action also supports schema validation for both JSON and YAML files.
 
-References docs for both JSON and YAML schema validation can be found at the links below:
+References for JSON Schema validation can be found at the link below. The YAML schema syntax supported by this action is documented in the YAML example that follows.
 
 - [JSON Schema Validation Docs](https://ajv.js.org/json-schema.html#json-schema)
-- [YAML Schema Validation Docs](https://github.com/ketanSaxena/schema-validator#yaml-schema) - Additional docs [can be found here](https://www.npmjs.com/package/validate)
 
-> Note: JSON files and YAML files use two separate libraries for schema validation
+> Note: JSON files use AJV JSON Schema. YAML files use this action's legacy YAML schema dialect, which is intentionally smaller and is not JSON Schema.
 
 Assuming the following repository structure:
 
@@ -326,7 +325,7 @@ Details on the fields seen in the schema above:
 - `type` - The type of the field (e.g. `string`, `number`, `boolean`, etc)
 - `length` - The length of the field with `min` and `max` constraints
 - `required` - Whether or not the field is required
-- `enums` - An array of values that the field can be
+- `enum` - An array of accepted values for the field
 
 ## Excluding Files
 

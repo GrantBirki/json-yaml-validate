@@ -1,7 +1,7 @@
-import * as core from '@actions/core'
-import {readFileSync} from 'fs'
+import {readFileSync} from 'node:fs'
+import {core} from '../actions-core.js'
+import type {PullRequestContext, ValidationResult} from '../types.js'
 
-// Constants
 const SUCCESS_OUTPUT_VALUE = 'true'
 const FAILURE_OUTPUT_VALUE = 'false'
 const MODE_FAIL = 'fail'
@@ -9,24 +9,20 @@ const MODE_WARN = 'warn'
 const DEFAULT_GITHUB_API_URL = 'https://api.github.com'
 const GITHUB_API_VERSION = '2022-11-28'
 
-// Helper function to check the results of json and yaml validation
-// :param results: the results of the validation
-// :param type: the type of validation (json or yaml)
-// :returns: true if the results are valid, false if they are not
-async function checkResults(results, type) {
-  // check if there were any scanned files
+async function checkResults(
+  results: ValidationResult,
+  type: 'JSON' | 'YAML'
+): Promise<boolean> {
   if (results.passed === 0 && results.failed === 0) {
     core.info(`🔎 no ${type} files were detected`)
     return true
   }
 
-  // print a nice success message if there were no errors
   if (results.success === true) {
     core.info(`✅ all ${results.passed} detected ${type} files are valid`)
     return true
   }
 
-  // print the results of the validation if there were errors
   core.info(
     `${type} Validation Results:\n  - Passed: ${results.passed}\n  - Failed: ${
       results.failed
@@ -40,11 +36,10 @@ async function checkResults(results, type) {
   return false
 }
 
-// Helper function to construct the body of the PR comment
-// :param jsonResults: the results of the json validation
-// :param yamlResults: the results of the yaml validation
-// :returns: the body of the PR comment
-async function constructBody(jsonResults, yamlResults) {
+async function constructBody(
+  jsonResults: ValidationResult,
+  yamlResults: ValidationResult
+): Promise<string> {
   let body = '## JSON and YAML Validation Results'
 
   if (jsonResults.success === false) {
@@ -68,7 +63,7 @@ async function constructBody(jsonResults, yamlResults) {
   return body
 }
 
-function validationSection(type, results) {
+function validationSection(type: 'JSON' | 'YAML', results: ValidationResult) {
   return [
     '',
     `### ${type} Validation Results`,
@@ -81,9 +76,10 @@ function validationSection(type, results) {
     '',
     ''
   ].join('\n')
+  /* node:coverage ignore next 2 */
 }
 
-function getPullRequestContext() {
+function getPullRequestContext(): PullRequestContext | null {
   if (!process.env.GITHUB_EVENT_PATH) {
     return null
   }
@@ -106,7 +102,11 @@ function getPullRequestContext() {
   }
 }
 
-async function createPullRequestComment(token, pullRequestContext, body) {
+async function createPullRequestComment(
+  token: string,
+  pullRequestContext: PullRequestContext,
+  body: string
+): Promise<void> {
   const response = await fetch(
     `${process.env.GITHUB_API_URL || DEFAULT_GITHUB_API_URL}/repos/${
       pullRequestContext.owner
@@ -133,35 +133,28 @@ async function createPullRequestComment(token, pullRequestContext, body) {
   }
 }
 
-// Helper function to process the results of json and yaml validation
-// :param jsonResults: the results of the json validation
-// :param yamlResults: the results of the yaml validation
-// :returns: true if the results are valid, false if they are not
-export async function processResults(jsonResults, yamlResults) {
-  // check the json results
+export async function processResults(
+  jsonResults: ValidationResult,
+  yamlResults: ValidationResult
+): Promise<boolean> {
   const jsonResult = await checkResults(jsonResults, 'JSON')
   const yamlResult = await checkResults(yamlResults, 'YAML')
 
-  // exit here if both JSON and YAML results are valid
   if (jsonResult === true && yamlResult === true) {
     core.setOutput('success', SUCCESS_OUTPUT_VALUE)
     return true
   }
 
-  // If we get here, the action failed
   core.setOutput('success', FAILURE_OUTPUT_VALUE)
 
-  // check if the context is a pull request and if we should comment
   if (core.getBooleanInput('comment')) {
     const pullRequestContext = getPullRequestContext()
     if (pullRequestContext === null) {
       return applyMode()
     }
 
-    // build the body of the comment
     const body = await constructBody(jsonResults, yamlResults)
 
-    // add a comment to the pull request
     core.info(`📝 adding comment to PR #${pullRequestContext.issueNumber}`)
     await createPullRequestComment(
       core.getInput('github_token', {required: true}),
@@ -173,8 +166,7 @@ export async function processResults(jsonResults, yamlResults) {
   return applyMode()
 }
 
-function applyMode() {
-  // add final log messages and exit status of the action
+function applyMode(): boolean {
   if (core.getInput('mode') === MODE_FAIL) {
     core.setFailed('❌ JSON or YAML files failed validation')
   } else if (core.getInput('mode') === MODE_WARN) {

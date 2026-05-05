@@ -1,15 +1,29 @@
-import * as core from '@actions/core'
-import validateSchema from 'yaml-schema-validator'
-import {readFileSync} from 'fs'
+import {globSync, readFileSync} from 'node:fs'
 import {parse, parseAllDocuments} from 'yaml'
-import {globSync} from 'glob'
-import {discoverFilesByExtension} from './file-discovery'
+import {core} from '../actions-core.js'
+import type {Excluder, ValidationError, ValidationResult} from '../types.js'
+import {discoverFilesByExtension} from './file-discovery.js'
+import {validateYamlSchemaFile} from './yaml-schema-validator.js'
 
-// Constants
 const INVALID_YAML_MESSAGE = 'Invalid YAML'
 
-// Helper function to validate all yaml files in the baseDir
-export async function yamlValidator(exclude) {
+function discoverExplicitFiles(patterns: string[]): string[] {
+  const files: string[] = []
+
+  for (const pattern of patterns) {
+    files.push(...globSync(pattern))
+  }
+
+  return files
+}
+
+function formatYamlParseError(error: unknown): string {
+  return String(error).split(':').slice(0, 2).join('')
+}
+
+export async function yamlValidator(
+  exclude: Excluder
+): Promise<ValidationResult> {
   const baseDir = core.getInput('base_dir')
   const jsonExtension = core.getInput('json_extension')
   const yamlExtension = core.getInput('yaml_extension')
@@ -21,25 +35,13 @@ export async function yamlValidator(exclude) {
   const allowMultipleDocuments = core.getBooleanInput(
     'allow_multiple_documents'
   )
-  let patterns = core.getMultilineInput('files').filter(Boolean)
+  const patterns = core.getMultilineInput('files').filter(Boolean)
 
-  // construct a list of file paths to validate and use glob if necessary
-  let files = []
-  patterns.forEach(pattern => {
-    files.push(...globSync(pattern))
-  })
-
-  // remove trailing slash from baseDir
+  let files = discoverExplicitFiles(patterns)
   const baseDirSanitized = baseDir.replace(/\/$/, '')
+  const skipRegex = yamlExcludeRegex ? new RegExp(yamlExcludeRegex) : null
 
-  // check if regex is enabled
-  let skipRegex = null
-  if (yamlExcludeRegex && yamlExcludeRegex !== '') {
-    skipRegex = new RegExp(yamlExcludeRegex)
-  }
-
-  // loop through all yaml files in the baseDir and validate them
-  const result = {
+  const result: ValidationResult = {
     success: true,
     passed: 0,
     failed: 0,
@@ -54,8 +56,9 @@ export async function yamlValidator(exclude) {
 
   core.debug(`yaml - using baseDir: ${baseDirSanitized}`)
   core.debug(`yaml - using glob: ${glob}`)
-  if (files.length > 0) core.debug(`using files: ${files.join(', ')}`)
-  else {
+  if (files.length > 0) {
+    core.debug(`using files: ${files.join(', ')}`)
+  } else {
     core.debug(`using baseDir: ${baseDirSanitized}`)
     core.debug(`using glob: ${glob}`)
 
@@ -66,8 +69,7 @@ export async function yamlValidator(exclude) {
     )
   }
 
-  // Create a Set to track processed files
-  const processedFiles = new Set()
+  const processedFiles = new Set<string>()
 
   for (const fullPath of files) {
     core.debug(`found file: ${fullPath}`)
@@ -77,9 +79,6 @@ export async function yamlValidator(exclude) {
       continue
     }
 
-    // if the file is a json file but it should not be treated as yaml
-    // skipped++ does not need to be called here as the file should be validated later...
-    // ...on as json with the json-validator
     const isJsonFile = jsonExtension && fullPath.endsWith(jsonExtension)
     if (yamlAsJson === false && isJsonFile) {
       core.debug(
@@ -96,13 +95,10 @@ export async function yamlValidator(exclude) {
       continue
     }
 
-    // If an exclude regex is provided, skip yaml files that match
-    if (skipRegex !== null) {
-      if (skipRegex.test(fullPath)) {
-        core.info(`skipping due to exclude match: ${fullPath}`)
-        result.skipped++
-        continue
-      }
+    if (skipRegex !== null && skipRegex.test(fullPath)) {
+      core.info(`skipping due to exclude match: ${fullPath}`)
+      result.skipped++
+      continue
     }
 
     if (exclude.isExcluded(fullPath)) {
@@ -111,7 +107,6 @@ export async function yamlValidator(exclude) {
       continue
     }
 
-    // Check if the file has already been processed
     if (processedFiles.has(fullPath)) {
       core.debug(`skipping duplicate file: ${fullPath}`)
       continue
@@ -120,23 +115,20 @@ export async function yamlValidator(exclude) {
     let multipleDocuments = false
 
     try {
-      // try to parse the yaml file
       if (allowMultipleDocuments) {
-        let documents = parseAllDocuments(readFileSync(fullPath, 'utf8'))
-        for (let doc of documents) {
+        const documents = parseAllDocuments(readFileSync(fullPath, 'utf8'))
+        for (const doc of documents) {
           if (doc.errors.length > 0) {
-            // format and show the first error
             throw doc.errors[0]
           }
-          parse(doc.toString()) // doc.toString() will throw an error if the document is invalid
+          parse(doc.toString())
         }
         core.info(`multiple documents found in file: ${fullPath}`)
         multipleDocuments = true
       } else {
         parse(readFileSync(fullPath, 'utf8'))
       }
-    } catch (err) {
-      // if the yaml file is invalid, log an error and set success to false
+    } catch (error) {
       core.error(`❌ failed to parse YAML file: ${fullPath}`)
       result.success = false
       result.failed++
@@ -146,15 +138,13 @@ export async function yamlValidator(exclude) {
           {
             path: null,
             message: INVALID_YAML_MESSAGE,
-            // format error message
-            error: err.toString().split(':').slice(0, 2).join('')
+            error: formatYamlParseError(error)
           }
         ]
       })
       continue
     }
 
-    // if no yamlSchema is provided, skip validation against the schema
     const hasNoSchema =
       !yamlSchema ||
       yamlSchema === '' ||
@@ -166,13 +156,9 @@ export async function yamlValidator(exclude) {
       continue
     }
 
-    const schemaErrors = validateSchema(`${fullPath}`, {
-      schema: yamlSchema,
-      logLevel: 'none'
-    })
+    const schemaErrors = validateYamlSchemaFile(fullPath, yamlSchema)
 
     if (schemaErrors && schemaErrors.length > 0) {
-      // if the yaml file is invalid against the schema, log an error and set success to false
       core.error(
         `❌ failed to parse YAML file: ${fullPath}\n${JSON.stringify(
           schemaErrors
@@ -181,9 +167,7 @@ export async function yamlValidator(exclude) {
       result.success = false
       result.failed++
 
-      // add the errors to the result object (path and message)
-      // where path is the path to the property that failed validation
-      const errors = []
+      const errors: ValidationError[] = []
       for (const error of schemaErrors) {
         errors.push({
           path: error.path || null,
@@ -191,7 +175,6 @@ export async function yamlValidator(exclude) {
         })
       }
 
-      // add the file and errors to the result object
       result.violations.push({
         file: fullPath,
         errors: errors
@@ -199,13 +182,11 @@ export async function yamlValidator(exclude) {
       continue
     }
 
-    // Add the file to the processedFiles Set
     processedFiles.add(fullPath)
 
     result.passed++
     core.info(`${fullPath} is valid`)
   }
 
-  // return the result object
   return result
 }

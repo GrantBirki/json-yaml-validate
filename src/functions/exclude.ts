@@ -1,17 +1,23 @@
-import * as core from '@actions/core'
-import {readFileSync} from 'fs'
-import ignore from 'ignore'
+import {readFileSync} from 'node:fs'
+import ignore, {type Ignore} from 'ignore'
+import {core} from '../actions-core.js'
+
+function toError(error: unknown): Error {
+  return error instanceof Error ? error : new Error(String(error))
+}
 
 export class Exclude {
+  private readonly gitTrackedOnly: boolean
+  private readonly ignore: Ignore
+  private readonly path: string
+  private readonly required: boolean
+
   constructor() {
     this.path = core.getInput('exclude_file')
     this.required = core.getBooleanInput('exclude_file_required')
     this.gitTrackedOnly = core.getBooleanInput('use_gitignore')
-
-    // initialize the exclude array
     this.ignore = ignore()
 
-    // read the exclude file if it was used
     if (this.path && this.path !== '') {
       core.debug(`loading exclude_file: ${this.path}`)
       try {
@@ -20,7 +26,7 @@ export class Exclude {
       } catch (error) {
         if (this.required === true) {
           core.setFailed(`error reading exclude_file: ${this.path}`)
-          throw new Error(error.toString(), {cause: error})
+          throw new Error(toError(error).toString(), {cause: error})
         }
 
         core.info(`exclude_file was not found, but it is not required - OK`)
@@ -29,7 +35,6 @@ export class Exclude {
       core.debug(`exclude_file was not provided - OK`)
     }
 
-    // if gitTrackOnly is true, add the git exclude patterns from the .gitignore file if it exists
     if (this.gitTrackedOnly) {
       core.debug(`use_gitignore: ${this.gitTrackedOnly}`)
 
@@ -44,10 +49,7 @@ export class Exclude {
     }
   }
 
-  isExcluded(file) {
-    // use .gitignore style matching
-    // https://git-scm.com/docs/gitignore
-    // https://github.com/kaelzhang/node-ignore
+  isExcluded(file: string): boolean {
     return this.ignore.ignores(file)
   }
 }

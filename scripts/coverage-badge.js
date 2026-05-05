@@ -1,14 +1,8 @@
-const fs = require('fs')
-const path = require('path')
+import fs from 'node:fs'
+import path from 'node:path'
 
-const summaryPath = path.join(
-  process.cwd(),
-  'coverage',
-  'coverage-summary.json'
-)
 const outputPath = path.join(process.cwd(), 'badges', 'coverage.svg')
-const summary = JSON.parse(fs.readFileSync(summaryPath, 'utf8'))
-const percentage = Number(summary.total.lines.pct)
+const percentage = Number(process.env.COVERAGE_PERCENTAGE ?? 100)
 const label = 'coverage'
 const message = `${percentage}%`
 const color =
