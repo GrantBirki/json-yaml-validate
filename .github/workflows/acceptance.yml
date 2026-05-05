@@ -83,6 +83,111 @@ jobs:
         id: json-yaml-validate-exclude-helm-charts-test
         with:
           comment: "true"
-          yaml_exclude_regex: "(charts/external-dns/templates.*|mkdocs.yml)"
+          json_exclude_regex: "edge_cases"
+          yaml_exclude_regex: "(charts/external-dns/templates.*|mkdocs.yml|edge_cases)"
           allow_multiple_documents: "true"
           base_dir: __tests__/acceptance
+
+      - name: acceptance test - custom extensions outside base_dir
+        uses: ./
+        id: custom_extensions
+        with:
+          base_dir: __tests__/acceptance/prod
+          use_gitignore: "false"
+          json_extension: .jsonc
+          yaml_extension: .yamlx
+          yaml_extension_short: .ymlx
+          files: |
+            __tests__/acceptance/edge_cases/custom/config.jsonc
+            __tests__/acceptance/edge_cases/custom/values.yamlx
+            __tests__/acceptance/edge_cases/custom/extra.ymlx
+
+      - name: acceptance test - exclude file negation
+        uses: ./
+        id: exclude_file_negation
+        with:
+          use_gitignore: "false"
+          exclude_file: __tests__/acceptance/edge_cases/exclude/ignore-rules.txt
+          files: |
+            __tests__/acceptance/edge_cases/exclude/skip.json
+            __tests__/acceptance/edge_cases/exclude/important.json
+            __tests__/acceptance/edge_cases/exclude/nested/bad.yaml
+
+      - name: acceptance test - warn mode with invalid files
+        uses: ./
+        id: warn_mode_invalid
+        with:
+          mode: warn
+          use_gitignore: "false"
+          files: |
+            __tests__/acceptance/edge_cases/failures/invalid.json
+            __tests__/acceptance/edge_cases/failures/invalid.yaml
+
+      - name: assert warn mode reports failed validation
+        if: ${{ steps.warn_mode_invalid.outputs.success != 'false' }}
+        run: |
+          echo "warn mode should report success=false for invalid files"
+          exit 1
+
+      - name: acceptance test - invalid syntax fails
+        uses: ./
+        id: invalid_syntax
+        continue-on-error: true
+        with:
+          use_gitignore: "false"
+          files: |
+            __tests__/acceptance/edge_cases/failures/invalid.json
+            __tests__/acceptance/edge_cases/failures/invalid.yaml
+
+      - name: assert invalid syntax fails
+        if: ${{ steps.invalid_syntax.outcome != 'failure' }}
+        run: |
+          echo "invalid syntax should fail in fail mode"
+          exit 1
+
+      - name: acceptance test - json schema violation fails
+        uses: ./
+        id: json_schema_violation
+        continue-on-error: true
+        with:
+          use_gitignore: "false"
+          json_schema: ./__tests__/fixtures/schemas/schema1.json
+          files: |
+            __tests__/fixtures/json/mixture/json1.json
+
+      - name: assert json schema violation fails
+        if: ${{ steps.json_schema_violation.outcome != 'failure' }}
+        run: |
+          echo "json schema violations should fail in fail mode"
+          exit 1
+
+      - name: acceptance test - yaml schema violation fails
+        uses: ./
+        id: yaml_schema_violation
+        continue-on-error: true
+        with:
+          use_gitignore: "false"
+          yaml_schema: ./__tests__/fixtures/schemas/schema1.yaml
+          files: |
+            __tests__/fixtures/yaml/mixture/yaml2.yml
+
+      - name: assert yaml schema violation fails
+        if: ${{ steps.yaml_schema_violation.outcome != 'failure' }}
+        run: |
+          echo "yaml schema violations should fail in fail mode"
+          exit 1
+
+      - name: acceptance test - multi document yaml requires opt in
+        uses: ./
+        id: multi_document_without_opt_in
+        continue-on-error: true
+        with:
+          use_gitignore: "false"
+          files: |
+            __tests__/fixtures/yaml/multiple/yaml1.yaml
+
+      - name: assert multi document yaml requires opt in
+        if: ${{ steps.multi_document_without_opt_in.outcome != 'failure' }}
+        run: |
+          echo "multi-document YAML should fail when allow_multiple_documents is false"
+          exit 1

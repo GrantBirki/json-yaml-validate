@@ -371,6 +371,17 @@ behaviors green:
 - multi-document YAML syntax validation skips native YAML schema validation
 - custom exclude files use gitignore-style negation and directory patterns
 
+Acceptance tests in `.github/workflows/acceptance.yml` use the action exactly as
+consumers do through `uses: ./`. Expected-failure acceptance cases must use
+`continue-on-error: true` on the action step and a following assertion step that
+checks `steps.<id>.outcome == 'failure'`; this keeps the job green while proving
+invalid syntax, schema violations, and multi-document YAML without opt-in still
+fail. Keep explicit `files` inputs pointed at existing fixtures, because if all
+patterns are unmatched the validators fall back to `base_dir` discovery.
+Intentionally invalid acceptance fixtures under `__tests__/acceptance` must also
+be excluded from any positive crawler-mode acceptance step that scans that
+directory.
+
 ## CI Workflows
 
 - `test.yml`: installs with `npm ci` and runs `npm run ci-test`.
@@ -378,8 +389,9 @@ behaviors green:
 - `package-check.yml`: runs `npm run bundle` and fails if `dist/` changes.
 - `acceptance.yml`: uses this action from the repository root (`uses: ./`) on
   representative files and options, including PR comments, `files`, custom AJV
-  formats, flat YAML schemas, multi-document YAML-as-JSON, and Helm-chart
-  exclusions.
+  formats, flat YAML schemas, multi-document YAML-as-JSON, Helm-chart
+  exclusions, custom extensions, exclude-file negation, warn mode, and
+  expected-failure checks for invalid syntax and schema errors.
 - `codeql-analysis.yml`: JavaScript CodeQL scan on `main` and weekly schedule.
 - `update-latest-release-tag.yml`: manual workflow to force-update major
   release tags such as `v8`.
