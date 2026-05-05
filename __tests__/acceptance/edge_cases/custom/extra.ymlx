@@ -1,0 +1,3 @@
+---
+environment: acceptance
+replicas: 2

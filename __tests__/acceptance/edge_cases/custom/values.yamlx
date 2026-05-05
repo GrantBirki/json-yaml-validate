@@ -1,0 +1,3 @@
+---
+service: json-yaml-validate
+mode: custom-extension

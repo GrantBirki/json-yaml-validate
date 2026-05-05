@@ -1,0 +1,3 @@
+__tests__/acceptance/edge_cases/exclude/*.json
+!__tests__/acceptance/edge_cases/exclude/important.json
+__tests__/acceptance/edge_cases/exclude/nested/
