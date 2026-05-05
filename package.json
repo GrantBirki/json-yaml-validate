@@ -9,7 +9,7 @@
     "format-check": "prettier --check '**/*.js'",
     "lint": "eslint src/**/*.js",
     "package": "ncc build src/main.js -o dist --source-map --license licenses.txt",
-    "test": "(LOCAL_ACTIONS_CI_TEST=true jest && make-coverage-badge --output-path ./badges/coverage.svg) || make-coverage-badge --output-path ./badges/coverage.svg",
+    "test": "LOCAL_ACTIONS_CI_TEST=true jest; test_status=$?; node scripts/coverage-badge.js; exit $test_status",
     "ci-test": "LOCAL_ACTIONS_CI_TEST=true jest",
     "all": "npm run format && npm run lint && npm run package",
     "bundle": "npm run format && npm run package"
@@ -28,17 +28,13 @@
   "author": "Grant Birkinbine",
   "license": "MIT",
   "dependencies": {
-    "@actions/core": "^1.11.1",
-    "@actions/github": "^6.0.0",
-    "ajv": "^8.17.1",
+    "@actions/core": "^3.0.1",
+    "ajv": "^8.20.0",
     "ajv-draft-04": "^1.0.0",
     "ajv-formats": "^3.0.1",
-    "dedent-js": "^1.0.1",
-    "fdir": "^6.4.3",
-    "glob": "^11.0.1",
+    "glob": "^13.0.6",
     "ignore": "^5.3.2",
-    "picomatch": "^4.0.2",
-    "yaml": "^2.7.1",
+    "yaml": "^2.8.4",
     "yaml-schema-validator": "^1.2.3"
   },
   "jest": {
@@ -51,6 +47,9 @@
     "collectCoverageFrom": [
       "./src/**"
     ],
+    "moduleNameMapper": {
+      "^@actions/core$": "<rootDir>/test-helpers/actions-core.js"
+    },
     "coverageThreshold": {
       "global": {
         "lines": 100
@@ -60,13 +59,12 @@
   "devDependencies": {
     "@babel/core": "^7.24.4",
     "@babel/plugin-transform-modules-commonjs": "^7.24.1",
-    "@octokit/rest": "^21.0.1",
-    "@types/node": "^22.3.0",
     "@vercel/ncc": "^0.38.1",
     "eslint": "^8.57.0",
     "jest": "^29.7.0",
-    "js-yaml": "^4.1.0",
-    "make-coverage-badge": "^1.2.0",
     "prettier": "^3.3.3"
+  },
+  "overrides": {
+    "brace-expansion": "^1.1.14"
   }
 }

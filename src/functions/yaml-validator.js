@@ -1,10 +1,9 @@
 import * as core from '@actions/core'
 import validateSchema from 'yaml-schema-validator'
 import {readFileSync} from 'fs'
-import {fdir} from 'fdir'
 import {parse, parseAllDocuments} from 'yaml'
 import {globSync} from 'glob'
-import picomatch from 'picomatch'
+import {discoverFilesByExtension} from './file-discovery'
 
 // Constants
 const INVALID_YAML_MESSAGE = 'Invalid YAML'
@@ -60,12 +59,11 @@ export async function yamlValidator(exclude) {
     core.debug(`using baseDir: ${baseDirSanitized}`)
     core.debug(`using glob: ${glob}`)
 
-    files = await new fdir()
-      .withBasePath()
-      .withGlobFunction(picomatch)
-      .globWithOptions([glob], {cwd: baseDirSanitized, dot: useDotMatch})
-      .crawl(baseDirSanitized)
-      .withPromise()
+    files = discoverFilesByExtension(
+      baseDirSanitized,
+      [yamlExtension, yamlExtensionShort],
+      useDotMatch
+    )
   }
 
   // Create a Set to track processed files

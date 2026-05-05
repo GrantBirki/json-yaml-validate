@@ -1,13 +1,13 @@
 import * as core from '@actions/core'
-import * as github from '@actions/github'
-import {context} from '@actions/github'
-import dedent from 'dedent-js'
+import {readFileSync} from 'fs'
 
 // Constants
 const SUCCESS_OUTPUT_VALUE = 'true'
 const FAILURE_OUTPUT_VALUE = 'false'
 const MODE_FAIL = 'fail'
 const MODE_WARN = 'warn'
+const DEFAULT_GITHUB_API_URL = 'https://api.github.com'
+const GITHUB_API_VERSION = '2022-11-28'
 
 // Helper function to check the results of json and yaml validation
 // :param results: the results of the validation
@@ -48,17 +48,7 @@ async function constructBody(jsonResults, yamlResults) {
   let body = '## JSON and YAML Validation Results'
 
   if (jsonResults.success === false) {
-    body += dedent(`
-
-    ### JSON Validation Results
-
-    - ✅ File(s) Passed: ${jsonResults.passed}
-    - ❌ File(s) Failed: ${jsonResults.failed}
-    - ⏭️ File(s) Skipped: ${jsonResults.skipped}
-    
-    **Violations**: 
-
-    `)
+    body += validationSection('JSON', jsonResults)
     body += `\`\`\`json\n${JSON.stringify(
       jsonResults.violations,
       null,
@@ -67,17 +57,7 @@ async function constructBody(jsonResults, yamlResults) {
   }
 
   if (yamlResults.success === false) {
-    body += dedent(`
-
-    ### YAML Validation Results
-
-    - ✅ File(s) Passed: ${yamlResults.passed}
-    - ❌ File(s) Failed: ${yamlResults.failed}
-    - ⏭️ File(s) Skipped: ${yamlResults.skipped}
-    
-    **Violations**: 
-
-    `)
+    body += validationSection('YAML', yamlResults)
     body += `\`\`\`json\n${JSON.stringify(
       yamlResults.violations,
       null,
@@ -86,6 +66,71 @@ async function constructBody(jsonResults, yamlResults) {
   }
 
   return body
+}
+
+function validationSection(type, results) {
+  return [
+    '',
+    `### ${type} Validation Results`,
+    '',
+    `- ✅ File(s) Passed: ${results.passed}`,
+    `- ❌ File(s) Failed: ${results.failed}`,
+    `- ⏭️ File(s) Skipped: ${results.skipped}`,
+    '',
+    '**Violations**:',
+    '',
+    ''
+  ].join('\n')
+}
+
+function getPullRequestContext() {
+  if (!process.env.GITHUB_EVENT_PATH) {
+    return null
+  }
+
+  const payload = JSON.parse(
+    readFileSync(process.env.GITHUB_EVENT_PATH, 'utf8')
+  )
+  if (!payload?.pull_request) {
+    return null
+  }
+
+  const [owner, repo] = (
+    process.env.GITHUB_REPOSITORY || payload.repository.full_name
+  ).split('/')
+
+  return {
+    owner,
+    repo,
+    issueNumber: payload.pull_request.number
+  }
+}
+
+async function createPullRequestComment(token, pullRequestContext, body) {
+  const response = await fetch(
+    `${process.env.GITHUB_API_URL || DEFAULT_GITHUB_API_URL}/repos/${
+      pullRequestContext.owner
+    }/${pullRequestContext.repo}/issues/${
+      pullRequestContext.issueNumber
+    }/comments`,
+    {
+      method: 'POST',
+      headers: {
+        accept: 'application/vnd.github+json',
+        authorization: `Bearer ${token}`,
+        'content-type': 'application/json',
+        'user-agent': 'json-yaml-validate-action',
+        'x-github-api-version': GITHUB_API_VERSION
+      },
+      body: JSON.stringify({body})
+    }
+  )
+
+  if (!response.ok) {
+    throw new Error(
+      `failed to create PR comment: ${response.status} ${response.statusText}`
+    )
+  }
 }
 
 // Helper function to process the results of json and yaml validation
@@ -107,28 +152,28 @@ export async function processResults(jsonResults, yamlResults) {
   core.setOutput('success', FAILURE_OUTPUT_VALUE)
 
   // check if the context is a pull request and if we should comment
-  // fetch the pr number from the context
-  if (
-    context?.payload?.pull_request !== undefined &&
-    context?.payload?.pull_request !== null &&
-    core.getBooleanInput('comment')
-  ) {
-    const octokit = github.getOctokit(
-      core.getInput('github_token', {required: true})
-    )
+  if (core.getBooleanInput('comment')) {
+    const pullRequestContext = getPullRequestContext()
+    if (pullRequestContext === null) {
+      return applyMode()
+    }
 
     // build the body of the comment
     const body = await constructBody(jsonResults, yamlResults)
 
     // add a comment to the pull request
-    core.info(`📝 adding comment to PR #${context.issue.number}`)
-    await octokit.rest.issues.createComment({
-      ...context.repo,
-      issue_number: context.issue.number,
-      body: body
-    })
+    core.info(`📝 adding comment to PR #${pullRequestContext.issueNumber}`)
+    await createPullRequestComment(
+      core.getInput('github_token', {required: true}),
+      pullRequestContext,
+      body
+    )
   }
 
+  return applyMode()
+}
+
+function applyMode() {
   // add final log messages and exit status of the action
   if (core.getInput('mode') === MODE_FAIL) {
     core.setFailed('❌ JSON or YAML files failed validation')

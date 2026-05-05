@@ -5,10 +5,9 @@ import Ajv2020 from 'ajv/dist/2020'
 import AjvDraft04 from 'ajv-draft-04'
 import addFormats from 'ajv-formats'
 import {readFileSync} from 'fs'
-import {fdir} from 'fdir'
 import {parse, parseAllDocuments} from 'yaml'
 import {globSync} from 'glob'
-import picomatch from 'picomatch'
+import {discoverFilesByExtension} from './file-discovery'
 
 // Constants
 const DRAFT_07 = 'draft-07'
@@ -154,12 +153,10 @@ export async function jsonValidator(exclude) {
     core.debug(`using baseDir: ${baseDirSanitized}`)
     core.debug(`using glob: ${glob}`)
 
-    files = await new fdir()
-      .withBasePath()
-      .withGlobFunction(picomatch)
-      .globWithOptions([glob], {cwd: baseDirSanitized, dot: useDotMatch})
-      .crawl(baseDirSanitized)
-      .withPromise()
+    const extensions = yamlAsJson
+      ? [jsonExtension, yamlExtension, yamlExtensionShort]
+      : [jsonExtension]
+    files = discoverFilesByExtension(baseDirSanitized, extensions, useDotMatch)
   }
 
   // Create a Set to track processed files

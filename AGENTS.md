@@ -18,11 +18,14 @@ public, has many dependents, and small behavior shifts can break downstream CI.
 - `src/functions/yaml-validator.js` handles YAML parsing, optional YAML schema
   validation through `yaml-schema-validator`, multi-document YAML syntax checks,
   and YAML file discovery.
+- `src/functions/file-discovery.js` provides native recursive crawler-mode
+  discovery for JSON and YAML extensions. Explicit `files` input patterns still
+  use `glob` for compatibility with existing user workflows.
 - `src/functions/exclude.js` loads `exclude_file` patterns and `.gitignore`
   patterns using the `ignore` package.
 - `src/functions/process-results.js` summarizes validation results, sets the
-  `success` output, creates optional PR comments, and applies `fail` or `warn`
-  mode behavior.
+  `success` output, creates optional PR comments with the native Node `fetch`
+  API, and applies `fail` or `warn` mode behavior.
 - `__tests__/functions/` contains focused Jest tests for each function module.
 - `__tests__/fixtures/` contains JSON, YAML, schema, exclude, and real-world
   fixture data for unit tests.
@@ -212,7 +215,7 @@ validation.
 Discovery:
 
 - If `files` has lines, each line is expanded with `globSync(pattern)`.
-- Otherwise `fdir` crawls `base_dir` using `picomatch`.
+- Otherwise `file-discovery.js` recursively crawls `base_dir` with Node `fs`.
 - Default JSON glob is based on `json_extension`.
 - When `yaml_as_json` is true, the JSON validator also discovers files matching
   `yaml_extension` and `yaml_extension_short`.
@@ -255,8 +258,8 @@ validation.
 Discovery:
 
 - If `files` has lines, each line is expanded with `globSync(pattern)`.
-- Otherwise `fdir` crawls `base_dir` using a glob for `yaml_extension` and
-  `yaml_extension_short`.
+- Otherwise `file-discovery.js` recursively crawls `base_dir` with Node `fs`
+  and filters files by `yaml_extension` and `yaml_extension_short`.
 - A `Set` prevents duplicate file processing.
 
 Skipping:
@@ -318,7 +321,8 @@ If either type fails:
 
 - The action sets `success` to `"false"`.
 - On pull request events with `comment: true`, it creates a new PR comment using
-  `@actions/github`.
+  `GITHUB_EVENT_PATH`, `GITHUB_REPOSITORY`, `GITHUB_API_URL`, and native
+  `fetch`.
 - In `fail` mode it calls `core.setFailed`.
 - In `warn` mode it logs a warning and error but does not call
   `core.setFailed`.
@@ -345,7 +349,8 @@ Current test organization:
   exclude files, optional missing files, `.gitignore` loading, and ignore
   pattern matches.
 - `__tests__/functions/process-results.test.js` covers success, no-file
-  success, failure, warn mode, unknown mode, and PR comment paths.
+  success, failure, warn mode, unknown mode, and native GitHub API PR comment
+  paths.
 - `__tests__/main.test.js` covers orchestration with mocked validators.
 - `__tests__/main-execution.test.js` covers the environment gate around direct
   execution.
@@ -401,6 +406,29 @@ directory.
 CI is the source of truth for package freshness. Any source change that affects
 runtime code should include the regenerated bundle before a PR is considered
 ready.
+
+## Dependency Notes
+
+The project intentionally keeps the runtime dependency surface small because the
+action runs in other repositories' CI. Current native replacements:
+
+- PR comments use the Actions event payload from `GITHUB_EVENT_PATH`,
+  `GITHUB_REPOSITORY`, `GITHUB_API_URL`, and native `fetch`, not
+  `@actions/github` or Octokit.
+- PR comment body formatting is built with arrays and template strings, not
+  `dedent-js`.
+- Crawler-mode JSON/YAML discovery uses `file-discovery.js` and Node `fs`
+  recursion, not `fdir` or `picomatch`.
+- Coverage badge generation uses `scripts/coverage-badge.js`, not
+  `make-coverage-badge`.
+- `@actions/core` is on v3, which is ESM-only. Jest maps `@actions/core` to
+  `test-helpers/actions-core.js` so unit tests do not load the real Actions
+  runtime package.
+- `package.json` uses an npm `overrides` entry for `brace-expansion` to keep
+  ESLint's transitive minimatch chain on a patched version.
+
+Keep `glob` for explicit `files` input compatibility unless you are prepared to
+match common glob behavior in detail and run both unit and acceptance suites.
 
 ## Release Notes
 
@@ -497,7 +525,8 @@ Changing file discovery:
 2. Include dot-directory behavior if `.github` or similar paths are relevant.
 3. Include duplicates and exclusion behavior.
 4. Verify schema files are still skipped correctly.
-5. Watch performance; `fdir` is used because discovery speed is a feature.
+5. Watch performance; discovery speed is a feature and crawler mode currently
+   avoids external dependencies.
 
 Changing result or comment formatting:
 
