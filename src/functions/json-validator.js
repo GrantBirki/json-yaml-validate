@@ -71,7 +71,9 @@ async function schema(jsonSchema) {
       try {
         regex = new RegExp(keyValuePair[1])
       } catch (syntaxError) {
-        throw new Error(`Invalid regular expression: ${syntaxError.message}`)
+        throw new Error(`Invalid regular expression: ${syntaxError.message}`, {
+          cause: syntaxError
+        })
       }
 
       // Add format if the regex is successfully compiled
