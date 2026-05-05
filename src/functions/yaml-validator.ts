@@ -1,9 +1,9 @@
-import validateSchema from 'yaml-schema-validator'
 import {globSync, readFileSync} from 'node:fs'
 import {parse, parseAllDocuments} from 'yaml'
 import {core} from '../actions-core.js'
 import type {Excluder, ValidationError, ValidationResult} from '../types.js'
 import {discoverFilesByExtension} from './file-discovery.js'
+import {validateYamlSchemaFile} from './yaml-schema-validator.js'
 
 const INVALID_YAML_MESSAGE = 'Invalid YAML'
 
@@ -156,10 +156,7 @@ export async function yamlValidator(
       continue
     }
 
-    const schemaErrors = validateSchema(`${fullPath}`, {
-      schema: yamlSchema,
-      logLevel: 'none'
-    })
+    const schemaErrors = validateYamlSchemaFile(fullPath, yamlSchema)
 
     if (schemaErrors && schemaErrors.length > 0) {
       core.error(

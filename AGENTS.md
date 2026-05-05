@@ -19,9 +19,12 @@ public, has many dependents, and small behavior shifts can break downstream CI.
 - `src/functions/json-validator.ts` handles JSON parsing, JSON Schema
   validation through AJV, `yaml_as_json`, custom AJV formats, explicit `files`
   glob expansion, and JSON file discovery.
-- `src/functions/yaml-validator.ts` handles YAML parsing, optional YAML schema
-  validation through `yaml-schema-validator`, multi-document YAML syntax checks,
-  explicit `files` glob expansion, and YAML file discovery.
+- `src/functions/yaml-validator.ts` handles YAML parsing, optional native YAML
+  schema validation, multi-document YAML syntax checks, explicit `files` glob
+  expansion, and YAML file discovery.
+- `src/functions/yaml-schema-validator.ts` implements the action's legacy YAML
+  schema dialect in TypeScript. It supports nested objects, arrays, `type`,
+  `required`, `length`, `enum`, and legacy extra-field warnings.
 - `src/functions/file-discovery.ts` provides native recursive crawler-mode
   discovery for JSON and YAML extensions.
 - `src/functions/exclude.ts` loads `exclude_file` patterns and `.gitignore`
@@ -156,8 +159,8 @@ Important inputs:
 - `ajv_strict_mode`: passed to AJV as `strict`.
 - `ajv_custom_regexp_formats`: newline-delimited `name=regexp` pairs added as
   AJV formats.
-- `yaml_schema`: optional schema for `yaml-schema-validator`. This is not JSON
-  Schema and has different syntax and capability limits.
+- `yaml_schema`: optional schema for the native legacy YAML schema validator.
+  This is not JSON Schema and has different syntax and capability limits.
 - `yaml_as_json`: validates YAML files through the JSON validator using
   `json_schema`; the YAML validator skips YAML files in this mode.
 - `allow_multiple_documents`: native YAML mode validates multi-document syntax
@@ -295,7 +298,8 @@ Validation:
   errors, then parses each document string again.
 - If `allow_multiple_documents` is true and parsing succeeds, YAML schema
   validation is skipped for that file.
-- Schema validation uses `yaml-schema-validator` with `{logLevel: 'none'}`.
+- Schema validation uses `yaml-schema-validator.ts`, the native TypeScript
+  replacement for the old `yaml-schema-validator` dependency.
 - Schema errors are normalized to `{path: error.path || null, message}`.
 - Syntax errors are reported with `message: "Invalid YAML"` and a compact
   formatted `error` field.
@@ -428,7 +432,6 @@ Current runtime dependencies:
 - `ajv`, `ajv-draft-04`, and `ajv-formats` for JSON Schema support across the
   public `json_schema_version` options and optional format validation.
 - `yaml` for YAML parsing and multi-document parsing.
-- `yaml-schema-validator` for the action's legacy native YAML schema support.
 - `ignore` for gitignore-style exclude files and `.gitignore` behavior.
 
 Current native replacements:
@@ -442,6 +445,8 @@ Current native replacements:
   package.
 - Crawler-mode JSON/YAML discovery uses `file-discovery.ts` and Node `fs`
   recursion, not `fdir` or `picomatch`.
+- Legacy YAML schema validation uses `yaml-schema-validator.ts`, not the old
+  `yaml-schema-validator` dependency and its older transitive packages.
 - PR comment body formatting is built with arrays and template strings, not
   `dedent-js`.
 - Unit tests use Node's built-in test runner and `test/setup.ts`, not Jest.
@@ -578,6 +583,9 @@ Preparing a PR:
   successful multi-document syntax parse.
 - `yaml_as_json` changes counting: YAML files are validated by the JSON
   validator and counted as skipped by the YAML validator.
+- The old `yaml-schema-validator` package failed in the ncc bundle because it
+  relied on non-strict CommonJS behavior. If native YAML schema behavior
+  changes, always smoke-test `dist/index.js`, not just `src/main.ts`.
 - User-provided regex inputs can be expensive. Avoid changes that multiply
   regex evaluation over large file sets.
 - `.gitignore` directory patterns should include trailing slashes for reliable
