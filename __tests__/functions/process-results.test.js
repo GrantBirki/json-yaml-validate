@@ -1,13 +1,28 @@
 import * as core from '@actions/core'
-import * as github from '@actions/github'
 import {processResults} from '../../src/functions/process-results'
+
+const fs = require('fs')
+const os = require('os')
+const path = require('path')
 
 const infoMock = jest.spyOn(core, 'info').mockImplementation(() => {})
 const warningMock = jest.spyOn(core, 'warning').mockImplementation(() => {})
 const errorMock = jest.spyOn(core, 'error').mockImplementation(() => {})
 const setFailedMock = jest.spyOn(core, 'setFailed').mockImplementation(() => {})
 const setOutputMock = jest.spyOn(core, 'setOutput').mockImplementation(() => {})
-const createCommentMock = jest.fn()
+const originalFetch = global.fetch
+let eventDir
+
+function writeEvent(payload) {
+  if (eventDir) {
+    fs.rmSync(eventDir, {recursive: true, force: true})
+  }
+
+  eventDir = fs.mkdtempSync(path.join(os.tmpdir(), 'json-yaml-event-'))
+  const eventPath = path.join(eventDir, 'event.json')
+  fs.writeFileSync(eventPath, JSON.stringify(payload))
+  process.env.GITHUB_EVENT_PATH = eventPath
+}
 
 const jsonViolations = [
   {
@@ -57,31 +72,31 @@ beforeEach(() => {
   process.env.INPUT_GITHUB_TOKEN = 'faketoken'
   process.env.INPUT_COMMENT = 'false'
   process.env.GITHUB_REPOSITORY = 'corp/test'
+  process.env.GITHUB_API_URL = 'https://api.github.com'
+  global.fetch = jest.fn().mockResolvedValue({
+    ok: true,
+    status: 201,
+    statusText: 'Created'
+  })
 
-  github.context.payload = {
-    repo: {
-      owner: 'corp',
-      repo: 'test'
-    },
-    issue: {
-      number: 123
-    },
+  writeEvent({
     pull_request: {
       number: 123
-    }
-  }
-
-  jest.spyOn(github, 'getOctokit').mockImplementation(() => {
-    return {
-      rest: {
-        issues: {
-          createComment: createCommentMock.mockReturnValueOnce({
-            data: {}
-          })
-        }
-      }
+    },
+    repository: {
+      full_name: 'corp/test'
     }
   })
+})
+
+afterEach(() => {
+  delete process.env.GITHUB_EVENT_PATH
+  delete process.env.GITHUB_API_URL
+  if (eventDir) {
+    fs.rmSync(eventDir, {recursive: true, force: true})
+  }
+  eventDir = undefined
+  global.fetch = originalFetch
 })
 
 test('successfully processes the results with no JSON or YAML failures', async () => {
@@ -290,11 +305,14 @@ test('tests constructBody function with JSON failures only (covers lines 50-67)'
 
 test('does not comment when comment mode is enabled outside a pull request', async () => {
   process.env.INPUT_COMMENT = 'true'
-  github.context.payload = {
+  writeEvent({
     push: {
       ref: 'refs/heads/main'
+    },
+    repository: {
+      full_name: 'corp/test'
     }
-  }
+  })
 
   expect(
     await processResults(
@@ -309,8 +327,30 @@ test('does not comment when comment mode is enabled outside a pull request', asy
     )
   ).toBe(false)
 
-  expect(github.getOctokit).not.toHaveBeenCalled()
-  expect(createCommentMock).not.toHaveBeenCalled()
+  expect(global.fetch).not.toHaveBeenCalled()
+  expect(setFailedMock).toHaveBeenCalledWith(
+    '❌ JSON or YAML files failed validation'
+  )
+})
+
+test('does not comment when comment mode is enabled without an event path', async () => {
+  process.env.INPUT_COMMENT = 'true'
+  delete process.env.GITHUB_EVENT_PATH
+
+  expect(
+    await processResults(
+      {
+        success: false,
+        failed: 1,
+        passed: 0,
+        skipped: 0,
+        violations: jsonViolations
+      },
+      {success: true, failed: 0, passed: 1, skipped: 0, violations: []}
+    )
+  ).toBe(false)
+
+  expect(global.fetch).not.toHaveBeenCalled()
   expect(setFailedMock).toHaveBeenCalledWith(
     '❌ JSON or YAML files failed validation'
   )
@@ -338,13 +378,19 @@ test('constructs a pull request comment body with both violation sections', asyn
     )
   ).toBe(false)
 
-  expect(createCommentMock).toHaveBeenCalledWith({
-    owner: 'corp',
-    repo: 'test',
-    issue_number: 123,
-    body: expect.stringContaining('## JSON and YAML Validation Results')
-  })
-  const commentBody = createCommentMock.mock.calls[0][0].body
+  expect(global.fetch).toHaveBeenCalledWith(
+    'https://api.github.com/repos/corp/test/issues/123/comments',
+    expect.objectContaining({
+      method: 'POST',
+      headers: expect.objectContaining({
+        authorization: 'Bearer faketoken',
+        'content-type': 'application/json',
+        'user-agent': 'json-yaml-validate-action'
+      })
+    })
+  )
+  const requestBody = JSON.parse(global.fetch.mock.calls[0][1].body)
+  const commentBody = requestBody.body
   expect(commentBody).toContain('### JSON Validation Results')
   expect(commentBody).toContain('- ✅ File(s) Passed: 1')
   expect(commentBody).toContain('- ❌ File(s) Failed: 2')
@@ -355,6 +401,28 @@ test('constructs a pull request comment body with both violation sections', asyn
   expect(commentBody).toContain('- ❌ File(s) Failed: 1')
   expect(commentBody).toContain('- ⏭️ File(s) Skipped: 5')
   expect(commentBody).toContain(JSON.stringify(yamlViolations, null, 2))
+})
+
+test('fails when pull request comment creation fails', async () => {
+  process.env.INPUT_COMMENT = 'true'
+  global.fetch.mockResolvedValueOnce({
+    ok: false,
+    status: 500,
+    statusText: 'Server Error'
+  })
+
+  await expect(
+    processResults(
+      {
+        success: false,
+        failed: 1,
+        passed: 0,
+        skipped: 0,
+        violations: jsonViolations
+      },
+      {success: true, failed: 0, passed: 1, skipped: 0, violations: []}
+    )
+  ).rejects.toThrow('failed to create PR comment: 500 Server Error')
 })
 
 test('tests constructBody function with YAML failures only (covers lines 69-86)', async () => {
