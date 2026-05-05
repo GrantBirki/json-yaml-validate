@@ -20,7 +20,7 @@ export class Exclude {
       } catch (error) {
         if (this.required === true) {
           core.setFailed(`error reading exclude_file: ${this.path}`)
-          throw new Error(error)
+          throw new Error(error.toString(), {cause: error})
         }
 
         core.info(`exclude_file was not found, but it is not required - OK`)

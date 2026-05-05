@@ -426,6 +426,9 @@ action runs in other repositories' CI. Current native replacements:
   runtime package.
 - `package.json` uses an npm `overrides` entry for `brace-expansion` to keep
   ESLint's transitive minimatch chain on a patched version.
+- ESLint is on the flat-config path. Keep lint configuration in
+  `eslint.config.js`; `.eslintrc.json` and `.eslintignore` are intentionally not
+  used with ESLint 10.
 
 Keep `glob` for explicit `files` input compatibility unless you are prepared to
 match common glob behavior in detail and run both unit and acceptance suites.
