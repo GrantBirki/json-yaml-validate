@@ -1,6 +1,5 @@
 # JSON and YAML - Validator ✅
 
-[![CodeQL](https://github.com/grantbirki/json-yaml-validate/actions/workflows/codeql-analysis.yml/badge.svg)](https://github.com/grantbirki/json-yaml-validate/actions/workflows/codeql-analysis.yml)
 [![test](https://github.com/grantbirki/json-yaml-validate/actions/workflows/test.yml/badge.svg)](https://github.com/grantbirki/json-yaml-validate/actions/workflows/test.yml)
 [![acceptance](https://github.com/GrantBirki/json-yaml-validate/actions/workflows/acceptance.yml/badge.svg)](https://github.com/GrantBirki/json-yaml-validate/actions/workflows/acceptance.yml)
 [![package-check](https://github.com/grantbirki/json-yaml-validate/actions/workflows/package-check.yml/badge.svg)](https://github.com/grantbirki/json-yaml-validate/actions/workflows/package-check.yml)
