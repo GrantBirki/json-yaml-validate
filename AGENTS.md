@@ -410,12 +410,15 @@ directory.
   formats, flat YAML schemas, multi-document YAML-as-JSON, Helm-chart
   exclusions, custom extensions, exclude-file negation, warn mode, and
   expected-failure checks for invalid syntax and schema errors.
-- `codeql-analysis.yml`: JavaScript/TypeScript CodeQL scan on `main` and weekly
-  schedule.
 - `update-latest-release-tag.yml`: manual workflow to force-update major
-  release tags such as `v8`.
-- `copilot-setup-steps.yml`: setup workflow for Copilot-style coding agents.
+  release tags such as `v4`.
 - `.github/dependabot.yml`: monthly grouped updates for GitHub Actions and npm.
+
+Executable workflow action refs should be pinned to full-length commit SHAs with
+`gh pin -mode actions`. The `# pin@vN` comments record the major tag that was
+resolved. When refreshing Actions, update docs/examples to the latest major tag,
+temporarily update workflow refs to that tag, then run `gh pin -mode actions
+.github/workflows/<file>.yml` for each workflow file.
 
 CI is the source of truth for package freshness. Any source change that affects
 runtime code should include the regenerated bundle before a PR is considered
@@ -562,6 +565,15 @@ Updating dependencies:
 3. Run `npm run all`.
 4. Inspect `dist/licenses.txt` and the generated bundle diff for unexpected
    dependency churn.
+
+Updating GitHub Actions:
+
+1. Check the current upstream major tags for each referenced action.
+2. Update user-facing README examples to the latest major tag.
+3. Update workflow refs to the latest major tag, then run `gh pin -mode actions`
+   against each workflow so executable refs end as full commit SHAs.
+4. Sweep `.github/workflows/` for any remaining unpinned third-party `uses:`
+   entries before opening a PR.
 
 Preparing a PR:
 
