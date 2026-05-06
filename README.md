@@ -27,11 +27,11 @@ Here is a quick example of how to install this action in any workflow:
 
 ```yaml
 # checkout the repository (required for this Action to work)
-- uses: actions/checkout@v5
+- uses: actions/checkout@v6
 
 # validate JSON and YAML files
 - name: json-yaml-validate
-  uses: GrantBirki/json-yaml-validate@vX.X.X # <--- replace with the latest version
+  uses: GrantBirki/json-yaml-validate@v4
 ```
 
 ## Inputs 📥
@@ -90,11 +90,11 @@ jobs:
   json-yaml-validate:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - name: json-yaml-validate
         id: json-yaml-validate
-        uses: GrantBirki/json-yaml-validate@vX.X.X # replace with the latest version
+        uses: GrantBirki/json-yaml-validate@v4
 ```
 
 ### Pull Request Comment
@@ -118,11 +118,11 @@ jobs:
   json-yaml-validate:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - name: json-yaml-validate
         id: json-yaml-validate
-        uses: GrantBirki/json-yaml-validate@vX.X.X # replace with the latest version
+        uses: GrantBirki/json-yaml-validate@v4
         with:
           comment: "true" # enable comment mode
 ```
@@ -158,10 +158,10 @@ Here is an example of how to use this feature:
 
 ```yaml
 # checkout the repository
-- uses: actions/checkout@v5
+- uses: actions/checkout@v6
 
 - name: json-yaml-validate
-  uses: GrantBirki/json-yaml-validate@vX.X.X # replace with the latest version
+  uses: GrantBirki/json-yaml-validate@v4
   with:
     yaml_schema: schemas/schema.yml # validate YAML files against the schema
     json_schema: schemas/schema.json # validate JSON files against the schema
@@ -258,7 +258,7 @@ Now that we have a JSON schema that uses custom regex formats and a JSON file th
 
 ```yaml
 - name: json-yaml-validate
-  uses: GrantBirki/json-yaml-validate@vX.X.X # replace with the latest version
+  uses: GrantBirki/json-yaml-validate@v4
   id: json-yaml-validate
   with:
     json_schema: ./schemas/custom_with_regex.json # <--- the schema file that uses custom regex formats
@@ -353,10 +353,10 @@ If the file path to your `exclude_file` is `exclude.txt`, you would set the `exc
 
 ```yaml
 # checkout the repository
-- uses: actions/checkout@v5
+- uses: actions/checkout@v6
 
 - name: json-yaml-validate
-  uses: GrantBirki/json-yaml-validate@vX.X.X # replace with the latest version
+  uses: GrantBirki/json-yaml-validate@v4
   with:
     exclude_file: exclude.txt # gitignore style file that contains a list of files to exclude
 ```
