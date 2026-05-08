@@ -164,6 +164,40 @@ test('fails an invalid json schema file against a local draft-07 meta-schema cop
   fs.rmSync(tempDir, {recursive: true, force: true})
 })
 
+test('does not treat user schemas with built-in meta-schema ids as meta-schema copies', async () => {
+  const fs = require('fs')
+  const os = require('os')
+  const path = require('path')
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'json-meta-schema-'))
+  const schemaFile = path.join(tempDir, 'schema.json')
+  const targetFile = path.join(tempDir, 'target.json')
+
+  fs.writeFileSync(
+    schemaFile,
+    JSON.stringify({
+      $id: 'http://json-schema.org/draft-07/schema#',
+      type: 'object',
+      properties: {
+        foo: {
+          type: 'integer'
+        }
+      },
+      required: ['foo']
+    })
+  )
+  fs.writeFileSync(targetFile, JSON.stringify({bar: true}))
+
+  process.env.INPUT_JSON_SCHEMA = schemaFile
+  process.env.INPUT_FILES = targetFile
+  process.env.INPUT_BASE_DIR = tempDir
+
+  await expect(jsonValidator(excludeMock)).rejects.toThrow(
+    'schema with key or id "http://json-schema.org/draft-07/schema" already exists'
+  )
+
+  fs.rmSync(tempDir, {recursive: true, force: true})
+})
+
 test('successfully validates a json file without using a schema', async () => {
   process.env.INPUT_JSON_SCHEMA = ''
   expect(await jsonValidator(excludeMock)).toStrictEqual({

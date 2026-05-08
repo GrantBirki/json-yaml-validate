@@ -21,6 +21,12 @@ test('returns null for schemas without built-in meta-schema ids', () => {
       type: 'object'
     })
   ).toBe(null)
+  expect(
+    builtInMetaSchema(ajv, {
+      $id: 'http://json-schema.org/draft-07/schema#',
+      type: 'object'
+    })
+  ).toBe(null)
 })
 
 test('returns AJV validators for local built-in meta-schema copies', () => {
@@ -36,7 +42,10 @@ test('returns AJV validators for local built-in meta-schema copies', () => {
 
   for (const [AjvImplementation, metaSchema] of cases) {
     const ajv = new AjvImplementation({allErrors: true, strict: true})
-    const validate = builtInMetaSchema(ajv, metaSchema)
+    const reorderedMetaSchema = Object.fromEntries(
+      Object.entries(metaSchema as Record<string, unknown>).reverse()
+    )
+    const validate = builtInMetaSchema(ajv, reorderedMetaSchema)
 
     expect(typeof validate).toBe('function')
     expect(validate?.({type: 'strng'})).toBe(false)
