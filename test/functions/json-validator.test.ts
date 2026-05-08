@@ -1485,6 +1485,54 @@ test('edge case: duplicate file processing prevention', async () => {
   )
 })
 
+test('deduplicates invalid json files before counting failures', async () => {
+  process.env.INPUT_JSON_SCHEMA = ''
+  process.env.INPUT_FILES =
+    '__tests__/fixtures/json/invalid/json1.json\n__tests__/fixtures/json/invalid/json1.json'
+  process.env.INPUT_BASE_DIR = '.'
+
+  expect(await jsonValidator(excludeMock)).toStrictEqual({
+    failed: 1,
+    passed: 0,
+    skipped: 0,
+    success: false,
+    violations: [
+      {
+        file: '__tests__/fixtures/json/invalid/json1.json',
+        errors: [
+          {
+            path: null,
+            message: 'Invalid JSON'
+          }
+        ]
+      }
+    ]
+  })
+
+  expect(debugMock).toHaveBeenCalledWith(
+    'skipping duplicate file: __tests__/fixtures/json/invalid/json1.json'
+  )
+})
+
+test('deduplicates excluded json files before counting skips', async () => {
+  process.env.INPUT_JSON_SCHEMA = ''
+  process.env.INPUT_FILES =
+    '__tests__/fixtures/json/invalid/skip-bad.json\n__tests__/fixtures/json/invalid/skip-bad.json'
+  process.env.INPUT_BASE_DIR = '.'
+
+  expect(await jsonValidator(excludeMock)).toStrictEqual({
+    failed: 0,
+    passed: 0,
+    skipped: 1,
+    success: true,
+    violations: []
+  })
+
+  expect(debugMock).toHaveBeenCalledWith(
+    'skipping duplicate file: __tests__/fixtures/json/invalid/skip-bad.json'
+  )
+})
+
 test('edge case: baseDir with trailing slash normalization', async () => {
   process.env.INPUT_BASE_DIR = '__tests__/fixtures/json/valid/' // Note trailing slash
   process.env.INPUT_JSON_SCHEMA = ''

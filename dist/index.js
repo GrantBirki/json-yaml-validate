@@ -8289,16 +8289,6 @@ async function validateJsonFiles(files, context, processedFiles = new Set()) {
             actions_core/* core */.I.debug(`skipping json schema file: ${fullPath}`);
             continue;
         }
-        if (context.skipRegex !== null && context.skipRegex.test(fullPath)) {
-            actions_core/* core */.I.info(`skipping due to exclude match: ${fullPath}`);
-            context.result.skipped++;
-            continue;
-        }
-        if (context.exclude.isExcluded(fullPath)) {
-            actions_core/* core */.I.info(`skipping due to exclude match: ${fullPath}`);
-            context.result.skipped++;
-            continue;
-        }
         const isYamlFile = fullPath.endsWith(context.yamlExtension) ||
             fullPath.endsWith(context.yamlExtensionShort);
         if (context.yamlAsJson === false && isYamlFile) {
@@ -8307,6 +8297,17 @@ async function validateJsonFiles(files, context, processedFiles = new Set()) {
         }
         if (processedFiles.has(fullPath)) {
             actions_core/* core */.I.debug(`skipping duplicate file: ${fullPath}`);
+            continue;
+        }
+        processedFiles.add(fullPath);
+        if (context.skipRegex !== null && context.skipRegex.test(fullPath)) {
+            actions_core/* core */.I.info(`skipping due to exclude match: ${fullPath}`);
+            context.result.skipped++;
+            continue;
+        }
+        if (context.exclude.isExcluded(fullPath)) {
+            actions_core/* core */.I.info(`skipping due to exclude match: ${fullPath}`);
+            context.result.skipped++;
             continue;
         }
         const source = (0,external_node_fs_.readFileSync)(fullPath, 'utf8');
@@ -8385,7 +8386,6 @@ async function validateJsonFiles(files, context, processedFiles = new Set()) {
             });
             continue;
         }
-        processedFiles.add(fullPath);
         context.result.passed++;
         actions_core/* core */.I.info(`${fullPath} is valid`);
     }
@@ -9120,6 +9120,11 @@ function validateYamlFiles(files, context) {
             actions_core/* core */.I.debug(`the yaml-validator found a json file so it will be skipped here: '${fullPath}'`);
             continue;
         }
+        if (processedFiles.has(fullPath)) {
+            actions_core/* core */.I.debug(`skipping duplicate file: ${fullPath}`);
+            continue;
+        }
+        processedFiles.add(fullPath);
         if (context.yamlAsJson) {
             actions_core/* core */.I.debug(`skipping yaml since it should be treated as json: ${fullPath}`);
             context.result.skipped++;
@@ -9133,10 +9138,6 @@ function validateYamlFiles(files, context) {
         if (context.exclude.isExcluded(fullPath)) {
             actions_core/* core */.I.info(`skipping due to exclude match: ${fullPath}`);
             context.result.skipped++;
-            continue;
-        }
-        if (processedFiles.has(fullPath)) {
-            actions_core/* core */.I.debug(`skipping duplicate file: ${fullPath}`);
             continue;
         }
         let documents;
@@ -9189,7 +9190,6 @@ function validateYamlFiles(files, context) {
             });
             continue;
         }
-        processedFiles.add(fullPath);
         context.result.passed++;
         actions_core/* core */.I.info(`${fullPath} is valid`);
     }

@@ -171,24 +171,16 @@ function inlineSchemaReference(
     : jsonInlineSchemaReference(data, fullPath)
 }
 
-async function validateJsonFiles(files: string[], context: JsonFileValidationContext, processedFiles = new Set<string>()): Promise<void> {
+async function validateJsonFiles(
+  files: string[],
+  context: JsonFileValidationContext,
+  processedFiles = new Set<string>()
+): Promise<void> {
   for (const fullPath of files) {
     core.debug(`found file: ${fullPath}`)
 
     if (context.jsonSchema !== '' && fullPath.includes(context.jsonSchema)) {
       core.debug(`skipping json schema file: ${fullPath}`)
-      continue
-    }
-
-    if (context.skipRegex !== null && context.skipRegex.test(fullPath)) {
-      core.info(`skipping due to exclude match: ${fullPath}`)
-      context.result.skipped++
-      continue
-    }
-
-    if (context.exclude.isExcluded(fullPath)) {
-      core.info(`skipping due to exclude match: ${fullPath}`)
-      context.result.skipped++
       continue
     }
 
@@ -204,6 +196,19 @@ async function validateJsonFiles(files: string[], context: JsonFileValidationCon
 
     if (processedFiles.has(fullPath)) {
       core.debug(`skipping duplicate file: ${fullPath}`)
+      continue
+    }
+    processedFiles.add(fullPath)
+
+    if (context.skipRegex !== null && context.skipRegex.test(fullPath)) {
+      core.info(`skipping due to exclude match: ${fullPath}`)
+      context.result.skipped++
+      continue
+    }
+
+    if (context.exclude.isExcluded(fullPath)) {
+      core.info(`skipping due to exclude match: ${fullPath}`)
+      context.result.skipped++
       continue
     }
 
@@ -300,8 +305,6 @@ async function validateJsonFiles(files: string[], context: JsonFileValidationCon
       })
       continue
     }
-
-    processedFiles.add(fullPath)
 
     context.result.passed++
     core.info(`${fullPath} is valid`)

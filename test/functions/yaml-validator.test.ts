@@ -165,6 +165,56 @@ test('successfully validates yaml files with a schema when files is defined and 
   expect(debugMock).toHaveBeenCalledWith(`using files: ${files.join(', ')}`)
 })
 
+test('deduplicates invalid yaml files before counting failures', async () => {
+  process.env.INPUT_YAML_SCHEMA = ''
+  process.env.INPUT_FILES =
+    '__tests__/fixtures/yaml/invalid/yaml1.yaml\n__tests__/fixtures/yaml/invalid/yaml1.yaml'
+  process.env.INPUT_BASE_DIR = '.'
+
+  expect(await yamlValidator(excludeMock)).toStrictEqual({
+    failed: 1,
+    passed: 0,
+    skipped: 0,
+    success: false,
+    violations: [
+      {
+        file: '__tests__/fixtures/yaml/invalid/yaml1.yaml',
+        errors: [
+          {
+            path: null,
+            message: 'Invalid YAML',
+            error:
+              'YAMLParseError Nested mappings are not allowed in compact mappings at line 4, column 17'
+          }
+        ]
+      }
+    ]
+  })
+
+  expect(debugMock).toHaveBeenCalledWith(
+    'skipping duplicate file: __tests__/fixtures/yaml/invalid/yaml1.yaml'
+  )
+})
+
+test('deduplicates excluded yaml files before counting skips', async () => {
+  process.env.INPUT_YAML_SCHEMA = ''
+  process.env.INPUT_FILES =
+    '__tests__/fixtures/yaml/invalid/skip-bad.yaml\n__tests__/fixtures/yaml/invalid/skip-bad.yaml'
+  process.env.INPUT_BASE_DIR = '.'
+
+  expect(await yamlValidator(excludeMock)).toStrictEqual({
+    failed: 0,
+    passed: 0,
+    skipped: 1,
+    success: true,
+    violations: []
+  })
+
+  expect(debugMock).toHaveBeenCalledWith(
+    'skipping duplicate file: __tests__/fixtures/yaml/invalid/skip-bad.yaml'
+  )
+})
+
 test('successfully validates yaml files when files is a flat space-separated list', async () => {
   const files = [
     '__tests__/fixtures/yaml/valid/yaml1.yaml',
@@ -320,6 +370,25 @@ test('skips all files when yaml_as_json is true, even invalid ones', async () =>
   )
   expect(debugMock).toHaveBeenCalledWith(
     'skipping yaml since it should be treated as json: __tests__/fixtures/yaml/invalid/skip-bad.yaml'
+  )
+})
+
+test('deduplicates yaml_as_json skipped files before counting skips', async () => {
+  process.env.INPUT_YAML_AS_JSON = 'true'
+  process.env.INPUT_FILES =
+    '__tests__/fixtures/yaml/valid/yaml1.yaml\n__tests__/fixtures/yaml/valid/yaml1.yaml'
+  process.env.INPUT_BASE_DIR = '.'
+
+  expect(await yamlValidator(excludeMock)).toStrictEqual({
+    failed: 0,
+    passed: 0,
+    skipped: 1,
+    success: true,
+    violations: []
+  })
+
+  expect(debugMock).toHaveBeenCalledWith(
+    'skipping duplicate file: __tests__/fixtures/yaml/valid/yaml1.yaml'
   )
 })
 
