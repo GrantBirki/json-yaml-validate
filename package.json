@@ -10,7 +10,7 @@
     "lint": "npm run typecheck",
     "package": "ncc build src/main.ts -o dist --source-map --license licenses.txt",
     "test": "npm run ci-test; test_status=$?; if [ $test_status -eq 0 ]; then node scripts/coverage-badge.js; fi; exit $test_status",
-    "ci-test": "LOCAL_ACTIONS_CI_TEST=true node --import tsx --import ./test/setup.ts --test --test-concurrency=1 --experimental-test-coverage --test-coverage-include='src/**/*.ts' --test-coverage-lines=100 test/*.test.ts test/functions/*.test.ts",
+    "ci-test": "LOCAL_ACTIONS_CI_TEST=true node --import tsx --import ./test/setup.ts --test --test-concurrency=1 --experimental-test-coverage --test-coverage-include='src/**/*.ts' --test-coverage-lines=100 --test-coverage-branches=97 --test-coverage-functions=100 test/*.test.ts test/functions/*.test.ts",
     "all": "npm run typecheck && npm test && npm run package",
     "bundle": "npm run package"
   },
