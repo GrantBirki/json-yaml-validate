@@ -27,6 +27,12 @@ test('returns null for schemas without built-in meta-schema ids', () => {
       type: 'object'
     })
   ).toBe(null)
+  expect(
+    builtInMetaSchema(
+      ajv,
+      require('ajv-draft-04/dist/refs/json-schema-draft-04.json')
+    )
+  ).toBe(null)
 })
 
 test('returns AJV validators for local built-in meta-schema copies', () => {

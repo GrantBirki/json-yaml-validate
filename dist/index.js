@@ -7966,8 +7966,12 @@ var actions_core = __nccwpck_require__(1499);
 // EXTERNAL MODULE: ./src/functions/file-discovery.ts
 var file_discovery = __nccwpck_require__(5696);
 ;// CONCATENATED MODULE: ./src/functions/json-meta-schema.ts
-
-const json_meta_schema_require = /* createRequire() */ undefined;
+const BUILT_IN_META_SCHEMA_IDS = new Set([
+    'http://json-schema.org/draft-04/schema',
+    'http://json-schema.org/draft-07/schema',
+    'https://json-schema.org/draft/2019-09/schema',
+    'https://json-schema.org/draft/2020-12/schema'
+]);
 function normalizeSchemaId(id) {
     return id.replace(/#$/, '');
 }
@@ -7983,12 +7987,6 @@ function stableStringify(value) {
     }
     return JSON.stringify(value);
 }
-const BUILT_IN_META_SCHEMAS = {
-    'http://json-schema.org/draft-04/schema': stableStringify(json_meta_schema_require('ajv-draft-04/dist/refs/json-schema-draft-04.json')),
-    'http://json-schema.org/draft-07/schema': stableStringify(json_meta_schema_require('ajv/dist/refs/json-schema-draft-07.json')),
-    'https://json-schema.org/draft/2019-09/schema': stableStringify(json_meta_schema_require('ajv/dist/refs/json-schema-2019-09/schema.json')),
-    'https://json-schema.org/draft/2020-12/schema': stableStringify(json_meta_schema_require('ajv/dist/refs/json-schema-2020-12/schema.json'))
-};
 function schemaId(schemaValue) {
     if (typeof schemaValue !== 'object' ||
         schemaValue === null ||
@@ -8006,15 +8004,17 @@ function schemaId(schemaValue) {
 }
 function builtInMetaSchema(ajv, schemaValue) {
     const normalizedId = normalizeSchemaId(schemaId(schemaValue));
-    const expectedSchema = BUILT_IN_META_SCHEMAS[normalizedId];
-    if (expectedSchema === undefined ||
-        stableStringify(schemaValue) !== expectedSchema) {
+    if (!BUILT_IN_META_SCHEMA_IDS.has(normalizedId)) {
         return null;
     }
-    return (ajv.getSchema(schemaId(schemaValue)) ??
+    const validate = ajv.getSchema(schemaId(schemaValue)) ??
         ajv.getSchema(normalizedId) ??
-        ajv.getSchema(`${normalizedId}#`) ??
-        null);
+        ajv.getSchema(`${normalizedId}#`);
+    if (validate === undefined)
+        return null;
+    return stableStringify(validate.schema) === stableStringify(schemaValue)
+        ? validate
+        : null;
 }
 
 ;// CONCATENATED MODULE: ./src/functions/json-validator.ts
