@@ -8,6 +8,8 @@ const MODE_FAIL = 'fail'
 const MODE_WARN = 'warn'
 const DEFAULT_GITHUB_API_URL = 'https://api.github.com'
 const GITHUB_API_VERSION = '2022-11-28'
+const COMMENT_MARKER = '<!-- json-yaml-validate-comment -->'
+const COMMENT_HEADER = '## JSON and YAML Validation Results'
 
 async function checkResults(
   results: ValidationResult,
@@ -40,7 +42,7 @@ async function constructBody(
   jsonResults: ValidationResult,
   yamlResults: ValidationResult
 ): Promise<string> {
-  let body = '## JSON and YAML Validation Results'
+  let body = [COMMENT_MARKER, COMMENT_HEADER].join('\n')
 
   if (jsonResults.success === false) {
     body += validationSection('JSON', jsonResults)
@@ -68,7 +70,8 @@ function constructSuccessBody(
   yamlResults: ValidationResult
 ): string {
   return [
-    '## JSON and YAML Validation Results',
+    COMMENT_MARKER,
+    COMMENT_HEADER,
     '',
     '✅ All detected JSON and YAML files are valid.',
     resultSection('JSON', jsonResults),
@@ -87,7 +90,7 @@ function validationSection(type: 'JSON' | 'YAML', results: ValidationResult) {
 }
 
 function resultSection(type: 'JSON' | 'YAML', results: ValidationResult) {
-  return [
+  const lines = [
     '',
     `### ${type} Validation Results`,
     '',
@@ -95,8 +98,60 @@ function resultSection(type: 'JSON' | 'YAML', results: ValidationResult) {
     `- ❌ File(s) Failed: ${results.failed}`,
     `- ⏭️ File(s) Skipped: ${results.skipped}`,
     ''
-  ].join('\n')
+  ]
+
+  return lines.join('\n')
   /* node:coverage ignore next 2 */
+}
+
+interface PullRequestComment {
+  body?: string | null
+  id: number
+}
+
+function commentsUrl(pullRequestContext: PullRequestContext): string {
+  return `${process.env.GITHUB_API_URL || DEFAULT_GITHUB_API_URL}/repos/${
+    pullRequestContext.owner
+  }/${pullRequestContext.repo}/issues/${
+    pullRequestContext.issueNumber
+  }/comments`
+}
+
+function commentUrl(
+  pullRequestContext: PullRequestContext,
+  commentId: number
+): string {
+  return `${process.env.GITHUB_API_URL || DEFAULT_GITHUB_API_URL}/repos/${
+    pullRequestContext.owner
+  }/${pullRequestContext.repo}/issues/comments/${commentId}`
+}
+
+function headers(token: string): Record<string, string> {
+  return {
+    accept: 'application/vnd.github+json',
+    authorization: `Bearer ${token}`,
+    'content-type': 'application/json',
+    'user-agent': 'json-yaml-validate-action',
+    'x-github-api-version': GITHUB_API_VERSION
+  }
+}
+
+function isValidationComment(comment: PullRequestComment): boolean {
+  return (
+    comment.body?.includes(COMMENT_MARKER) === true ||
+    comment.body?.startsWith(COMMENT_HEADER) === true
+  )
+}
+
+async function assertGitHubResponse(
+  response: Response,
+  action: string
+): Promise<void> {
+  if (!response.ok) {
+    throw new Error(
+      `failed to ${action}: ${response.status} ${response.statusText}`
+    )
+  }
 }
 
 function getPullRequestContext(): PullRequestContext | null {
@@ -127,30 +182,78 @@ async function createPullRequestComment(
   pullRequestContext: PullRequestContext,
   body: string
 ): Promise<void> {
-  const response = await fetch(
-    `${process.env.GITHUB_API_URL || DEFAULT_GITHUB_API_URL}/repos/${
-      pullRequestContext.owner
-    }/${pullRequestContext.repo}/issues/${
-      pullRequestContext.issueNumber
-    }/comments`,
-    {
-      method: 'POST',
-      headers: {
-        accept: 'application/vnd.github+json',
-        authorization: `Bearer ${token}`,
-        'content-type': 'application/json',
-        'user-agent': 'json-yaml-validate-action',
-        'x-github-api-version': GITHUB_API_VERSION
-      },
-      body: JSON.stringify({body})
-    }
-  )
+  const response = await fetch(commentsUrl(pullRequestContext), {
+    method: 'POST',
+    headers: headers(token),
+    body: JSON.stringify({body})
+  })
 
-  if (!response.ok) {
-    throw new Error(
-      `failed to create PR comment: ${response.status} ${response.statusText}`
+  await assertGitHubResponse(response, 'create PR comment')
+}
+
+async function findPullRequestComment(
+  token: string,
+  pullRequestContext: PullRequestContext
+): Promise<number | null> {
+  let page = 1
+  let matchingCommentId: number | null = null
+
+  while (true) {
+    const response = await fetch(
+      `${commentsUrl(pullRequestContext)}?per_page=100&page=${page}`,
+      {
+        method: 'GET',
+        headers: headers(token)
+      }
     )
+    await assertGitHubResponse(response, 'list PR comments')
+
+    const comments = (await response.json()) as PullRequestComment[]
+    for (const comment of comments) {
+      if (isValidationComment(comment)) {
+        matchingCommentId = comment.id
+      }
+    }
+
+    if (comments.length < 100) {
+      return matchingCommentId
+    }
+
+    page++
   }
+}
+
+async function updatePullRequestComment(
+  token: string,
+  pullRequestContext: PullRequestContext,
+  commentId: number,
+  body: string
+): Promise<void> {
+  const response = await fetch(commentUrl(pullRequestContext, commentId), {
+    method: 'PATCH',
+    headers: headers(token),
+    body: JSON.stringify({body})
+  })
+
+  await assertGitHubResponse(response, 'update PR comment')
+}
+
+async function writePullRequestComment(
+  token: string,
+  pullRequestContext: PullRequestContext,
+  body: string,
+  updateComment: boolean
+): Promise<'created' | 'updated'> {
+  if (updateComment) {
+    const commentId = await findPullRequestComment(token, pullRequestContext)
+    if (commentId !== null) {
+      await updatePullRequestComment(token, pullRequestContext, commentId, body)
+      return 'updated'
+    }
+  }
+
+  await createPullRequestComment(token, pullRequestContext, body)
+  return 'created'
 }
 
 async function commentOnPullRequest(body: string): Promise<boolean> {
@@ -159,12 +262,14 @@ async function commentOnPullRequest(body: string): Promise<boolean> {
     return false
   }
 
-  core.info(`📝 adding comment to PR #${pullRequestContext.issueNumber}`)
-  await createPullRequestComment(
-    core.getInput('github_token', {required: true}),
+  const token = core.getInput('github_token', {required: true})
+  const action = await writePullRequestComment(
+    token,
     pullRequestContext,
-    body
+    body,
+    core.getBooleanInput('update_comment')
   )
+  core.info(`📝 ${action} comment on PR #${pullRequestContext.issueNumber}`)
   return true
 }
 

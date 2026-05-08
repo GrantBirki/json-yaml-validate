@@ -72,6 +72,7 @@ beforeEach(() => {
   process.env.INPUT_GITHUB_TOKEN = 'faketoken'
   process.env.INPUT_COMMENT = 'false'
   process.env.INPUT_COMMENT_ON_SUCCESS = 'false'
+  process.env.INPUT_UPDATE_COMMENT = 'false'
   process.env.GITHUB_REPOSITORY = 'corp/test'
   process.env.GITHUB_API_URL = 'https://api.github.com'
   global.fetch = jest.fn().mockResolvedValue({
@@ -146,7 +147,7 @@ test('comments on pull requests when all validations pass and comment_on_success
   ).toBe(true)
 
   expect(setOutputMock).toHaveBeenCalledWith('success', 'true')
-  expect(infoMock).toHaveBeenCalledWith('📝 adding comment to PR #123')
+  expect(infoMock).toHaveBeenCalledWith('📝 created comment on PR #123')
   expect(global.fetch).toHaveBeenCalledWith(
     'https://api.github.com/repos/corp/test/issues/123/comments',
     expect.objectContaining({
@@ -161,6 +162,7 @@ test('comments on pull requests when all validations pass and comment_on_success
 
   const requestBody = JSON.parse(global.fetch.mock.calls[0][1].body)
   const commentBody = requestBody.body
+  expect(commentBody).toContain('<!-- json-yaml-validate-comment -->')
   expect(commentBody).toContain('✅ All detected JSON and YAML files are valid.')
   expect(commentBody).toContain('### JSON Validation Results')
   expect(commentBody).toContain('- ✅ File(s) Passed: 12')
@@ -383,7 +385,7 @@ test('tests constructBody function with JSON failures only (covers lines 50-67)'
 
   // The constructBody function should have been called and created a comment
   expect(infoMock).toHaveBeenCalledWith(
-    expect.stringMatching('📝 adding comment to PR')
+    expect.stringMatching('comment on PR')
   )
 })
 
@@ -475,6 +477,7 @@ test('constructs a pull request comment body with both violation sections', asyn
   )
   const requestBody = JSON.parse(global.fetch.mock.calls[0][1].body)
   const commentBody = requestBody.body
+  expect(commentBody).toContain('<!-- json-yaml-validate-comment -->')
   expect(commentBody).toContain('### JSON Validation Results')
   expect(commentBody).toContain('- ✅ File(s) Passed: 1')
   expect(commentBody).toContain('- ❌ File(s) Failed: 2')
@@ -509,6 +512,73 @@ test('fails when pull request comment creation fails', async () => {
   ).rejects.toThrow('failed to create PR comment: 500 Server Error')
 })
 
+test('updates the latest existing validation comment when update_comment is enabled', async () => {
+  process.env.INPUT_COMMENT = 'true'
+  process.env.INPUT_UPDATE_COMMENT = 'true'
+  const firstPageComments = Array.from({length: 100}, (_, index) => ({
+    id: index + 1,
+    body: `unrelated comment ${index + 1}`
+  }))
+
+  global.fetch
+    .mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      statusText: 'OK',
+      json: async () => firstPageComments
+    })
+    .mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      statusText: 'OK',
+      json: async () => [
+        {
+          id: 456,
+          body: '## JSON and YAML Validation Results\nold results'
+        }
+      ]
+    })
+    .mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      statusText: 'OK'
+    })
+
+  expect(
+    await processResults(
+      {
+        success: false,
+        failed: 2,
+        passed: 1,
+        skipped: 3,
+        violations: jsonViolations
+      },
+      {success: true, failed: 0, passed: 4, skipped: 5, violations: []}
+    )
+  ).toBe(false)
+
+  expect(global.fetch.mock.calls[0][0]).toBe(
+    'https://api.github.com/repos/corp/test/issues/123/comments?per_page=100&page=1'
+  )
+  expect(global.fetch.mock.calls[0][1].method).toBe('GET')
+  expect(global.fetch.mock.calls[1][0]).toBe(
+    'https://api.github.com/repos/corp/test/issues/123/comments?per_page=100&page=2'
+  )
+  expect(global.fetch.mock.calls[1][1].method).toBe('GET')
+  expect(global.fetch.mock.calls[2][0]).toBe(
+    'https://api.github.com/repos/corp/test/issues/comments/456'
+  )
+  expect(global.fetch.mock.calls[2][1].method).toBe('PATCH')
+
+  const requestBody = JSON.parse(global.fetch.mock.calls[2][1].body)
+  expect(requestBody.body).toContain('<!-- json-yaml-validate-comment -->')
+  expect(requestBody.body).toContain(JSON.stringify(jsonViolations, null, 2))
+  expect(infoMock).toHaveBeenCalledWith('📝 updated comment on PR #123')
+  expect(setFailedMock).toHaveBeenCalledWith(
+    '❌ JSON or YAML files failed validation'
+  )
+})
+
 test('tests constructBody function with YAML failures only (covers lines 69-86)', async () => {
   process.env.INPUT_COMMENT = 'true'
   expect(
@@ -526,6 +596,6 @@ test('tests constructBody function with YAML failures only (covers lines 69-86)'
 
   // The constructBody function should have been called and created a comment
   expect(infoMock).toHaveBeenCalledWith(
-    expect.stringMatching('📝 adding comment to PR')
+    expect.stringMatching('comment on PR')
   )
 })
