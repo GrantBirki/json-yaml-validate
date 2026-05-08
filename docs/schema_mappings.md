@@ -5,7 +5,7 @@ groups against different schemas.
 
 ```yaml
 - name: json-yaml-validate
-  uses: GrantBirki/json-yaml-validate@v4
+  uses: GrantBirki/json-yaml-validate@v5
   with:
     schema_mappings: |
       - type: json

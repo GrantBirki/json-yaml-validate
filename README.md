@@ -31,7 +31,7 @@ Here is a quick example of how to install this action in any workflow:
 
 # validate JSON and YAML files
 - name: json-yaml-validate
-  uses: GrantBirki/json-yaml-validate@v4
+  uses: GrantBirki/json-yaml-validate@v5
 ```
 
 Planning a v5 upgrade? Read the
@@ -107,7 +107,7 @@ jobs:
 
       - name: json-yaml-validate
         id: json-yaml-validate
-        uses: GrantBirki/json-yaml-validate@v4
+        uses: GrantBirki/json-yaml-validate@v5
 ```
 
 ### Pull Request Comment
@@ -135,7 +135,7 @@ jobs:
 
       - name: json-yaml-validate
         id: json-yaml-validate
-        uses: GrantBirki/json-yaml-validate@v4
+        uses: GrantBirki/json-yaml-validate@v5
         with:
           comment: "true" # enable comment mode
 ```
@@ -178,7 +178,7 @@ Here is an example of how to use this feature:
 - uses: actions/checkout@v6
 
 - name: json-yaml-validate
-  uses: GrantBirki/json-yaml-validate@v4
+  uses: GrantBirki/json-yaml-validate@v5
   with:
     yaml_schema: schemas/schema.yml # validate YAML files against the schema
     json_schema: schemas/schema.json # validate JSON files against the schema
@@ -207,7 +207,7 @@ Each mapping entry requires:
 
 ```yaml
 - name: json-yaml-validate
-  uses: GrantBirki/json-yaml-validate@v4
+  uses: GrantBirki/json-yaml-validate@v5
   with:
     schema_mappings: |
       - type: json
@@ -234,7 +234,7 @@ Use `use_inline_schema` when files already declare their JSON Schema locally and
 
 ```yaml
 - name: json-yaml-validate
-  uses: GrantBirki/json-yaml-validate@v4
+  uses: GrantBirki/json-yaml-validate@v5
   with:
     use_inline_schema: "true"
     yaml_as_json: "true"
@@ -329,7 +329,7 @@ Now that we have a JSON schema that uses custom regex formats and a JSON file th
 
 ```yaml
 - name: json-yaml-validate
-  uses: GrantBirki/json-yaml-validate@v4
+  uses: GrantBirki/json-yaml-validate@v5
   id: json-yaml-validate
   with:
     json_schema: ./schemas/custom_with_regex.json # <--- the schema file that uses custom regex formats
@@ -427,7 +427,7 @@ If the file path to your `exclude_file` is `exclude.txt`, you would set the `exc
 - uses: actions/checkout@v6
 
 - name: json-yaml-validate
-  uses: GrantBirki/json-yaml-validate@v4
+  uses: GrantBirki/json-yaml-validate@v5
   with:
     exclude_file: exclude.txt # gitignore style file that contains a list of files to exclude
 ```
