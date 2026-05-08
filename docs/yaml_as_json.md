@@ -17,7 +17,7 @@ Here is an example of how to use this feature:
 ```yaml
 - name: json-yaml-validate
   id: json-yaml-validate
-  uses: GrantBirki/json-yaml-validate@v4
+  uses: GrantBirki/json-yaml-validate@v5
   with:
     yaml_as_json: "true" # enable yaml as json mode
 ```
