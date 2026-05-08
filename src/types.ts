@@ -44,3 +44,15 @@ export interface PullRequestContext {
   repo: string
   issueNumber: number
 }
+
+export interface JsonFileValidationContext {
+  allowMultipleDocuments: boolean
+  exclude: Excluder
+  jsonSchema: string
+  result: ValidationResult
+  skipRegex: RegExp | null
+  validate: ValidateFunction
+  yamlAsJson: boolean
+  yamlExtension: string
+  yamlExtensionShort: string
+}
