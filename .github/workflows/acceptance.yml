@@ -46,6 +46,12 @@ jobs:
             __tests__/**/test1.yml
             __tests__/**/test*.json
 
+      - name: acceptance test - files input option (flat list)
+        uses: ./
+        id: json-yaml-validate-flat-list-test
+        with:
+          files: __tests__/fixtures/json/valid/json1.json __tests__/fixtures/yaml/valid/yaml1.yaml
+
       - name: acceptance test - custom formats
         uses: ./
         id: json-yaml-validate-custom-formats-test

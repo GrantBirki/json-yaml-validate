@@ -463,6 +463,24 @@ test('successfully validates json files with a schema when files is defined', as
   expect(debugMock).toHaveBeenCalledWith(`using files: ${files.join(', ')}`)
 })
 
+test('successfully validates json files with a schema when files is a flat space-separated list', async () => {
+  const files = [
+    '__tests__/fixtures/json/valid/json1.json',
+    '__tests__/fixtures/json/project_dir/data/config/json1.json'
+  ]
+  process.env.INPUT_FILES = files.join(' ')
+
+  expect(await jsonValidator(excludeMock)).toStrictEqual({
+    failed: 0,
+    passed: 2,
+    skipped: 0,
+    success: true,
+    violations: []
+  })
+
+  expect(debugMock).toHaveBeenCalledWith(`using files: ${files.join(', ')}`)
+})
+
 test('successfully validates json files with a schema when files is defined and there are duplicates', async () => {
   const files = [
     '__tests__/fixtures/json/valid/json1.json',

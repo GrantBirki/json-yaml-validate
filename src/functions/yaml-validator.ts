@@ -1,21 +1,14 @@
-import {globSync, readFileSync} from 'node:fs'
+import {readFileSync} from 'node:fs'
 import {parse, parseAllDocuments} from 'yaml'
 import {core} from '../actions-core.js'
 import type {Excluder, ValidationError, ValidationResult} from '../types.js'
-import {discoverFilesByExtension} from './file-discovery.js'
+import {
+  discoverExplicitFiles,
+  discoverFilesByExtension
+} from './file-discovery.js'
 import {validateYamlSchemaFile} from './yaml-schema-validator.js'
 
 const INVALID_YAML_MESSAGE = 'Invalid YAML'
-
-function discoverExplicitFiles(patterns: string[]): string[] {
-  const files: string[] = []
-
-  for (const pattern of patterns) {
-    files.push(...globSync(pattern))
-  }
-
-  return files
-}
 
 function formatYamlParseError(error: unknown): string {
   return String(error).split(':').slice(0, 2).join('')

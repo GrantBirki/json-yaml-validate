@@ -148,6 +148,25 @@ test('successfully validates yaml files with a schema when files is defined and 
   expect(debugMock).toHaveBeenCalledWith(`using files: ${files.join(', ')}`)
 })
 
+test('successfully validates yaml files when files is a flat space-separated list', async () => {
+  const files = [
+    '__tests__/fixtures/yaml/valid/yaml1.yaml',
+    '__tests__/fixtures/yaml/mixture/yaml2.yml'
+  ]
+  process.env.INPUT_YAML_SCHEMA = ''
+  process.env.INPUT_FILES = files.join(' ')
+
+  expect(await yamlValidator(excludeMock)).toStrictEqual({
+    failed: 0,
+    passed: 2,
+    skipped: 0,
+    success: true,
+    violations: []
+  })
+
+  expect(debugMock).toHaveBeenCalledWith(`using files: ${files.join(', ')}`)
+})
+
 test('fails to validate a yaml file with an incorrect schema', async () => {
   process.env.INPUT_YAML_SCHEMA = '__tests__/fixtures/schemas/schema2.yml'
   expect(await yamlValidator(excludeMock)).toStrictEqual({
