@@ -1,3 +1,4 @@
+import {resolve} from 'node:path'
 import {loadSchemaMappings} from '../../src/functions/schema-mappings.js'
 
 test('returns no schema mappings when input is empty', () => {
@@ -194,5 +195,51 @@ test('fails when the same file is mapped to multiple schemas of the same type', 
     )
   ).toThrow(
     'schema_mappings maps "__tests__/fixtures/json/valid/json1.json" to multiple json schemas'
+  )
+})
+
+test('deduplicates files within a schema mapping by real path', () => {
+  const relativeFile = '__tests__/fixtures/yaml/valid/yaml1.yaml'
+  const absoluteFile = resolve(relativeFile)
+
+  expect(
+    loadSchemaMappings(
+      `
+      - type: yaml
+        schema: __tests__/fixtures/schemas/schema1.yaml
+        files:
+          - ${relativeFile}
+          - ${absoluteFile}
+      `,
+      {yamlAsJson: false}
+    )
+  ).toStrictEqual([
+    {
+      type: 'yaml',
+      schema: '__tests__/fixtures/schemas/schema1.yaml',
+      files: [relativeFile],
+      jsonSchemaVersion: undefined
+    }
+  ])
+})
+
+test('fails when the same real file is mapped by different path forms', () => {
+  const relativeFile = '__tests__/fixtures/json/valid/json1.json'
+  const absoluteFile = resolve(relativeFile)
+
+  expect(() =>
+    loadSchemaMappings(
+      `
+      - type: json
+        schema: __tests__/fixtures/schemas/schema1.json
+        files: ${relativeFile}
+      - type: json
+        schema: __tests__/fixtures/schemas/schema2.json
+        files: ${absoluteFile}
+      `,
+      {yamlAsJson: false}
+    )
+  ).toThrow(
+    `schema_mappings maps "${absoluteFile}" to multiple json schemas`
   )
 })

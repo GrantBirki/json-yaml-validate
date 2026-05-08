@@ -8903,7 +8903,13 @@ function applyMode() {
 /* harmony export */   P: () => (/* binding */ loadSchemaMappings)
 /* harmony export */ });
 /* harmony import */ var yaml__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(8815);
-/* harmony import */ var _file_discovery_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(5696);
+/* harmony import */ var node_fs__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(3024);
+/* harmony import */ var node_fs__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__nccwpck_require__.n(node_fs__WEBPACK_IMPORTED_MODULE_1__);
+/* harmony import */ var node_path__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(6760);
+/* harmony import */ var node_path__WEBPACK_IMPORTED_MODULE_2___default = /*#__PURE__*/__nccwpck_require__.n(node_path__WEBPACK_IMPORTED_MODULE_2__);
+/* harmony import */ var _file_discovery_js__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(5696);
+
+
 
 
 function errorMessage(error) {
@@ -8914,6 +8920,22 @@ function isRecord(value) {
 }
 function schemaMappingError(index, message) {
     return new Error(`schema_mappings[${index}]: ${message}`);
+}
+function canonicalFileKey(file) {
+    return (0,node_fs__WEBPACK_IMPORTED_MODULE_1__.realpathSync)((0,node_path__WEBPACK_IMPORTED_MODULE_2__.resolve)(file));
+}
+function deduplicateFiles(files) {
+    const seen = new Set();
+    const deduplicated = [];
+    for (const file of files) {
+        const key = canonicalFileKey(file);
+        if (seen.has(key)) {
+            continue;
+        }
+        seen.add(key);
+        deduplicated.push(file);
+    }
+    return deduplicated;
 }
 function normalizeType(value, index) {
     if (value === 'json' || value === 'yaml') {
@@ -8945,7 +8967,7 @@ function normalizeFilePatterns(value, index) {
     if (normalizedPatterns.length === 0) {
         throw schemaMappingError(index, 'files must include at least one pattern');
     }
-    const files = [...new Set((0,_file_discovery_js__WEBPACK_IMPORTED_MODULE_1__/* .discoverExplicitFiles */ .Z)(normalizedPatterns))];
+    const files = deduplicateFiles((0,_file_discovery_js__WEBPACK_IMPORTED_MODULE_3__/* .discoverExplicitFiles */ .Z)(normalizedPatterns));
     if (files.length === 0) {
         throw schemaMappingError(index, 'files matched no files');
     }
@@ -8981,11 +9003,12 @@ function assertNoOverlappingFiles(mappings) {
         const files = filesByType.get(mapping.type) ?? new Map();
         filesByType.set(mapping.type, files);
         for (const file of mapping.files) {
-            const previousSchema = files.get(file);
+            const fileKey = canonicalFileKey(file);
+            const previousSchema = files.get(fileKey);
             if (previousSchema !== undefined) {
                 throw new Error(`schema_mappings maps "${file}" to multiple ${mapping.type} schemas: ${previousSchema}, ${mapping.schema}`);
             }
-            files.set(file, mapping.schema);
+            files.set(fileKey, mapping.schema);
         }
     }
 }
