@@ -8,7 +8,6 @@ on:
 
 permissions:
   contents: read
-  pull-requests: write
 
 jobs:
   acceptance:
@@ -16,6 +15,8 @@ jobs:
     steps:
       # Need to checkout for testing the Action in this repo
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # pin@v6
+        with:
+          persist-credentials: false
 
       # creates invalid files that are excluded by git and should not fail
       - name: invalid file creation
@@ -32,14 +33,12 @@ jobs:
         uses: ./
         id: json-yaml-validate
         with:
-          comment: "true"
           exclude_file: .github/config/exclude.txt
 
       - name: acceptance test - files input option (glob)
         uses: ./
         id: json-yaml-validate-glob-test
         with:
-          comment: "true"
           yaml_as_json: "false"
           exclude_file: .github/config/exclude-alt.txt
           files: |
@@ -56,7 +55,6 @@ jobs:
         uses: ./
         id: json-yaml-validate-custom-formats-test
         with:
-          comment: "true"
           json_schema: ./__tests__/fixtures/schemas/schema_with_custom_ajv_regexp_format.json
           ajv_custom_regexp_formats: |
             lowercase_char=^[a-z]*$
@@ -94,7 +92,6 @@ jobs:
         uses: ./
         id: json-yaml-validate-flat-yaml-test
         with:
-          comment: "true"
           yaml_schema: ./__tests__/fixtures/schemas/flat.yaml
           files: |
             __tests__/acceptance/flat_yaml/flat.yaml
@@ -103,7 +100,6 @@ jobs:
         uses: ./
         id: json-yaml-validate-multi-yaml-as-json-test
         with:
-          comment: "true"
           allow_multiple_documents: true
           yaml_as_json: true
           json_schema: ./__tests__/fixtures/schemas/schema1.json
@@ -114,7 +110,6 @@ jobs:
         uses: ./
         id: json-yaml-validate-exclude-helm-charts-test
         with:
-          comment: "true"
           json_exclude_regex: "edge_cases"
           yaml_exclude_regex: "(charts/external-dns/templates.*|mkdocs.yml|edge_cases)"
           allow_multiple_documents: "true"

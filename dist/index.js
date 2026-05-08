@@ -7959,6 +7959,8 @@ var _2019 = __nccwpck_require__(878);
 var _2020 = __nccwpck_require__(2210);
 // EXTERNAL MODULE: external "node:fs"
 var external_node_fs_ = __nccwpck_require__(3024);
+// EXTERNAL MODULE: external "node:path"
+var external_node_path_ = __nccwpck_require__(6760);
 // EXTERNAL MODULE: ./node_modules/yaml/dist/index.js
 var yaml_dist = __nccwpck_require__(8815);
 // EXTERNAL MODULE: ./src/actions-core.ts + 1 modules
@@ -8024,8 +8026,6 @@ function builtInMetaSchema(ajv, schemaValue) {
         : null;
 }
 
-// EXTERNAL MODULE: external "node:path"
-var external_node_path_ = __nccwpck_require__(6760);
 ;// CONCATENATED MODULE: ./src/functions/inline-schema.ts
 
 
@@ -8178,6 +8178,7 @@ var schema_mappings = __nccwpck_require__(4748);
 
 
 
+
 const DRAFT_07 = 'draft-07';
 const DRAFT_04 = 'draft-04';
 const DRAFT_2019_09 = 'draft-2019-09';
@@ -8186,7 +8187,8 @@ const BUILT_IN_SCHEMA_VERSIONS = new Map([
     ['http://json-schema.org/draft-04/schema', DRAFT_04],
     ['http://json-schema.org/draft-07/schema', DRAFT_07],
     ['https://json-schema.org/draft/2019-09/schema', DRAFT_2019_09],
-    ['https://json-schema.org/draft/2020-12/schema', DRAFT_2020_12]
+    ['https://json-schema.org/draft/2020-12/schema', DRAFT_2020_12],
+    /* node:coverage ignore next */
 ]);
 const INVALID_JSON_MESSAGE = 'Invalid JSON';
 const CUSTOM_FORMAT_REGEX = /^[\w-]+=.+$/;
@@ -8243,6 +8245,9 @@ function json_validator_ajv(jsonSchemaVersion = actions_core/* core */.I.getInpu
     });
     return validator;
 }
+function isJsonSchemaFile(fullPath, jsonSchema) {
+    return jsonSchema !== '' && (0,external_node_path_.resolve)(fullPath) === (0,external_node_path_.resolve)(jsonSchema);
+}
 async function compileSchemaValue(schemaValue, jsonSchemaVersion) {
     const validator = json_validator_ajv(jsonSchemaVersion);
     return builtInMetaSchema(validator, schemaValue) ?? validator.compile(schemaValue);
@@ -8285,7 +8290,7 @@ function inlineSchemaReference(fullPath, source, data, isYamlFile) {
 async function validateJsonFiles(files, context, processedFiles = new Set()) {
     for (const fullPath of files) {
         actions_core/* core */.I.debug(`found file: ${fullPath}`);
-        if (context.jsonSchema !== '' && fullPath.includes(context.jsonSchema)) {
+        if (isJsonSchemaFile(fullPath, context.jsonSchema)) {
             actions_core/* core */.I.debug(`skipping json schema file: ${fullPath}`);
             continue;
         }
@@ -8527,6 +8532,7 @@ const DEFAULT_GITHUB_API_URL = 'https://api.github.com';
 const GITHUB_API_VERSION = '2022-11-28';
 const COMMENT_MARKER = '<!-- json-yaml-validate-comment -->';
 const COMMENT_HEADER = '## JSON and YAML Validation Results';
+const GITHUB_ACTIONS_BOT_LOGIN = 'github-actions[bot]';
 async function checkResults(results, type) {
     if (results.passed === 0 && results.failed === 0) {
         _actions_core_js__WEBPACK_IMPORTED_MODULE_1__/* .core */ .I.info(`🔎 no ${type} files were detected`);
@@ -8603,6 +8609,10 @@ function isValidationComment(comment) {
     return (comment.body?.includes(COMMENT_MARKER) === true ||
         comment.body?.startsWith(COMMENT_HEADER) === true);
 }
+function isUpdatableValidationComment(comment) {
+    return (comment.user?.login === GITHUB_ACTIONS_BOT_LOGIN &&
+        isValidationComment(comment));
+}
 async function assertGitHubResponse(response, action) {
     if (!response.ok) {
         throw new Error(`failed to ${action}: ${response.status} ${response.statusText}`);
@@ -8642,7 +8652,7 @@ async function findPullRequestComment(token, pullRequestContext) {
         await assertGitHubResponse(response, 'list PR comments');
         const comments = (await response.json());
         for (const comment of comments) {
-            if (isValidationComment(comment)) {
+            if (isUpdatableValidationComment(comment)) {
                 matchingCommentId = comment.id;
             }
         }

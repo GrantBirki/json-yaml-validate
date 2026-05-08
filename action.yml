@@ -22,7 +22,7 @@ inputs:
     required: false
     default: "false"
   update_comment:
-    description: Whether or not to update an existing validation results PR comment instead of creating a new one - "true" or "false" - Default is "false"
+    description: Whether or not to update an existing validation results PR comment authored by github-actions[bot] instead of creating a new one - "true" or "false" - Default is "false"
     required: false
     default: "false"
   base_dir:
