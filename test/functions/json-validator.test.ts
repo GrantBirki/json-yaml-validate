@@ -65,6 +65,139 @@ test('successfully validates a json file with a schema and defaults to the draft
   )
 })
 
+test('successfully validates json schema files against local built-in meta-schema copies', async () => {
+  const fs = require('fs')
+  const os = require('os')
+  const path = require('path')
+  const cases = [
+    [
+      'draft-04',
+      require('ajv-draft-04/dist/refs/json-schema-draft-04.json')
+    ],
+    ['draft-07', require('ajv/dist/refs/json-schema-draft-07.json')],
+    [
+      'draft-2019-09',
+      require('ajv/dist/refs/json-schema-2019-09/schema.json')
+    ],
+    [
+      'draft-2020-12',
+      require('ajv/dist/refs/json-schema-2020-12/schema.json')
+    ]
+  ]
+
+  for (const [schemaVersion, metaSchema] of cases) {
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'json-meta-schema-'))
+    const metaSchemaFile = path.join(tempDir, 'meta-schema.json')
+    const schemaFile = path.join(tempDir, 'schema.json')
+
+    fs.writeFileSync(metaSchemaFile, JSON.stringify(metaSchema))
+    fs.writeFileSync(
+      schemaFile,
+      JSON.stringify({
+        type: 'object',
+        properties: {
+          name: {
+            type: 'string'
+          }
+        }
+      })
+    )
+
+    process.env.INPUT_JSON_SCHEMA_VERSION = schemaVersion
+    process.env.INPUT_JSON_SCHEMA = metaSchemaFile
+    process.env.INPUT_FILES = schemaFile
+    process.env.INPUT_BASE_DIR = tempDir
+
+    expect(await jsonValidator(excludeMock)).toStrictEqual({
+      failed: 0,
+      passed: 1,
+      skipped: 0,
+      success: true,
+      violations: []
+    })
+
+    fs.rmSync(tempDir, {recursive: true, force: true})
+  }
+})
+
+test('fails an invalid json schema file against a local draft-07 meta-schema copy', async () => {
+  const fs = require('fs')
+  const os = require('os')
+  const path = require('path')
+  const metaSchema = require('ajv/dist/refs/json-schema-draft-07.json')
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'json-meta-schema-'))
+  const metaSchemaFile = path.join(tempDir, 'meta-schema.json')
+  const schemaFile = path.join(tempDir, 'schema.json')
+
+  fs.writeFileSync(metaSchemaFile, JSON.stringify(metaSchema))
+  fs.writeFileSync(
+    schemaFile,
+    JSON.stringify({
+      type: 'strng'
+    })
+  )
+
+  process.env.INPUT_JSON_SCHEMA = metaSchemaFile
+  process.env.INPUT_FILES = schemaFile
+  process.env.INPUT_BASE_DIR = tempDir
+
+  const result = await jsonValidator(excludeMock)
+
+  expect(result.success).toBe(false)
+  expect(result.failed).toBe(1)
+  expect(result.violations[0].file).toBe(schemaFile)
+  expect(result.violations[0].errors).toStrictEqual([
+    {
+      path: '/type',
+      message: 'must be equal to one of the allowed values'
+    },
+    {
+      path: '/type',
+      message: 'must be array'
+    },
+    {
+      path: '/type',
+      message: 'must match a schema in anyOf'
+    }
+  ])
+
+  fs.rmSync(tempDir, {recursive: true, force: true})
+})
+
+test('does not treat user schemas with built-in meta-schema ids as meta-schema copies', async () => {
+  const fs = require('fs')
+  const os = require('os')
+  const path = require('path')
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'json-meta-schema-'))
+  const schemaFile = path.join(tempDir, 'schema.json')
+  const targetFile = path.join(tempDir, 'target.json')
+
+  fs.writeFileSync(
+    schemaFile,
+    JSON.stringify({
+      $id: 'http://json-schema.org/draft-07/schema#',
+      type: 'object',
+      properties: {
+        foo: {
+          type: 'integer'
+        }
+      },
+      required: ['foo']
+    })
+  )
+  fs.writeFileSync(targetFile, JSON.stringify({bar: true}))
+
+  process.env.INPUT_JSON_SCHEMA = schemaFile
+  process.env.INPUT_FILES = targetFile
+  process.env.INPUT_BASE_DIR = tempDir
+
+  await expect(jsonValidator(excludeMock)).rejects.toThrow(
+    'schema with key or id "http://json-schema.org/draft-07/schema" already exists'
+  )
+
+  fs.rmSync(tempDir, {recursive: true, force: true})
+})
+
 test('successfully validates a json file without using a schema', async () => {
   process.env.INPUT_JSON_SCHEMA = ''
   expect(await jsonValidator(excludeMock)).toStrictEqual({

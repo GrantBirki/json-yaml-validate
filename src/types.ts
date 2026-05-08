@@ -3,6 +3,7 @@ import type {ValidateFunction} from 'ajv'
 export interface AjvLike {
   addFormat(name: string, format: RegExp): unknown
   compile(schema: unknown): ValidateFunction
+  getSchema(keyRef: string): ValidateFunction | undefined
 }
 
 export type AjvConstructor = new (options: {
