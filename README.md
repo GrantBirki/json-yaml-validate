@@ -40,6 +40,7 @@ Here is a quick example of how to install this action in any workflow:
 | ----- | --------- | ------- | ----------- |
 | `mode` | `false` | `"fail"` | The mode to run the action in `"warn"` or `"fail"` |
 | `comment` | `false` | `"false"` | Whether or not to comment on a PR with the validation results - `"true"` or `"false"` |
+| `comment_on_success` | `false` | `"false"` | Whether or not to comment on a PR when all validation checks pass - `"true"` or `"false"` |
 | `base_dir` | `false` | `"."` | The base directory to search for JSON and YAML files (e.g. ./src) - Default is `"."` which searches the entire repository |
 | `files` | `false` | `""` | List of file paths to validate. File paths may be newline-delimited or provided as a single space-separated line. |
 | `use_dot_match` | `false` | `"true"` | Whether or not to use dot-matching when searching for files - `"true"` or `"false"` - If this is true, directories like `.github`, etc will be searched |
