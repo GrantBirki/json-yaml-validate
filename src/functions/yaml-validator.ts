@@ -7,6 +7,12 @@ import {
   discoverFilesByExtension
 } from './file-discovery.js'
 import {loadSchemaMappings} from './schema-mappings.js'
+import {
+  isSameFile,
+  resolveValidationFile,
+  resolveWorkspaceDirectory,
+  safeLogPath
+} from './path-utils.js'
 import {validateYamlSchemaData} from './yaml-schema-validator.js'
 
 const INVALID_YAML_MESSAGE = 'Invalid YAML'
@@ -64,6 +70,29 @@ interface YamlFileValidationContext {
   yamlSchema: string
 }
 
+function isYamlSchemaFile(fullPath: string, yamlSchema: string): boolean {
+  return yamlSchema !== '' && isSameFile(fullPath, yamlSchema)
+}
+
+function failPathValidation(
+  result: ValidationResult,
+  displayPath: string,
+  message: string
+): void {
+  core.error(`❌ invalid validation path: ${displayPath}`)
+  result.success = false
+  result.failed++
+  result.violations.push({
+    file: displayPath,
+    errors: [
+      {
+        path: null,
+        message
+      }
+    ]
+  })
+}
+
 function validateYamlFiles(
   files: string[],
   context: YamlFileValidationContext
@@ -73,42 +102,60 @@ function validateYamlFiles(
   for (const fullPath of files) {
     core.debug(`found file: ${fullPath}`)
 
-    if (context.yamlSchema !== '' && fullPath === context.yamlSchema) {
-      core.debug(`skipping yaml schema file: ${fullPath}`)
+    const resolved = resolveValidationFile(fullPath)
+    if (!resolved.ok) {
+      failPathValidation(
+        context.result,
+        resolved.displayPath,
+        resolved.message
+      )
+      continue
+    }
+    const file = resolved.value
+
+    if (isYamlSchemaFile(file.fullPath, context.yamlSchema)) {
+      core.debug(`skipping yaml schema file: ${file.displayPath}`)
       continue
     }
 
     const isJsonFile =
-      context.jsonExtension && fullPath.endsWith(context.jsonExtension)
+      context.jsonExtension && file.relativePath.endsWith(context.jsonExtension)
     if (context.yamlAsJson === false && isJsonFile) {
       core.debug(
-        `the yaml-validator found a json file so it will be skipped here: '${fullPath}'`
+        `the yaml-validator found a json file so it will be skipped here: '${file.displayPath}'`
       )
       continue
     }
 
-    if (processedFiles.has(fullPath)) {
-      core.debug(`skipping duplicate file: ${fullPath}`)
+    if (processedFiles.has(file.fullPath)) {
+      core.debug(`skipping duplicate file: ${file.displayPath}`)
       continue
     }
-    processedFiles.add(fullPath)
+    processedFiles.add(file.fullPath)
 
     if (context.yamlAsJson) {
       core.debug(
-        `skipping yaml since it should be treated as json: ${fullPath}`
+        `skipping yaml since it should be treated as json: ${file.displayPath}`
       )
       context.result.skipped++
       continue
     }
 
-    if (context.skipRegex !== null && context.skipRegex.test(fullPath)) {
-      core.info(`skipping due to exclude match: ${fullPath}`)
+    if (
+      context.skipRegex !== null &&
+      context.skipRegex.test(file.relativePath)
+    ) {
+      core.info(
+        `skipping due to exclude match: ${safeLogPath(file.displayPath)}`
+      )
       context.result.skipped++
       continue
     }
 
-    if (context.exclude.isExcluded(fullPath)) {
-      core.info(`skipping due to exclude match: ${fullPath}`)
+    if (context.exclude.isExcluded(file.relativePath)) {
+      core.info(
+        `skipping due to exclude match: ${safeLogPath(file.displayPath)}`
+      )
       context.result.skipped++
       continue
     }
@@ -116,16 +163,21 @@ function validateYamlFiles(
     let documents: ParsedYamlDocument[]
 
     try {
-      documents = parseYamlDocuments(fullPath, context.allowMultipleDocuments)
+      documents = parseYamlDocuments(
+        file.fullPath,
+        context.allowMultipleDocuments
+      )
       if (documents.length > 1) {
-        core.info(`multiple documents found in file: ${fullPath}`)
+        core.info(
+          `multiple documents found in file: ${safeLogPath(file.displayPath)}`
+        )
       }
     } catch (error) {
-      core.error(`❌ failed to parse YAML file: ${fullPath}`)
+      core.error(`❌ failed to parse YAML file: ${file.displayPath}`)
       context.result.success = false
       context.result.failed++
       context.result.violations.push({
-        file: fullPath,
+        file: file.displayPath,
         errors: [
           {
             path: null,
@@ -139,7 +191,7 @@ function validateYamlFiles(
 
     if (!context.yamlSchema) {
       context.result.passed++
-      core.info(`${fullPath} is valid`)
+      core.info(`${safeLogPath(file.displayPath)} is valid`)
       continue
     }
 
@@ -161,7 +213,7 @@ function validateYamlFiles(
 
     if (schemaErrors && schemaErrors.length > 0) {
       core.error(
-        `❌ failed to parse YAML file: ${fullPath}\n${JSON.stringify(
+        `❌ failed to parse YAML file: ${file.displayPath}\n${JSON.stringify(
           schemaErrors
         )}`
       )
@@ -169,14 +221,14 @@ function validateYamlFiles(
       context.result.failed++
 
       context.result.violations.push({
-        file: fullPath,
+        file: file.displayPath,
         errors: schemaErrors
       })
       continue
     }
 
     context.result.passed++
-    core.info(`${fullPath} is valid`)
+    core.info(`${safeLogPath(file.displayPath)} is valid`)
   }
 }
 
@@ -242,8 +294,18 @@ export async function yamlValidator(
     core.debug(`using baseDir: ${baseDirSanitized}`)
     core.debug(`using glob: ${glob}`)
 
+    const baseDirectory = resolveWorkspaceDirectory(baseDirSanitized)
+    if (!baseDirectory.ok) {
+      failPathValidation(
+        result,
+        baseDirectory.displayPath,
+        baseDirectory.message
+      )
+      return result
+    }
+
     files = discoverFilesByExtension(
-      baseDirSanitized,
+      baseDirectory.value,
       [yamlExtension, yamlExtensionShort],
       useDotMatch
     )

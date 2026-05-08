@@ -1,9 +1,6 @@
 import {globSync, readdirSync} from 'node:fs'
-import {join, sep} from 'node:path'
-
-function normalizePath(filePath: string): string {
-  return filePath.split(sep).join('/')
-}
+import {join} from 'node:path'
+import {normalizePath} from './path-utils.js'
 
 function expandFilePatterns(patterns: string[]): string[] {
   const files: string[] = []

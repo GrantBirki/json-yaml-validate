@@ -1,5 +1,6 @@
 import {jsonValidator} from '../../src/functions/json-validator.js'
 import {core} from '../../src/actions-core.js'
+import {Exclude as ActionExclude} from '../../src/functions/exclude.js'
 
 const debugMock = jest.spyOn(core, 'debug').mockImplementation(() => {})
 const infoMock = jest.spyOn(core, 'info').mockImplementation(() => {})
@@ -92,6 +93,7 @@ test('successfully validates json schema files against local built-in meta-schem
     const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'json-meta-schema-'))
     const metaSchemaFile = path.join(tempDir, 'meta-schema.json')
     const schemaFile = path.join(tempDir, 'schema.json')
+    process.env.GITHUB_WORKSPACE = tempDir
 
     fs.writeFileSync(metaSchemaFile, JSON.stringify(metaSchema))
     fs.writeFileSync(
@@ -131,6 +133,7 @@ test('fails an invalid json schema file against a local draft-07 meta-schema cop
   const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'json-meta-schema-'))
   const metaSchemaFile = path.join(tempDir, 'meta-schema.json')
   const schemaFile = path.join(tempDir, 'schema.json')
+  process.env.GITHUB_WORKSPACE = tempDir
 
   fs.writeFileSync(metaSchemaFile, JSON.stringify(metaSchema))
   fs.writeFileSync(
@@ -148,7 +151,7 @@ test('fails an invalid json schema file against a local draft-07 meta-schema cop
 
   expect(result.success).toBe(false)
   expect(result.failed).toBe(1)
-  expect(result.violations[0].file).toBe(schemaFile)
+  expect(result.violations[0].file).toBe('schema.json')
   expect(result.violations[0].errors).toStrictEqual([
     {
       path: '/type',
@@ -174,6 +177,7 @@ test('does not treat user schemas with built-in meta-schema ids as meta-schema c
   const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'json-meta-schema-'))
   const schemaFile = path.join(tempDir, 'schema.json')
   const targetFile = path.join(tempDir, 'target.json')
+  process.env.GITHUB_WORKSPACE = tempDir
 
   fs.writeFileSync(
     schemaFile,
@@ -743,7 +747,7 @@ test('reports invalid inline schema JSON as file validation failures', async () 
 
   expect(result.success).toBe(false)
   expect(result.failed).toBe(1)
-  expect(result.violations[0].file).toBe(dataFile)
+  expect(result.violations[0].file).toBe('data.json')
   expect(result.violations[0].errors[0].path).toBe(null)
   expect(result.violations[0].errors[0].message).toContain(
     'Invalid inline schema: Expected property name or'
@@ -1463,6 +1467,7 @@ test('does not skip json files whose path only contains the schema path', async 
   const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'json-schema-skip-'))
   const schemaFile = path.join(tempDir, 'schema.json')
   const dataFile = path.join(tempDir, 'schema.json-target.json')
+  process.env.GITHUB_WORKSPACE = tempDir
 
   fs.writeFileSync(schemaFile, '{}')
   fs.writeFileSync(dataFile, '{"ok": true}')
@@ -1482,6 +1487,135 @@ test('does not skip json files whose path only contains the schema path', async 
   expect(debugMock).not.toHaveBeenCalledWith(
     `skipping json schema file: ${dataFile}`
   )
+
+  fs.rmSync(tempDir, {recursive: true, force: true})
+})
+
+test('rejects explicit json file matches that are not regular workspace files', async () => {
+  const fs = require('fs')
+  const os = require('os')
+  const path = require('path')
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'json-paths-'))
+  const outsideDir = fs.mkdtempSync(path.join(os.tmpdir(), 'json-outside-'))
+  fs.mkdirSync(path.join(tempDir, 'dir.json'))
+  fs.writeFileSync(path.join(tempDir, 'ok.json'), '{}')
+  fs.writeFileSync(path.join(outsideDir, 'secret.json'), '{}')
+  fs.symlinkSync(
+    path.join(outsideDir, 'secret.json'),
+    path.join(tempDir, 'outside.json')
+  )
+  process.env.GITHUB_WORKSPACE = tempDir
+
+  process.env.INPUT_JSON_SCHEMA = ''
+  process.env.INPUT_FILES = path.join(tempDir, '*.json')
+  process.env.INPUT_BASE_DIR = tempDir
+
+  const result = await jsonValidator(excludeMock)
+
+  expect(result).toStrictEqual({
+    failed: 2,
+    passed: 1,
+    skipped: 0,
+    success: false,
+    violations: [
+      {
+        file: 'dir.json',
+        errors: [
+          {
+            path: null,
+            message: 'validation path must be a regular file: dir.json'
+          }
+        ]
+      },
+      {
+        file: 'outside.json',
+        errors: [
+          {
+            path: null,
+            message: 'validation path must be inside the workspace: outside.json'
+          }
+        ]
+      }
+    ]
+  })
+  expect(infoMock).toHaveBeenCalledWith('ok.json is valid')
+
+  fs.rmSync(tempDir, {recursive: true, force: true})
+  fs.rmSync(outsideDir, {recursive: true, force: true})
+})
+
+test('uses workspace-relative paths for gitignore checks with absolute base_dir', async () => {
+  process.env.INPUT_JSON_SCHEMA = ''
+  process.env.INPUT_BASE_DIR = `${process.cwd()}/__tests__/fixtures/json/valid`
+  process.env.INPUT_EXCLUDE_FILE = ''
+  process.env.INPUT_EXCLUDE_FILE_REQUIRED = 'true'
+  process.env.INPUT_USE_GITIGNORE = 'true'
+  process.env.INPUT_GIT_IGNORE_PATH = '.gitignore'
+
+  expect(await jsonValidator(new ActionExclude())).toStrictEqual({
+    failed: 0,
+    passed: 1,
+    skipped: 0,
+    success: true,
+    violations: []
+  })
+})
+
+test('fails json discovery when base_dir resolves outside the workspace', async () => {
+  const fs = require('fs')
+  const os = require('os')
+  const path = require('path')
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'json-base-'))
+  const workspace = path.join(tempDir, 'workspace')
+  const outside = path.join(tempDir, 'outside')
+  fs.mkdirSync(workspace)
+  fs.mkdirSync(outside)
+  process.env.GITHUB_WORKSPACE = workspace
+
+  process.env.INPUT_JSON_SCHEMA = ''
+  process.env.INPUT_BASE_DIR = outside
+  process.env.INPUT_FILES = ''
+
+  expect(await jsonValidator(excludeMock)).toStrictEqual({
+    failed: 1,
+    passed: 0,
+    skipped: 0,
+    success: false,
+    violations: [
+      {
+        file: outside,
+        errors: [
+          {
+            path: null,
+            message: `validation path must be inside the workspace: ${outside}`
+          }
+        ]
+      }
+    ]
+  })
+
+  fs.rmSync(tempDir, {recursive: true, force: true})
+})
+
+test('escapes command-looking json filenames before raw info logging', async () => {
+  const fs = require('fs')
+  const os = require('os')
+  const path = require('path')
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'json-log-path-'))
+  fs.writeFileSync(path.join(tempDir, '::warning::forged.json'), '{}')
+  process.env.GITHUB_WORKSPACE = tempDir
+
+  process.env.INPUT_JSON_SCHEMA = ''
+  process.env.INPUT_BASE_DIR = tempDir
+
+  expect(await jsonValidator(excludeMock)).toStrictEqual({
+    failed: 0,
+    passed: 1,
+    skipped: 0,
+    success: true,
+    violations: []
+  })
+  expect(infoMock).toHaveBeenCalledWith('./::warning::forged.json is valid')
 
   fs.rmSync(tempDir, {recursive: true, force: true})
 })
@@ -1586,8 +1720,12 @@ test('real world scenario: large schema with draft-2019-09', async () => {
 test('edge case: potential non-array data with complex yaml parsing', async () => {
   // Create a file with complex YAML that might not result in array
   const fs = require('fs')
-  const tempFile = '/tmp/complex_yaml.yaml'
+  const os = require('os')
+  const path = require('path')
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'complex-yaml-'))
+  const tempFile = path.join(tempDir, 'complex_yaml.yaml')
   fs.writeFileSync(tempFile, 'scalar_value')
+  process.env.GITHUB_WORKSPACE = tempDir
 
   process.env.INPUT_YAML_AS_JSON = 'true'
   process.env.INPUT_ALLOW_MULTIPLE_DOCUMENTS = 'false'
@@ -1599,14 +1737,18 @@ test('edge case: potential non-array data with complex yaml parsing', async () =
   expect(result.passed).toBe(1)
 
   // Cleanup
-  fs.unlinkSync(tempFile)
+  fs.rmSync(tempDir, {recursive: true, force: true})
 })
 
 test('edge case: empty document processing', async () => {
   // Create an empty YAML file
   const fs = require('fs')
-  const tempFile = '/tmp/empty.yaml'
+  const os = require('os')
+  const path = require('path')
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'empty-yaml-'))
+  const tempFile = path.join(tempDir, 'empty.yaml')
   fs.writeFileSync(tempFile, '')
+  process.env.GITHUB_WORKSPACE = tempDir
 
   process.env.INPUT_YAML_AS_JSON = 'true'
   process.env.INPUT_ALLOW_MULTIPLE_DOCUMENTS = 'false'
@@ -1618,14 +1760,18 @@ test('edge case: empty document processing', async () => {
   expect(result.passed + result.failed).toBeGreaterThan(0)
 
   // Cleanup
-  fs.unlinkSync(tempFile)
+  fs.rmSync(tempDir, {recursive: true, force: true})
 })
 
 test('edge case: malformed JSON in real file', async () => {
   // Create a malformed JSON file
   const fs = require('fs')
-  const tempFile = '/tmp/malformed.json'
+  const os = require('os')
+  const path = require('path')
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'malformed-json-'))
+  const tempFile = path.join(tempDir, 'malformed.json')
   fs.writeFileSync(tempFile, '{"invalid": json, missing quotes}')
+  process.env.GITHUB_WORKSPACE = tempDir
 
   process.env.INPUT_FILES = tempFile
   process.env.INPUT_BASE_DIR = '.'
@@ -1637,7 +1783,7 @@ test('edge case: malformed JSON in real file', async () => {
   expect(result.success).toBe(false)
 
   // Cleanup
-  fs.unlinkSync(tempFile)
+  fs.rmSync(tempDir, {recursive: true, force: true})
 })
 
 test('falls back to base_dir discovery when explicit json file globs match nothing', async () => {
@@ -1675,6 +1821,7 @@ test('discovers json files with a custom extension', async () => {
   const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'json-custom-ext-'))
   const tempFile = path.join(tempDir, 'config.jsonc')
   fs.writeFileSync(tempFile, '{"foo": 1}')
+  process.env.GITHUB_WORKSPACE = tempDir
 
   process.env.INPUT_JSON_SCHEMA = ''
   process.env.INPUT_JSON_EXTENSION = '.jsonc'
@@ -1698,6 +1845,7 @@ test('yaml_as_json reports invalid yaml parse errors as invalid json', async () 
   const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'yaml-as-json-bad-'))
   const tempFile = path.join(tempDir, 'bad.yaml')
   fs.writeFileSync(tempFile, 'person: { name: mona: lisa }')
+  process.env.GITHUB_WORKSPACE = tempDir
 
   process.env.INPUT_JSON_SCHEMA = ''
   process.env.INPUT_YAML_AS_JSON = 'true'
@@ -1710,7 +1858,7 @@ test('yaml_as_json reports invalid yaml parse errors as invalid json', async () 
     success: false,
     violations: [
       {
-        file: tempFile,
+        file: 'bad.yaml',
         errors: [
           {
             path: null,
