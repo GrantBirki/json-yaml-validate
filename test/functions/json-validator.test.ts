@@ -30,6 +30,7 @@ beforeEach(() => {
   process.env.INPUT_AJV_STRICT_MODE = 'true'
   process.env.INPUT_AJV_CUSTOM_REGEXP_FORMATS = ''
   process.env.INPUT_ALLOW_MULTIPLE_DOCUMENTS = 'false'
+  process.env.INPUT_SCHEMA_MAPPINGS = ''
 })
 
 test('successfully validates a json file with a schema', async () => {
@@ -612,6 +613,117 @@ test('successfully validates json files with a schema when files is a flat space
   })
 
   expect(debugMock).toHaveBeenCalledWith(`using files: ${files.join(', ')}`)
+})
+
+test('successfully validates json files with multiple schema mappings', async () => {
+  process.env.INPUT_BASE_DIR = '__tests__/fixtures/json/invalid'
+  process.env.INPUT_JSON_SCHEMA = '__tests__/fixtures/schemas/schema2.json'
+  process.env.INPUT_SCHEMA_MAPPINGS = [
+    '- type: json',
+    '  schema: __tests__/fixtures/schemas/schema1.json',
+    '  files:',
+    '    - __tests__/fixtures/json/valid/json1.json',
+    '  json_schema_version: draft-07',
+    '- type: json',
+    '  schema: __tests__/fixtures/schemas/schema2.json',
+    '  files:',
+    '    - __tests__/fixtures/json/mixture/json2.json',
+    '- type: yaml',
+    '  schema: __tests__/fixtures/schemas/schema1.yaml',
+    '  files:',
+    '    - __tests__/fixtures/yaml/valid/yaml1.yaml'
+  ].join('\n')
+
+  expect(await jsonValidator(excludeMock)).toStrictEqual({
+    failed: 0,
+    passed: 2,
+    skipped: 0,
+    success: true,
+    violations: []
+  })
+  expect(debugMock).toHaveBeenCalledWith(
+    'using schema_mappings for json validation'
+  )
+})
+
+test('fails json files against their mapped schema only', async () => {
+  process.env.INPUT_SCHEMA_MAPPINGS = [
+    '- type: json',
+    '  schema: __tests__/fixtures/schemas/schema2.json',
+    '  files:',
+    '    - __tests__/fixtures/json/valid/json1.json'
+  ].join('\n')
+
+  expect(await jsonValidator(excludeMock)).toStrictEqual({
+    failed: 1,
+    passed: 0,
+    skipped: 0,
+    success: false,
+    violations: [
+      {
+        file: '__tests__/fixtures/json/valid/json1.json',
+        errors: [
+          {
+            path: '/foo',
+            message: 'must be string'
+          }
+        ]
+      }
+    ]
+  })
+})
+
+test('validates yaml files with json schema mappings when yaml_as_json is enabled', async () => {
+  process.env.INPUT_YAML_AS_JSON = 'true'
+  process.env.INPUT_SCHEMA_MAPPINGS = [
+    '- type: json',
+    '  schema: __tests__/fixtures/schemas/schema1.json',
+    '  files:',
+    '    - __tests__/fixtures/yaml_as_json/valid/yaml1.yaml'
+  ].join('\n')
+
+  expect(await jsonValidator(excludeMock)).toStrictEqual({
+    failed: 0,
+    passed: 1,
+    skipped: 0,
+    success: true,
+    violations: []
+  })
+})
+
+test('reports document indexes for mapped multi-document yaml_as_json failures', async () => {
+  process.env.INPUT_YAML_AS_JSON = 'true'
+  process.env.INPUT_ALLOW_MULTIPLE_DOCUMENTS = 'true'
+  process.env.INPUT_SCHEMA_MAPPINGS = [
+    '- type: json',
+    '  schema: __tests__/fixtures/schemas/schema1.json',
+    '  files:',
+    '    - __tests__/fixtures/yaml_as_json/invalid_multi/yaml1.yaml'
+  ].join('\n')
+
+  expect(await jsonValidator(excludeMock)).toStrictEqual({
+    failed: 1,
+    passed: 0,
+    skipped: 0,
+    success: false,
+    violations: [
+      {
+        file: '__tests__/fixtures/yaml_as_json/invalid_multi/yaml1.yaml',
+        errors: [
+          {
+            document: 0,
+            message: 'must be integer',
+            path: '/foo'
+          },
+          {
+            document: 1,
+            message: 'must NOT have additional properties',
+            path: null
+          }
+        ]
+      }
+    ]
+  })
 })
 
 test('successfully validates json files with a schema when files is defined and there are duplicates', async () => {

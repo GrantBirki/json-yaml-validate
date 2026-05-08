@@ -22,6 +22,9 @@ public, has many dependents, and small behavior shifts can break downstream CI.
 - `src/functions/json-meta-schema.ts` detects exact local copies of built-in
   JSON Schema meta-schemas so they can reuse AJV's registered validators without
   treating arbitrary user schemas with spoofed `$id` values as meta-schemas.
+- `src/functions/schema-mappings.ts` parses the `schema_mappings` YAML input,
+  expands mapped file patterns, rejects ambiguous overlaps, and returns
+  normalized JSON/YAML schema-to-files groups.
 - `src/functions/yaml-validator.ts` handles YAML parsing, optional native YAML
   schema validation, multi-document YAML syntax checks, explicit `files` glob
   expansion, and YAML file discovery.
@@ -164,6 +167,11 @@ Important inputs:
   expand those tokens. If the tokens also match nothing, crawler discovery falls
   back to `base_dir`. Do not split on commas because commas are valid in glob
   syntax such as brace patterns.
+- `schema_mappings`: optional YAML list that maps schema files to explicit file
+  patterns. When set, mappings are authoritative: validators do not use
+  `base_dir`, top-level `files`, `json_schema`, or `yaml_schema`. Each mapping
+  requires `type`, `schema`, and `files`; JSON mappings may also set
+  `json_schema_version`.
 - `use_dot_match`: controls whether crawled discovery includes dot paths such
   as `.github`.
 - `json_schema`: optional JSON Schema path for AJV. If empty, AJV compiles
@@ -394,6 +402,9 @@ Current test organization:
 - `test/functions/json-meta-schema.test.ts` covers exact-copy built-in
   meta-schema detection and rejects spoofed schemas that only reuse a built-in
   `$id`.
+- `test/functions/schema-mappings.test.ts` covers mapping parsing, shape
+  validation, unmatched files, YAML-as-JSON rejection, and same-type overlap
+  detection.
 - `test/functions/yaml-validator.test.ts` covers YAML syntax, schema validation,
   multi-document parsing, schema skipping, `yaml_as_json` skipping, exclude
   regex, custom extensions, explicit files, and JSON-file skipping.
@@ -441,6 +452,9 @@ hardened unit tests around these behaviors green:
 - success PR comments, failure PR comments, and `update_comment` behavior use
   the same hidden marker so repeated runs can update the latest validation
   comment instead of adding comment noise
+- `schema_mappings` mode uses matched files only and must not fall back to
+  crawler discovery. Reject same-type file overlaps so one JSON or YAML file is
+  never validated against two schemas in the same run.
 
 Acceptance tests in `.github/workflows/acceptance.yml` use the action exactly as
 consumers do through `uses: ./`. Expected-failure acceptance cases must use
@@ -676,6 +690,9 @@ Preparing a PR:
 - Success PR comments are intentionally opt-in and updateable. When changing
   comment behavior, keep public comment noise in mind and preserve hidden marker
   compatibility for existing validation comments.
+- `schema_mappings` is intentionally explicit and does not auto-discover
+  colocated `*.schema.*` files. Keep this behavior unless there is a separate
+  public design for naming conventions and precedence.
 - User-provided regex inputs can be expensive. Avoid changes that multiply
   regex evaluation over large file sets.
 - `.gitignore` directory patterns should include trailing slashes for reliable

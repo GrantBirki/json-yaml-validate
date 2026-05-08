@@ -33,6 +33,10 @@ inputs:
     description: List of file paths to validate. File paths may be newline-delimited or provided as a single space-separated line.
     required: false
     default: ""
+  schema_mappings:
+    description: YAML list that maps JSON or YAML schema files to explicit file patterns for multi-schema validation.
+    required: false
+    default: ""
   use_dot_match:
     description: Whether or not to use dot-matching when searching for files - "true" or "false" - Default is "true" - If this is true, directories like .github, etc will be searched
     required: false

@@ -44,6 +44,7 @@ Here is a quick example of how to install this action in any workflow:
 | `update_comment` | `false` | `"false"` | Whether or not to update an existing validation results PR comment instead of creating a new one - `"true"` or `"false"` |
 | `base_dir` | `false` | `"."` | The base directory to search for JSON and YAML files (e.g. ./src) - Default is `"."` which searches the entire repository |
 | `files` | `false` | `""` | List of file paths to validate. File paths may be newline-delimited or provided as a single space-separated line. |
+| `schema_mappings` | `false` | `""` | YAML list that maps JSON or YAML schema files to explicit file patterns for multi-schema validation |
 | `use_dot_match` | `false` | `"true"` | Whether or not to use dot-matching when searching for files - `"true"` or `"false"` - If this is true, directories like `.github`, etc will be searched |
 | `json_schema` | `false` | `""` | The full path to the JSON schema file (e.g. ./schemas/schema.json) - Default is `""` which doesn't enforce a strict schema |
 | `json_schema_version` | `false` | `"draft-07"` | The version of the JSON schema to use - `"draft-07"`, `"draft-04"`, `"draft-2019-09"`, `"draft-2020-12"` |
@@ -172,6 +173,40 @@ Here is an example of how to use this feature:
 When this Action workflow runs, it will validate all JSON and YAML files in the repository against the schema files in the `schemas/` directory.
 
 > If you want to only validate files in the `data/` directory, you could set the `base_dir` input to `data/`
+
+### Multiple Schema Mappings
+
+Use `schema_mappings` when different file groups need different schemas in the same action step. When this input is set, the mappings are authoritative: the action validates only files matched by the mapping entries and does not fall back to `base_dir`, `files`, `json_schema`, or `yaml_schema`. See [schema mappings docs](docs/schema_mappings.md) for the detailed behavior.
+
+Each mapping entry requires:
+
+- `type`: either `json` or `yaml`
+- `schema`: the schema file for that entry
+- `files`: one file pattern, or a list of file patterns
+- `json_schema_version`: optional for JSON mappings, defaulting to the top-level `json_schema_version`
+
+```yaml
+- name: json-yaml-validate
+  uses: GrantBirki/json-yaml-validate@v4
+  with:
+    schema_mappings: |
+      - type: json
+        schema: ./schemas/index-schema.json
+        files:
+          - ./data/index_*.json
+        json_schema_version: draft-07
+      - type: json
+        schema: ./schemas/topic-schema.json
+        files:
+          - ./data/topic_*.json
+      - type: yaml
+        schema: ./schemas/config-schema.yaml
+        files:
+          - ./config/*.yaml
+          - ./config/*.yml
+```
+
+`schema_mappings` still uses the global exclude options, AJV options, `yaml_as_json`, and `allow_multiple_documents` where those options apply. YAML schema mappings cannot be used when `yaml_as_json` is `"true"` because YAML schemas are ignored in that mode.
 
 ### JSON Schema Docs
 

@@ -64,6 +64,21 @@ jobs:
           files: |
             __tests__/fixtures/json/custom_ajv_regexp_format/valid.json
 
+      - name: acceptance test - schema mappings
+        uses: ./
+        id: json-yaml-validate-schema-mappings-test
+        with:
+          use_gitignore: "false"
+          schema_mappings: |
+            - type: json
+              schema: ./__tests__/fixtures/schemas/schema1.json
+              files:
+                - __tests__/fixtures/json/valid/json1.json
+            - type: json
+              schema: ./__tests__/fixtures/schemas/schema2.json
+              files:
+                - __tests__/fixtures/json/mixture/json2.json
+
       - name: acceptance test - flat yaml
         uses: ./
         id: json-yaml-validate-flat-yaml-test

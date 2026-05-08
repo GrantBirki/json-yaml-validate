@@ -25,6 +25,7 @@ beforeEach(() => {
   process.env.INPUT_USE_DOT_MATCH = 'true'
   process.env.INPUT_FILES = ''
   process.env.INPUT_ALLOW_MULTIPLE_DOCUMENTS = 'false'
+  process.env.INPUT_SCHEMA_MAPPINGS = ''
 })
 
 test('successfully validates a yaml file with a schema', async () => {
@@ -165,6 +166,50 @@ test('successfully validates yaml files when files is a flat space-separated lis
   })
 
   expect(debugMock).toHaveBeenCalledWith(`using files: ${files.join(', ')}`)
+})
+
+test('successfully validates yaml files with multiple schema mappings', async () => {
+  process.env.INPUT_BASE_DIR = '__tests__/fixtures/yaml/invalid'
+  process.env.INPUT_YAML_SCHEMA = '__tests__/fixtures/schemas/schema2.yml'
+  process.env.INPUT_SCHEMA_MAPPINGS = [
+    '- type: json',
+    '  schema: __tests__/fixtures/schemas/schema1.json',
+    '  files:',
+    '    - __tests__/fixtures/json/valid/json1.json',
+    '- type: yaml',
+    '  schema: __tests__/fixtures/schemas/schema1.yaml',
+    '  files:',
+    '    - __tests__/fixtures/yaml/valid/yaml1.yaml',
+    '- type: yaml',
+    '  schema: __tests__/fixtures/schemas/schema2.yml',
+    '  files:',
+    '    - __tests__/fixtures/yaml/mixture/yaml2.yml'
+  ].join('\n')
+
+  expect(await yamlValidator(excludeMock)).toStrictEqual({
+    failed: 0,
+    passed: 2,
+    skipped: 0,
+    success: true,
+    violations: []
+  })
+  expect(debugMock).toHaveBeenCalledWith(
+    'using schema_mappings for yaml validation'
+  )
+})
+
+test('rejects yaml schema mappings when yaml_as_json is enabled', async () => {
+  process.env.INPUT_YAML_AS_JSON = 'true'
+  process.env.INPUT_SCHEMA_MAPPINGS = [
+    '- type: yaml',
+    '  schema: __tests__/fixtures/schemas/schema1.yaml',
+    '  files:',
+    '    - __tests__/fixtures/yaml/valid/yaml1.yaml'
+  ].join('\n')
+
+  await expect(yamlValidator(excludeMock)).rejects.toThrow(
+    'schema_mappings entries with type "yaml" cannot be used when yaml_as_json is true'
+  )
 })
 
 test('fails to validate a yaml file with an incorrect schema', async () => {
