@@ -34,6 +34,10 @@ Here is a quick example of how to install this action in any workflow:
   uses: GrantBirki/json-yaml-validate@v4
 ```
 
+Planning a v5 upgrade? Read the
+[v4 to v5 migration guide](docs/migrating-from-v4-to-v5.md) before updating
+the action ref.
+
 ## Inputs 📥
 
 | Input | Required? | Default | Description |
