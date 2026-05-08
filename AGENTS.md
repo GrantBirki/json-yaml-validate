@@ -19,14 +19,19 @@ public, has many dependents, and small behavior shifts can break downstream CI.
 - `src/functions/json-validator.ts` handles JSON parsing, JSON Schema
   validation through AJV, `yaml_as_json`, custom AJV formats, explicit `files`
   glob expansion, and JSON file discovery.
+- `src/functions/json-meta-schema.ts` detects exact local copies of built-in
+  JSON Schema meta-schemas so they can reuse AJV's registered validators without
+  treating arbitrary user schemas with spoofed `$id` values as meta-schemas.
 - `src/functions/yaml-validator.ts` handles YAML parsing, optional native YAML
   schema validation, multi-document YAML syntax checks, explicit `files` glob
   expansion, and YAML file discovery.
 - `src/functions/yaml-schema-validator.ts` implements the action's legacy YAML
   schema dialect in TypeScript. It supports nested objects, arrays, `type`,
-  `required`, `length`, `enum`, and legacy extra-field warnings.
+  `required`, `length`, `enum`, schema keyword names used as normal nested
+  fields, and legacy extra-field warnings.
 - `src/functions/file-discovery.ts` provides native recursive crawler-mode
-  discovery for JSON and YAML extensions.
+  discovery for JSON and YAML extensions, plus shared explicit `files` glob
+  handling for both validators.
 - `src/functions/exclude.ts` loads `exclude_file` patterns and `.gitignore`
   patterns using the `ignore` package.
 - `src/functions/process-results.ts` summarizes validation results, sets the
@@ -142,12 +147,23 @@ Important inputs:
 - `mode`: `fail` calls `core.setFailed`; `warn` logs a warning and error but
   does not fail the action; unknown values fail.
 - `comment`: when true on a pull request event, posts a new issue comment with
-  validation failures. It does not update or deduplicate prior comments.
+  validation failures.
+- `comment_on_success`: when true on a pull request event, posts a validation
+  results comment after both JSON and YAML validations pass. Keep this opt-in;
+  unconditional success comments are noisy on repeated CI runs.
+- `update_comment`: when true, updates the latest existing validation results
+  comment instead of creating another one. The lookup recognizes the hidden
+  marker used by current comments and the legacy visible comment heading.
 - `github_token`: only used for PR comments. Do not log it.
 - `base_dir`: base directory for crawler-based discovery when `files` is empty.
   A single trailing slash is removed.
-- `files`: newline-delimited glob patterns. When present, validators expand
-  patterns with Node's native `fs.globSync` instead of crawling `base_dir`.
+- `files`: newline-delimited glob patterns or a single-line whitespace-delimited
+  file list such as the default `tj-actions/changed-files` output. Validators
+  first expand the value as newline-delimited patterns. If that matches no files
+  and there is exactly one non-empty line, they split that line on whitespace and
+  expand those tokens. If the tokens also match nothing, crawler discovery falls
+  back to `base_dir`. Do not split on commas because commas are valid in glob
+  syntax such as brace patterns.
 - `use_dot_match`: controls whether crawled discovery includes dot paths such
   as `.github`.
 - `json_schema`: optional JSON Schema path for AJV. If empty, AJV compiles
@@ -254,6 +270,12 @@ Validation:
 - YAML files in `yaml_as_json` mode are parsed with `yaml.parse` or
   `yaml.parseAllDocuments`.
 - AJV validates each parsed document. All AJV errors are collected.
+- Local copies of built-in draft-04, draft-07, draft-2019-09, and draft-2020-12
+  JSON Schema meta-schemas reuse AJV's registered meta-schema validators instead
+  of going through `ajv.compile`, which would fail on duplicate schema IDs.
+  This shortcut must require an exact structural match against
+  `validate.schema`, not just a matching `$id` or `id`, so user schemas cannot
+  bypass normal validation by spoofing a built-in meta-schema ID.
 - AJV error paths use `error.instancePath || null`.
 - Invalid JSON syntax and YAML-as-JSON parse errors are reported with
   `message: "Invalid JSON"` for compatibility.
@@ -268,6 +290,10 @@ Security-sensitive areas:
   importing, or evaluating checked-out files.
 - Keep violation logs to file paths and parser/schema messages. Do not add file
   contents to logs or PR comments unless there is a deliberate design change.
+- Be careful with schema helper code in the committed ncc bundle. Loading JSON
+  schema assets through `createRequire(import.meta.url)` broke after bundling in
+  this repo; prefer data already registered on AJV or smoke-test `dist/index.js`
+  when changing meta-schema behavior.
 
 ## YAML Validator Details
 
@@ -299,6 +325,11 @@ Validation:
   validation is skipped for that file.
 - Schema validation uses `yaml-schema-validator.ts`, the native TypeScript
   replacement for the old `yaml-schema-validator` dependency.
+- Schema keys named `type`, `required`, `length`, or `enum` may be either legacy
+  rule keywords or ordinary nested field names. Treat them as rule keywords only
+  when their values have the rule shape expected by the legacy schema dialect;
+  object-shaped child schemas under those names should validate target fields
+  with the same names.
 - Schema errors are normalized to `{path: error.path || null, message}`.
 - Syntax errors are reported with `message: "Invalid YAML"` and a compact
   formatted `error` field.
@@ -315,6 +346,9 @@ who need JSON Schema behavior for YAML should use `yaml_as_json`.
 - Otherwise it logs counts and serialized violations.
 
 If both types pass, the action sets `success` to `"true"` and returns true.
+When `comment_on_success` is true, it also writes a success comment with JSON
+and YAML passed, failed, and skipped counts. Failure to create a success comment
+logs a warning and does not fail an otherwise successful validation run.
 
 If either type fails:
 
@@ -322,6 +356,9 @@ If either type fails:
 - On pull request events with `comment: true`, it creates a new PR comment using
   `GITHUB_EVENT_PATH`, `GITHUB_REPOSITORY`, `GITHUB_API_URL`, and native
   `fetch`.
+- If `update_comment` is true, comments are written through the update path:
+  list issue comments, find the latest validation results comment, and patch it;
+  create a new comment only when no existing validation comment is found.
 - In `fail` mode it calls `core.setFailed`.
 - In `warn` mode it logs a warning and error but does not call
   `core.setFailed`.
@@ -354,6 +391,9 @@ Current test organization:
 - `test/functions/json-validator.test.ts` covers AJV schema versions, strict
   mode, custom formats, syntax failures, schema failures, `files`, native glob
   expansion, duplicates, exclude regex, schema skipping, and `yaml_as_json`.
+- `test/functions/json-meta-schema.test.ts` covers exact-copy built-in
+  meta-schema detection and rejects spoofed schemas that only reuse a built-in
+  `$id`.
 - `test/functions/yaml-validator.test.ts` covers YAML syntax, schema validation,
   multi-document parsing, schema skipping, `yaml_as_json` skipping, exclude
   regex, custom extensions, explicit files, and JSON-file skipping.
@@ -361,7 +401,8 @@ Current test organization:
   files, optional missing files, `.gitignore` loading, and ignore pattern
   matches.
 - `test/functions/process-results.test.ts` covers success, no-file success,
-  failure, warn mode, unknown mode, and native GitHub API PR comment paths.
+  failure, warn mode, unknown mode, success comments, comment updates, and
+  native GitHub API PR comment paths.
 - `test/main.test.ts` covers orchestration with injectable dependencies.
 
 The project requires 100% source line coverage through Node's native coverage
@@ -382,11 +423,24 @@ hardened unit tests around these behaviors green:
   anywhere in the workspace
 - if `files` is provided but all glob patterns are unmatched, validators fall
   back to crawler discovery under `base_dir`
+- single-line whitespace-delimited `files` input is parsed only after the
+  original newline-delimited expansion matches nothing
+- newline-delimited `files` globs continue to work and are not split on
+  whitespace within each line when they already match files
+- `files` input is not comma-delimited; comma can be part of valid glob syntax
 - custom JSON and YAML extensions are discovered through crawler mode
 - `yaml_as_json` parse failures are reported as `Invalid JSON` for
   compatibility
 - multi-document YAML syntax validation skips native YAML schema validation
+- local copies of built-in JSON Schema meta-schemas validate without duplicate
+  ID failures, but user schemas with only a spoofed built-in `$id` still go
+  through normal `ajv.compile`
+- YAML schema keyword names such as `type`, `required`, `length`, and `enum`
+  can be validated as normal nested target fields
 - custom exclude files use gitignore-style negation and directory patterns
+- success PR comments, failure PR comments, and `update_comment` behavior use
+  the same hidden marker so repeated runs can update the latest validation
+  comment instead of adding comment noise
 
 Acceptance tests in `.github/workflows/acceptance.yml` use the action exactly as
 consumers do through `uses: ./`. Expected-failure acceptance cases must use
@@ -444,7 +498,9 @@ Current native replacements:
   `GITHUB_REPOSITORY`, `GITHUB_API_URL`, and native `fetch`, not
   `@actions/github` or Octokit.
 - Explicit `files` patterns use Node's native `fs.globSync`, not the `glob`
-  package.
+  package. The shared helper in `file-discovery.ts` owns newline-delimited and
+  single-line whitespace-delimited parsing so JSON and YAML validators stay in
+  sync.
 - Crawler-mode JSON/YAML discovery uses `file-discovery.ts` and Node `fs`
   recursion, not `fdir` or `picomatch`.
 - Legacy YAML schema validation uses `yaml-schema-validator.ts`, not the old
@@ -582,22 +638,44 @@ Preparing a PR:
 3. Confirm source, tests, docs, and bundle are consistent.
 4. Prefer a concise PR body, but call out dependency or security-relevant
    changes explicitly.
+5. When a PR resolves a GitHub issue and the user requests a resolving footer,
+   keep the footer exact, for example:
+
+   ```markdown
+   ---
+
+   Resolves: https://github.com/GrantBirki/json-yaml-validate/issues/<number>
+   ```
 
 ## Known Sharp Edges
 
 - `files` mode bypasses `base_dir` discovery but both validators still receive
   the expanded file list and must skip files they do not own.
-- If every explicit `files` pattern expands to zero files, validators fall back
-  to crawler discovery under `base_dir`.
+- If every explicit `files` pattern expands to zero files, a single non-empty
+  line is retried as a whitespace-delimited list. If that also expands to zero
+  files, validators fall back to crawler discovery under `base_dir`.
+- Do not treat `files` as comma-delimited. Commas can be valid glob syntax, and
+  changing this would create ambiguous parsing for brace patterns.
 - JSON schema skipping uses substring matching; YAML schema skipping uses exact
   path equality.
+- Local built-in JSON meta-schema detection must be exact-copy based. Matching
+  only `$id` or `id` can silently ignore user schema constraints.
 - Native YAML multi-document mode does not run YAML schema validation after a
   successful multi-document syntax parse.
+- YAML schema keyword names can also be ordinary field names. Preserve tests for
+  target data fields named `type`, `required`, `length`, and `enum`.
 - `yaml_as_json` changes counting: YAML files are validated by the JSON
   validator and counted as skipped by the YAML validator.
 - The old `yaml-schema-validator` package failed in the ncc bundle because it
   relied on non-strict CommonJS behavior. If native YAML schema behavior
   changes, always smoke-test `dist/index.js`, not just `src/main.ts`.
+- The ncc ESM bundle can also expose import-time problems that source tests miss
+  for helper modules. In particular, avoid `createRequire(import.meta.url)` for
+  JSON schema assets unless `npm run package` and acceptance tests prove the
+  bundled action still runs.
+- Success PR comments are intentionally opt-in and updateable. When changing
+  comment behavior, keep public comment noise in mind and preserve hidden marker
+  compatibility for existing validation comments.
 - User-provided regex inputs can be expensive. Avoid changes that multiply
   regex evaluation over large file sets.
 - `.gitignore` directory patterns should include trailing slashes for reliable
