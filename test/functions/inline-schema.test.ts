@@ -1,6 +1,7 @@
 import {
   extractJsonInlineSchema,
   extractYamlInlineSchema,
+  isPathEscape,
   jsonInlineSchemaReference,
   resolveInlineSchemaReference,
   yamlInlineSchemaReference
@@ -81,6 +82,14 @@ test('resolves relative and absolute inline schema paths inside the workspace', 
     kind: 'local',
     schemaPath: `${process.cwd()}/${schemaPath}`
   })
+})
+
+test('detects parent path escapes for posix and windows relative paths', () => {
+  expect(isPathEscape('..')).toBe(true)
+  expect(isPathEscape('../outside/schema.json')).toBe(true)
+  expect(isPathEscape('..\\outside\\schema.json')).toBe(true)
+  expect(isPathEscape('schemas/person.schema.json')).toBe(false)
+  expect(isPathEscape('..schemas/person.schema.json')).toBe(false)
 })
 
 test('rejects missing inline schema files', () => {

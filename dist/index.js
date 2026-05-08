@@ -8033,9 +8033,15 @@ var external_node_path_ = __nccwpck_require__(6760);
 function isRecord(value) {
     return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
+function isPathEscape(relativePath) {
+    return (relativePath === '..' ||
+        relativePath.startsWith('../') ||
+        relativePath.startsWith('..\\') ||
+        (0,external_node_path_.isAbsolute)(relativePath));
+}
 function isPathInside(childPath, parentPath) {
     const path = (0,external_node_path_.relative)(parentPath, childPath);
-    return path === '' || (path !== '..' && !path.startsWith('../'));
+    return path === '' || !isPathEscape(path);
 }
 function workspaceRoot(workspace = process.env.GITHUB_WORKSPACE) {
     return (0,external_node_fs_.realpathSync)(workspace && workspace !== '' ? workspace : process.cwd());

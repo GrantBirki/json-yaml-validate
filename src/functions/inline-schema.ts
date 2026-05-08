@@ -23,9 +23,18 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
 
+export function isPathEscape(relativePath: string): boolean {
+  return (
+    relativePath === '..' ||
+    relativePath.startsWith('../') ||
+    relativePath.startsWith('..\\') ||
+    isAbsolute(relativePath)
+  )
+}
+
 function isPathInside(childPath: string, parentPath: string): boolean {
   const path = relative(parentPath, childPath)
-  return path === '' || (path !== '..' && !path.startsWith('../'))
+  return path === '' || !isPathEscape(path)
 }
 
 function workspaceRoot(workspace = process.env.GITHUB_WORKSPACE): string {
