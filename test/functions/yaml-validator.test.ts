@@ -24,7 +24,7 @@ beforeEach(() => {
   process.env.INPUT_YAML_AS_JSON = 'false'
   process.env.INPUT_USE_DOT_MATCH = 'true'
   process.env.INPUT_FILES = ''
-  process.env.INPUT_ALLOW_MULTIPLE_DOCUMENTS = 'false'
+  process.env.INPUT_ALLOW_MULTIPLE_DOCUMENTS = 'true'
   process.env.INPUT_SCHEMA_MAPPINGS = ''
   process.env.INPUT_USE_INLINE_SCHEMA = 'false'
 })
@@ -324,8 +324,11 @@ test('skips all files when yaml_as_json is true, even invalid ones', async () =>
 })
 
 test('successfully validates a yaml file with multiple documents but fails on the other', async () => {
-  process.env.INPUT_ALLOW_MULTIPLE_DOCUMENTS = 'true'
-  process.env.INPUT_BASE_DIR = '__tests__/fixtures/yaml/multiple'
+  process.env.INPUT_YAML_SCHEMA = ''
+  process.env.INPUT_FILES = [
+    '__tests__/fixtures/yaml/multiple/yaml1.yaml',
+    '__tests__/fixtures/yaml/multiple/invalid.yaml'
+  ].join('\n')
   expect(await yamlValidator(excludeMock)).toStrictEqual({
     failed: 1,
     passed: 1,
@@ -476,10 +479,28 @@ test('edge case: yaml schema file skipping', async () => {
 
 test('edge case: mixed valid and invalid yaml with multiple documents disabled', async () => {
   process.env.INPUT_ALLOW_MULTIPLE_DOCUMENTS = 'false'
-  process.env.INPUT_BASE_DIR = '__tests__/fixtures/yaml/mixture'
+  process.env.INPUT_YAML_SCHEMA = ''
+  process.env.INPUT_FILES = '__tests__/fixtures/yaml/multiple/yaml1.yaml'
 
-  const result = await yamlValidator(excludeMock)
-  expect(result.passed + result.failed).toBeGreaterThan(0)
+  expect(await yamlValidator(excludeMock)).toStrictEqual({
+    failed: 1,
+    passed: 0,
+    skipped: 0,
+    success: false,
+    violations: [
+      {
+        file: '__tests__/fixtures/yaml/multiple/yaml1.yaml',
+        errors: [
+          {
+            path: null,
+            message: 'Invalid YAML',
+            error:
+              'Multiple YAML documents found; set allow_multiple_documents: "true" to validate Kubernetes-style multi-document YAML files.'
+          }
+        ]
+      }
+    ]
+  })
 })
 
 test('edge case: yaml with empty/minimal data structure', async () => {
@@ -588,9 +609,8 @@ test('discovers yaml files with custom extensions', async () => {
   fs.rmSync(tempDir, {recursive: true, force: true})
 })
 
-test('multi-document yaml skips schema validation after syntax validation', async () => {
-  process.env.INPUT_ALLOW_MULTIPLE_DOCUMENTS = 'true'
-  process.env.INPUT_YAML_SCHEMA = '__tests__/fixtures/schemas/schema2.yml'
+test('multi-document yaml validates each document with yaml_schema', async () => {
+  process.env.INPUT_YAML_SCHEMA = '__tests__/fixtures/schemas/kubernetes.yaml'
   process.env.INPUT_FILES = '__tests__/fixtures/yaml/multiple/yaml1.yaml'
   process.env.INPUT_BASE_DIR = '.'
 
@@ -600,6 +620,32 @@ test('multi-document yaml skips schema validation after syntax validation', asyn
     skipped: 0,
     success: true,
     violations: []
+  })
+})
+
+test('multi-document yaml schema errors include document indexes', async () => {
+  process.env.INPUT_YAML_SCHEMA = '__tests__/fixtures/schemas/kubernetes.yaml'
+  process.env.INPUT_FILES =
+    '__tests__/fixtures/yaml/multiple/schema-invalid.yaml'
+  process.env.INPUT_BASE_DIR = '.'
+
+  expect(await yamlValidator(excludeMock)).toStrictEqual({
+    failed: 1,
+    passed: 0,
+    skipped: 0,
+    success: false,
+    violations: [
+      {
+        file: '__tests__/fixtures/yaml/multiple/schema-invalid.yaml',
+        errors: [
+          {
+            document: 1,
+            path: 'kind',
+            message: 'kind must be of type String.'
+          }
+        ]
+      }
+    ]
   })
 })
 

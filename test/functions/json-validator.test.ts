@@ -30,7 +30,7 @@ beforeEach(() => {
   process.env.INPUT_JSON_SCHEMA_VERSION = 'draft-07'
   process.env.INPUT_AJV_STRICT_MODE = 'true'
   process.env.INPUT_AJV_CUSTOM_REGEXP_FORMATS = ''
-  process.env.INPUT_ALLOW_MULTIPLE_DOCUMENTS = 'false'
+  process.env.INPUT_ALLOW_MULTIPLE_DOCUMENTS = 'true'
   process.env.INPUT_SCHEMA_MAPPINGS = ''
   process.env.INPUT_USE_INLINE_SCHEMA = 'false'
 })

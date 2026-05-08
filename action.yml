@@ -102,9 +102,9 @@ inputs:
     required: false
     default: ".gitignore"
   allow_multiple_documents:
-    description: Whether or not to allow multiple documents in a single YAML file - "true" or "false" - Default is "false"
+    description: Whether or not to allow multiple documents in a single YAML file - "true" or "false" - Default is "true"
     required: false
-    default: "false"
+    default: "true"
   ajv_strict_mode:
     description: Whether or not to use strict mode for AJV - "true" or "false" - Default is "true"
     required: false

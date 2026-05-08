@@ -1,0 +1,14 @@
+---
+apiVersion:
+  type: string
+  required: true
+kind:
+  type: string
+  required: true
+metadata:
+  name:
+    type: string
+    required: true
+  labels:
+    app:
+      type: string

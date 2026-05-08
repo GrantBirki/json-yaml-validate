@@ -8314,10 +8314,17 @@ async function validateJsonFiles(files, context, processedFiles = new Set()) {
         try {
             if (context.yamlAsJson === true && isYamlFile) {
                 actions_core/* core */.I.debug(`attempting to process yaml file: '${fullPath}' as json`);
-                data =
-                    context.allowMultipleDocuments === true
-                        ? (0,yaml_dist/* parseAllDocuments */.hR)(source)
-                        : (0,yaml_dist/* parse */.qg)(source);
+                if (context.allowMultipleDocuments === true) {
+                    data = (0,yaml_dist/* parseAllDocuments */.hR)(source);
+                    for (const document of data) {
+                        if (document.errors.length > 0) {
+                            throw document.errors[0];
+                        }
+                    }
+                }
+                else {
+                    data = (0,yaml_dist/* parse */.qg)(source);
+                }
             }
             else {
                 data = JSON.parse(source);
@@ -8338,9 +8345,12 @@ async function validateJsonFiles(files, context, processedFiles = new Set()) {
             });
             continue;
         }
-        const documents = context.yamlAsJson === true && context.allowMultipleDocuments === true
+        const documents = context.yamlAsJson === true &&
+            isYamlFile &&
+            context.allowMultipleDocuments === true
             ? data.map(doc => doc.toJS())
             : [data];
+        const includeDocumentIndexes = context.yamlAsJson && isYamlFile && documents.length > 1;
         actions_core/* core */.I.debug(`${documents.length} object(s) found in file: ${fullPath}`);
         let validate = context.validate;
         if (context.inlineSchemaValidator !== undefined) {
@@ -8362,9 +8372,7 @@ async function validateJsonFiles(files, context, processedFiles = new Set()) {
             allErrors.push(...(validate.errors ?? []).map(error => ({
                 path: error.instancePath || null,
                 message: error.message ?? 'validation failed',
-                ...(context.allowMultipleDocuments && context.yamlAsJson === true
-                    ? { document: index }
-                    : {})
+                ...(includeDocumentIndexes ? { document: index } : {})
             })));
         });
         if (!allValid) {
@@ -9052,8 +9060,11 @@ function validateExtraFields(targetNode, schemaNode, path, errors) {
     }
 }
 function validateYamlSchemaFile(targetPath, schemaPath) {
-    const schema = loadStructuredFile(schemaPath);
     const target = loadStructuredFile(targetPath);
+    return validateYamlSchemaData(target, schemaPath);
+}
+function validateYamlSchemaData(target, schemaPath) {
+    const schema = loadStructuredFile(schemaPath);
     const validationErrors = [];
     const extraFieldErrors = [];
     validateSchemaNode(target, schema, '', validationErrors);
@@ -9069,8 +9080,32 @@ function validateYamlSchemaFile(targetPath, schemaPath) {
 
 
 const INVALID_YAML_MESSAGE = 'Invalid YAML';
+const MULTIPLE_DOCUMENTS_MESSAGE = 'Multiple YAML documents found; set allow_multiple_documents: "true" to validate Kubernetes-style multi-document YAML files.';
+class MultipleYamlDocumentsError extends Error {
+    constructor() {
+        super(MULTIPLE_DOCUMENTS_MESSAGE);
+    }
+}
 function formatYamlParseError(error) {
+    if (error instanceof MultipleYamlDocumentsError) {
+        return error.message;
+    }
     return String(error).split(':').slice(0, 2).join('');
+}
+function parseYamlDocuments(fullPath, allowMultipleDocuments) {
+    const documents = (0,dist/* parseAllDocuments */.hR)((0,external_node_fs_.readFileSync)(fullPath, 'utf8'));
+    for (const document of documents) {
+        if (document.errors.length > 0) {
+            throw document.errors[0];
+        }
+    }
+    if (!allowMultipleDocuments && documents.length > 1) {
+        throw new MultipleYamlDocumentsError();
+    }
+    return documents.map((document, index) => ({
+        data: document.toJS(),
+        ...(documents.length > 1 ? { document: index } : {})
+    }));
 }
 function validateYamlFiles(files, context) {
     const processedFiles = new Set();
@@ -9104,21 +9139,11 @@ function validateYamlFiles(files, context) {
             actions_core/* core */.I.debug(`skipping duplicate file: ${fullPath}`);
             continue;
         }
-        let multipleDocuments = false;
+        let documents;
         try {
-            if (context.allowMultipleDocuments) {
-                const documents = (0,dist/* parseAllDocuments */.hR)((0,external_node_fs_.readFileSync)(fullPath, 'utf8'));
-                for (const doc of documents) {
-                    if (doc.errors.length > 0) {
-                        throw doc.errors[0];
-                    }
-                    (0,dist/* parse */.qg)(doc.toString());
-                }
+            documents = parseYamlDocuments(fullPath, context.allowMultipleDocuments);
+            if (documents.length > 1) {
                 actions_core/* core */.I.info(`multiple documents found in file: ${fullPath}`);
-                multipleDocuments = true;
-            }
-            else {
-                (0,dist/* parse */.qg)((0,external_node_fs_.readFileSync)(fullPath, 'utf8'));
             }
         }
         catch (error) {
@@ -9137,30 +9162,30 @@ function validateYamlFiles(files, context) {
             });
             continue;
         }
-        const hasNoSchema = !context.yamlSchema ||
-            context.yamlSchema === '' ||
-            context.yamlSchema === null ||
-            context.yamlSchema === undefined;
-        if (hasNoSchema || multipleDocuments) {
+        if (!context.yamlSchema) {
             context.result.passed++;
             actions_core/* core */.I.info(`${fullPath} is valid`);
             continue;
         }
-        const schemaErrors = validateYamlSchemaFile(fullPath, context.yamlSchema);
+        const schemaErrors = [];
+        for (const document of documents) {
+            for (const error of validateYamlSchemaData(document.data, context.yamlSchema)) {
+                schemaErrors.push({
+                    path: error.path || null,
+                    message: error.message,
+                    ...(document.document !== undefined
+                        ? { document: document.document }
+                        : {})
+                });
+            }
+        }
         if (schemaErrors && schemaErrors.length > 0) {
             actions_core/* core */.I.error(`❌ failed to parse YAML file: ${fullPath}\n${JSON.stringify(schemaErrors)}`);
             context.result.success = false;
             context.result.failed++;
-            const errors = [];
-            for (const error of schemaErrors) {
-                errors.push({
-                    path: error.path || null,
-                    message: error.message
-                });
-            }
             context.result.violations.push({
                 file: fullPath,
-                errors: errors
+                errors: schemaErrors
             });
             continue;
         }

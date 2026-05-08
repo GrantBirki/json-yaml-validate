@@ -1,0 +1,14 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-deployment
+  labels:
+    app: nginx
+---
+apiVersion: v1
+kind: 1
+metadata:
+  name: nginx-service
+  labels:
+    app: nginx

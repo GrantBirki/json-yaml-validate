@@ -61,7 +61,7 @@ Here is a quick example of how to install this action in any workflow:
 | `exclude_file_required` | `true` | `"true"` | Whether or not the `exclude_file` must exist if it is used. If this is `true` and the `exclude_file` does not exist, the Action will fail. Set this to `"false"` if you do not care when the `exclude_file` exists or not |
 | `use_gitignore` | `true` | `"true"` | Whether or not to use the .gitignore file in the root of the repository to exclude files from validation - `"true"` or `"false"` - Default is `"true"` |
 | `git_ignore_path` | `false` | `".gitignore"` | The full path to the .gitignore file to use if use_gitignore is set to "true" (e.g. ./src/.gitignore) - Default is ".gitignore" which uses the .gitignore file in the root of the repository |
-| `allow_multiple_documents` | `false` | `"false"` | Whether or not to allow multiple documents in a single YAML file - `"true"` or `"false"` - Default is `"false"`. Useful for k8s documents. |
+| `allow_multiple_documents` | `false` | `"true"` | Whether or not to allow multiple documents in a single YAML file - `"true"` or `"false"` - Default is `"true"`. Set to `"false"` to reject Kubernetes-style multi-document YAML files. |
 | `ajv_strict_mode` | `false` | `"true"` | Whether or not to use strict mode for AJV - "true" or "false" - Default is "true" |
 | `ajv_custom_regexp_formats` | `false` | `""` | List of key value pairs of `format_name=regexp`. Each pair must be on a newline. (e.g. `lowercase_chars=^[a-z]*$` - See below for more details) |
 | `github_token` | `false` | `${{ github.token }}` | The GitHub token used to create an authenticated client - Provided for you by default! |
@@ -174,6 +174,12 @@ Here is an example of how to use this feature:
 When this Action workflow runs, it will validate all JSON and YAML files in the repository against the schema files in the `schemas/` directory.
 
 > If you want to only validate files in the `data/` directory, you could set the `base_dir` input to `data/`
+
+YAML files may contain multiple documents separated by `---`. This is valid
+YAML and is common for Kubernetes manifests, so `allow_multiple_documents`
+defaults to `"true"`. When `yaml_schema` is set, each YAML document is validated
+against the configured schema. Set `allow_multiple_documents: "false"` when a
+workflow should reject files that contain more than one YAML document.
 
 ### Multiple Schema Mappings
 
