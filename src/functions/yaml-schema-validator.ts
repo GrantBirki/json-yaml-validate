@@ -53,24 +53,32 @@ function joinPath(parent: string, child: string | number): string {
 }
 
 function isRuleNode(schemaNode: unknown): schemaNode is SchemaMap {
-  return (
-    isRecord(schemaNode) &&
-    ('type' in schemaNode ||
-      'required' in schemaNode ||
-      'length' in schemaNode ||
-      'enum' in schemaNode)
-  )
-}
-
-function isLeafRule(schemaNode: unknown): boolean {
-  if (!isRuleNode(schemaNode)) {
+  if (!isRecord(schemaNode)) {
     return false
   }
 
   return (
     normalizeType(schemaNode.type) !== null ||
-    typeof schemaNode.required === 'boolean'
+    typeof schemaNode.required === 'boolean' ||
+    isLengthRule(schemaNode.length) ||
+    Array.isArray(schemaNode.enum)
   )
+}
+
+function isLeafRule(schemaNode: unknown): boolean {
+  return isRuleNode(schemaNode) && (normalizeType(schemaNode.type) !== null || typeof schemaNode.required === 'boolean')
+}
+
+function isLengthRule(value: unknown): boolean {
+  if (typeof value === 'number') {
+    return true
+  }
+
+  if (!isRecord(value)) {
+    return false
+  }
+
+  return typeof value.min === 'number' || typeof value.max === 'number'
 }
 
 function formatEnum(values: unknown[]): string {
