@@ -50,6 +50,54 @@ test('reports type and enum violations with legacy-compatible messages', () => {
   ])
 })
 
+test('validates fields named like schema keywords', () => {
+  withTempFiles(
+    {
+      'valid.yaml': [
+        'args:',
+        '  - description:',
+        '    name: domain',
+        '    required: false',
+        '    type: string'
+      ].join('\n'),
+      'invalid.yaml': [
+        'args:',
+        '  - description:',
+        '    name: domain',
+        '    required: false',
+        '    type: integer'
+      ].join('\n'),
+      'schema.yaml': [
+        'args:',
+        '  - name:',
+        '      type: string',
+        '      required: true',
+        '    description:',
+        '      type: string',
+        '    required:',
+        '      type: boolean',
+        '    type:',
+        '      type: string',
+        '      enum: ["string", "url", "domain", "path", "status", "ip", "list"]'
+      ].join('\n')
+    },
+    paths => {
+      expect(
+        validateYamlSchemaFile(paths['valid.yaml'], paths['schema.yaml'])
+      ).toStrictEqual([])
+      expect(
+        validateYamlSchemaFile(paths['invalid.yaml'], paths['schema.yaml'])
+      ).toStrictEqual([
+        {
+          path: 'args.0.type',
+          message:
+            'args.0.type must be either string, url, domain, path, status, ip or list.'
+        }
+      ])
+    }
+  )
+})
+
 test('loads JSON schema files as well as YAML schema files', () => {
   withTempFiles(
     {

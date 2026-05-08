@@ -8450,18 +8450,25 @@ function joinPath(parent, child) {
     return parent ? `${parent}.${child}` : String(child);
 }
 function isRuleNode(schemaNode) {
-    return (isRecord(schemaNode) &&
-        ('type' in schemaNode ||
-            'required' in schemaNode ||
-            'length' in schemaNode ||
-            'enum' in schemaNode));
-}
-function isLeafRule(schemaNode) {
-    if (!isRuleNode(schemaNode)) {
+    if (!isRecord(schemaNode)) {
         return false;
     }
     return (normalizeType(schemaNode.type) !== null ||
-        typeof schemaNode.required === 'boolean');
+        typeof schemaNode.required === 'boolean' ||
+        isLengthRule(schemaNode.length) ||
+        Array.isArray(schemaNode.enum));
+}
+function isLeafRule(schemaNode) {
+    return isRuleNode(schemaNode) && (normalizeType(schemaNode.type) !== null || typeof schemaNode.required === 'boolean');
+}
+function isLengthRule(value) {
+    if (typeof value === 'number') {
+        return true;
+    }
+    if (!isRecord(value)) {
+        return false;
+    }
+    return typeof value.min === 'number' || typeof value.max === 'number';
 }
 function formatEnum(values) {
     if (values.length <= 1) {
