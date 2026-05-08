@@ -45,6 +45,7 @@ Here is a quick example of how to install this action in any workflow:
 | `base_dir` | `false` | `"."` | The base directory to search for JSON and YAML files (e.g. ./src) - Default is `"."` which searches the entire repository |
 | `files` | `false` | `""` | List of file paths to validate. File paths may be newline-delimited or provided as a single space-separated line. |
 | `schema_mappings` | `false` | `""` | YAML list that maps JSON or YAML schema files to explicit file patterns for multi-schema validation |
+| `use_inline_schema` | `false` | `"false"` | Whether or not to use local inline JSON Schema references in JSON files and YAML language-server schema comments when YAML is validated as JSON |
 | `use_dot_match` | `false` | `"true"` | Whether or not to use dot-matching when searching for files - `"true"` or `"false"` - If this is true, directories like `.github`, etc will be searched |
 | `json_schema` | `false` | `""` | The full path to the JSON schema file (e.g. ./schemas/schema.json) - Default is `""` which doesn't enforce a strict schema |
 | `json_schema_version` | `false` | `"draft-07"` | The version of the JSON schema to use - `"draft-07"`, `"draft-04"`, `"draft-2019-09"`, `"draft-2020-12"` |
@@ -207,6 +208,20 @@ Each mapping entry requires:
 ```
 
 `schema_mappings` still uses the global exclude options, AJV options, `yaml_as_json`, and `allow_multiple_documents` where those options apply. YAML schema mappings cannot be used when `yaml_as_json` is `"true"` because YAML schemas are ignored in that mode.
+
+### Inline Schemas
+
+Use `use_inline_schema` when files already declare their JSON Schema locally and you do not want to duplicate that mapping in workflow YAML. JSON files can declare a top-level `$schema` value, and YAML files can declare a leading `# yaml-language-server: $schema=...` comment when `yaml_as_json` is `"true"`.
+
+```yaml
+- name: json-yaml-validate
+  uses: GrantBirki/json-yaml-validate@v4
+  with:
+    use_inline_schema: "true"
+    yaml_as_json: "true"
+```
+
+Inline schema references are local-only. Relative schema paths are resolved from the file being validated, absolute schema paths must stay inside the workspace, and arbitrary remote `http://` or `https://` schemas are rejected instead of fetched. `schema_mappings` and explicit `json_schema` inputs take precedence over inline schemas. See [inline schema docs](docs/inline_schema.md) for detailed behavior.
 
 ### JSON Schema Docs
 

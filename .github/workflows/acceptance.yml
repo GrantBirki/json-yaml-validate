@@ -79,6 +79,17 @@ jobs:
               files:
                 - __tests__/fixtures/json/mixture/json2.json
 
+      - name: acceptance test - inline schemas
+        uses: ./
+        id: json-yaml-validate-inline-schemas-test
+        with:
+          use_gitignore: "false"
+          use_inline_schema: "true"
+          yaml_as_json: "true"
+          files: |
+            __tests__/acceptance/inline_schema/json/person.json
+            __tests__/acceptance/inline_schema/yaml/person.yaml
+
       - name: acceptance test - flat yaml
         uses: ./
         id: json-yaml-validate-flat-yaml-test

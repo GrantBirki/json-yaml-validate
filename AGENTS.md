@@ -22,6 +22,9 @@ public, has many dependents, and small behavior shifts can break downstream CI.
 - `src/functions/json-meta-schema.ts` detects exact local copies of built-in
   JSON Schema meta-schemas so they can reuse AJV's registered validators without
   treating arbitrary user schemas with spoofed `$id` values as meta-schemas.
+- `src/functions/inline-schema.ts` extracts opt-in inline JSON Schema
+  references, rejects remote schemas, and resolves local schema files with
+  realpath workspace containment checks.
 - `src/functions/schema-mappings.ts` parses the `schema_mappings` YAML input,
   expands mapped file patterns, rejects ambiguous overlaps, and returns
   normalized JSON/YAML schema-to-files groups.
@@ -172,6 +175,12 @@ Important inputs:
   `base_dir`, top-level `files`, `json_schema`, or `yaml_schema`. Each mapping
   requires `type`, `schema`, and `files`; JSON mappings may also set
   `json_schema_version`.
+- `use_inline_schema`: opt-in local inline JSON Schema discovery. When true and
+  no `schema_mappings` or top-level `json_schema` is configured, JSON files may
+  use a top-level `$schema` path and YAML files may use a leading
+  `# yaml-language-server: $schema=...` comment when `yaml_as_json` is true.
+  Relative paths resolve from the validated file, absolute paths must remain
+  inside the workspace by realpath, and remote schemas are rejected.
 - `use_dot_match`: controls whether crawled discovery includes dot paths such
   as `.github`.
 - `json_schema`: optional JSON Schema path for AJV. If empty, AJV compiles
@@ -278,6 +287,10 @@ Validation:
 - YAML files in `yaml_as_json` mode are parsed with `yaml.parse` or
   `yaml.parseAllDocuments`.
 - AJV validates each parsed document. All AJV errors are collected.
+- When `use_inline_schema` is true and no explicit `json_schema` or
+  `schema_mappings` apply, each file may select a local JSON Schema from a
+  top-level JSON `$schema` value or a YAML language-server schema comment.
+  Files without inline references keep syntax-only behavior.
 - Local copies of built-in draft-04, draft-07, draft-2019-09, and draft-2020-12
   JSON Schema meta-schemas reuse AJV's registered meta-schema validators instead
   of going through `ajv.compile`, which would fail on duplicate schema IDs.
@@ -294,6 +307,10 @@ Security-sensitive areas:
 - `json_exclude_regex` and `ajv_custom_regexp_formats` compile user-provided
   regular expressions. Be cautious about ReDoS risk and avoid adding repeated
   matching loops over large file contents.
+- Inline schema paths are untrusted input. Keep `inline-schema.ts` local-only:
+  reject arbitrary remote URLs, require resolved schema files to be regular
+  files, and enforce realpath containment under the workspace to prevent
+  symlink escapes.
 - JSON and schema files are untrusted repository content. Avoid executing,
   importing, or evaluating checked-out files.
 - Keep violation logs to file paths and parser/schema messages. Do not add file
@@ -343,7 +360,9 @@ Validation:
   formatted `error` field.
 
 Be careful not to confuse native YAML schema validation with JSON Schema. Users
-who need JSON Schema behavior for YAML should use `yaml_as_json`.
+who need JSON Schema behavior for YAML should use `yaml_as_json`. YAML
+language-server inline schema comments are handled by the JSON validator only
+when `yaml_as_json` and `use_inline_schema` are both true.
 
 ## Result Processing And Comments
 
@@ -402,6 +421,9 @@ Current test organization:
 - `test/functions/json-meta-schema.test.ts` covers exact-copy built-in
   meta-schema detection and rejects spoofed schemas that only reuse a built-in
   `$id`.
+- `test/functions/inline-schema.test.ts` covers inline schema extraction,
+  local path resolution, remote URL rejection, directory rejection, and symlink
+  escape prevention.
 - `test/functions/schema-mappings.test.ts` covers mapping parsing, shape
   validation, unmatched files, YAML-as-JSON rejection, and same-type overlap
   detection.
@@ -446,6 +468,8 @@ hardened unit tests around these behaviors green:
 - local copies of built-in JSON Schema meta-schemas validate without duplicate
   ID failures, but user schemas with only a spoofed built-in `$id` still go
   through normal `ajv.compile`
+- inline schema resolution remains local-only, rejects remote URLs, and blocks
+  symlink escapes outside the workspace
 - YAML schema keyword names such as `type`, `required`, `length`, and `enum`
   can be validated as normal nested target fields
 - custom exclude files use gitignore-style negation and directory patterns
@@ -674,6 +698,9 @@ Preparing a PR:
   path equality.
 - Local built-in JSON meta-schema detection must be exact-copy based. Matching
   only `$id` or `id` can silently ignore user schema constraints.
+- Inline schema support is intentionally local-only. Do not add remote schema
+  fetching without a separate design for network permissions, pinning, caching,
+  timeout behavior, and PR threat modeling.
 - Native YAML multi-document mode does not run YAML schema validation after a
   successful multi-document syntax parse.
 - YAML schema keyword names can also be ordinary field names. Preserve tests for

@@ -7936,7 +7936,7 @@ function discoverFilesByExtension(baseDir, extensions, useDotMatch) {
 
 /***/ }),
 
-/***/ 4379:
+/***/ 6628:
 /***/ ((__unused_webpack_module, __webpack_exports__, __nccwpck_require__) => {
 
 
@@ -7946,7 +7946,7 @@ __nccwpck_require__.d(__webpack_exports__, {
 });
 
 // EXTERNAL MODULE: ./node_modules/ajv/dist/ajv.js
-var dist_ajv = __nccwpck_require__(2463);
+var ajv = __nccwpck_require__(2463);
 // EXTERNAL MODULE: ./node_modules/ajv-draft-04/dist/index.js
 var dist = __nccwpck_require__(905);
 var dist_default = /*#__PURE__*/__nccwpck_require__.n(dist);
@@ -7974,6 +7974,19 @@ const BUILT_IN_META_SCHEMA_IDS = new Set([
 ]);
 function normalizeSchemaId(id) {
     return id.replace(/#$/, '');
+}
+function isBuiltInMetaSchemaId(id) {
+    return BUILT_IN_META_SCHEMA_IDS.has(normalizeSchemaId(id));
+}
+function builtInMetaSchemaById(ajv, id) {
+    const normalizedId = normalizeSchemaId(id);
+    if (!BUILT_IN_META_SCHEMA_IDS.has(normalizedId)) {
+        return null;
+    }
+    return (ajv.getSchema(id) ??
+        ajv.getSchema(normalizedId) ??
+        ajv.getSchema(`${normalizedId}#`) ??
+        null);
 }
 function stableStringify(value) {
     if (Array.isArray(value)) {
@@ -8003,18 +8016,151 @@ function schemaId(schemaValue) {
     return '';
 }
 function builtInMetaSchema(ajv, schemaValue) {
-    const normalizedId = normalizeSchemaId(schemaId(schemaValue));
-    if (!BUILT_IN_META_SCHEMA_IDS.has(normalizedId)) {
-        return null;
-    }
-    const validate = ajv.getSchema(schemaId(schemaValue)) ??
-        ajv.getSchema(normalizedId) ??
-        ajv.getSchema(`${normalizedId}#`);
-    if (validate === undefined)
+    const validate = builtInMetaSchemaById(ajv, schemaId(schemaValue));
+    if (validate === null)
         return null;
     return stableStringify(validate.schema) === stableStringify(schemaValue)
         ? validate
         : null;
+}
+
+// EXTERNAL MODULE: external "node:path"
+var external_node_path_ = __nccwpck_require__(6760);
+;// CONCATENATED MODULE: ./src/functions/inline-schema.ts
+
+
+
+function isRecord(value) {
+    return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+function isPathEscape(relativePath) {
+    return (relativePath === '..' ||
+        relativePath.startsWith('../') ||
+        relativePath.startsWith('..\\') ||
+        (0,external_node_path_.isAbsolute)(relativePath));
+}
+function isPathInside(childPath, parentPath) {
+    const path = (0,external_node_path_.relative)(parentPath, childPath);
+    return path === '' || !isPathEscape(path);
+}
+function workspaceRoot(workspace = process.env.GITHUB_WORKSPACE) {
+    return (0,external_node_fs_.realpathSync)(workspace && workspace !== '' ? workspace : process.cwd());
+}
+function unsupportedRemoteReference(reference) {
+    return {
+        kind: 'error',
+        message: `Remote inline schemas are not supported: ${reference}`
+    };
+}
+function unsupportedUrlReference(reference) {
+    return {
+        kind: 'error',
+        message: `Unsupported inline schema URL: ${reference}`
+    };
+}
+function extractJsonInlineSchema(data) {
+    if (!isRecord(data) || !('$schema' in data)) {
+        return undefined;
+    }
+    if (typeof data.$schema !== 'string') {
+        return new Error('Inline JSON schema reference must be a string');
+    }
+    const reference = data.$schema.trim();
+    if (reference === '') {
+        return new Error('Inline JSON schema reference must be non-empty');
+    }
+    return reference;
+}
+function extractYamlInlineSchema(source) {
+    for (const line of source.split(/\r?\n/)) {
+        const trimmed = line.trim();
+        if (trimmed === '') {
+            continue;
+        }
+        if (!trimmed.startsWith('#')) {
+            return undefined;
+        }
+        const match = /^\s*#\s*yaml-language-server:\s*\$schema=(.*)$/.exec(line);
+        if (!match) {
+            continue;
+        }
+        const reference = match[1].trim();
+        if (reference === '') {
+            return new Error('Inline YAML schema reference must be non-empty');
+        }
+        return reference;
+    }
+    return undefined;
+}
+function resolveInlineSchemaReference(reference, sourceFile, workspace) {
+    if (isBuiltInMetaSchemaId(reference)) {
+        return {
+            kind: 'built-in',
+            schemaId: reference
+        };
+    }
+    if (/^https?:\/\//i.test(reference)) {
+        return unsupportedRemoteReference(reference);
+    }
+    if (/^[a-zA-Z][a-zA-Z\d+.-]*:/.test(reference)) {
+        return unsupportedUrlReference(reference);
+    }
+    const candidatePath = (0,external_node_path_.isAbsolute)(reference)
+        ? reference
+        : (0,external_node_path_.resolve)((0,external_node_path_.dirname)(sourceFile), reference);
+    let schemaPath;
+    try {
+        schemaPath = (0,external_node_fs_.realpathSync)(candidatePath);
+    }
+    catch {
+        return {
+            kind: 'error',
+            message: `Inline schema file does not exist: ${candidatePath}`
+        };
+    }
+    const root = workspaceRoot(workspace);
+    if (!isPathInside(schemaPath, root)) {
+        return {
+            kind: 'error',
+            message: `Inline schema file must be inside the workspace: ${candidatePath}`
+        };
+    }
+    if (!(0,external_node_fs_.statSync)(schemaPath).isFile()) {
+        return {
+            kind: 'error',
+            message: `Inline schema path must be a file: ${candidatePath}`
+        };
+    }
+    return {
+        kind: 'local',
+        schemaPath
+    };
+}
+function jsonInlineSchemaReference(data, sourceFile, workspace) {
+    const reference = extractJsonInlineSchema(data);
+    if (reference === undefined) {
+        return { kind: 'none' };
+    }
+    if (reference instanceof Error) {
+        return {
+            kind: 'error',
+            message: reference.message
+        };
+    }
+    return resolveInlineSchemaReference(reference, sourceFile, workspace);
+}
+function yamlInlineSchemaReference(source, sourceFile, workspace) {
+    const reference = extractYamlInlineSchema(source);
+    if (reference === undefined) {
+        return { kind: 'none' };
+    }
+    if (reference instanceof Error) {
+        return {
+            kind: 'error',
+            message: reference.message
+        };
+    }
+    return resolveInlineSchemaReference(reference, sourceFile, workspace);
 }
 
 // EXTERNAL MODULE: ./src/functions/schema-mappings.ts
@@ -8031,40 +8177,47 @@ var schema_mappings = __nccwpck_require__(4748);
 
 
 
+
 const DRAFT_07 = 'draft-07';
 const DRAFT_04 = 'draft-04';
 const DRAFT_2019_09 = 'draft-2019-09';
 const DRAFT_2020_12 = 'draft-2020-12';
+const BUILT_IN_SCHEMA_VERSIONS = new Map([
+    ['http://json-schema.org/draft-04/schema', DRAFT_04],
+    ['http://json-schema.org/draft-07/schema', DRAFT_07],
+    ['https://json-schema.org/draft/2019-09/schema', DRAFT_2019_09],
+    ['https://json-schema.org/draft/2020-12/schema', DRAFT_2020_12]
+]);
 const INVALID_JSON_MESSAGE = 'Invalid JSON';
 const CUSTOM_FORMAT_REGEX = /^[\w-]+=.+$/;
 const AjvDraft04 = ((dist_default()) ??
     dist);
 const addFormats = ((ajv_formats_dist_default()) ??
     ajv_formats_dist);
-async function schema(jsonSchema, jsonSchemaVersion = actions_core/* core */.I.getInput('json_schema_version')) {
+function json_validator_ajv(jsonSchemaVersion = actions_core/* core */.I.getInput('json_schema_version')) {
     const strict = actions_core/* core */.I.getBooleanInput('ajv_strict_mode');
     actions_core/* core */.I.debug(`json_schema_version: ${jsonSchemaVersion}`);
     actions_core/* core */.I.debug(`strict: ${strict}`);
-    let ajv;
+    let validator;
     if (jsonSchemaVersion === DRAFT_07) {
-        ajv = new dist_ajv.Ajv({ allErrors: true, strict: strict });
+        validator = new ajv.Ajv({ allErrors: true, strict: strict });
     }
     else if (jsonSchemaVersion === DRAFT_04) {
-        ajv = new AjvDraft04({ allErrors: true, strict: strict });
+        validator = new AjvDraft04({ allErrors: true, strict: strict });
     }
     else if (jsonSchemaVersion === DRAFT_2019_09) {
-        ajv = new _2019.Ajv2019({ allErrors: true, strict: strict });
+        validator = new _2019.Ajv2019({ allErrors: true, strict: strict });
     }
     else if (jsonSchemaVersion === DRAFT_2020_12) {
-        ajv = new _2020.Ajv2020({ allErrors: true, strict: strict });
+        validator = new _2020.Ajv2020({ allErrors: true, strict: strict });
     }
     else {
         actions_core/* core */.I.warning(`json_schema_version '${jsonSchemaVersion}' is not supported. Defaulting to '${DRAFT_07}'`);
-        ajv = new dist_ajv.Ajv({ allErrors: true, strict: strict });
+        validator = new ajv.Ajv({ allErrors: true, strict: strict });
     }
     if (actions_core/* core */.I.getBooleanInput('use_ajv_formats')) {
         actions_core/* core */.I.debug('using ajv-formats with json-validator');
-        addFormats(ajv);
+        addFormats(validator);
     }
     else {
         actions_core/* core */.I.debug('ajv-formats will not be used with the json-validator');
@@ -8086,14 +8239,50 @@ async function schema(jsonSchema, jsonSchemaVersion = actions_core/* core */.I.g
                 cause: syntaxError
             });
         }
-        ajv.addFormat(keyValuePair[0], regex);
+        validator.addFormat(keyValuePair[0], regex);
     });
+    return validator;
+}
+async function compileSchemaValue(schemaValue, jsonSchemaVersion) {
+    const validator = json_validator_ajv(jsonSchemaVersion);
+    return builtInMetaSchema(validator, schemaValue) ?? validator.compile(schemaValue);
+}
+async function schema(jsonSchema, jsonSchemaVersion = actions_core/* core */.I.getInput('json_schema_version')) {
     const schemaValue = jsonSchema && jsonSchema !== ''
         ? JSON.parse((0,external_node_fs_.readFileSync)(jsonSchema, 'utf8'))
         : true;
-    return builtInMetaSchema(ajv, schemaValue) ?? ajv.compile(schemaValue);
+    return compileSchemaValue(schemaValue, jsonSchemaVersion);
 }
-function validateJsonFiles(files, context, processedFiles = new Set()) {
+async function builtInSchema(schemaId, jsonSchemaVersion = actions_core/* core */.I.getInput('json_schema_version')) {
+    const validate = builtInMetaSchemaById(json_validator_ajv(jsonSchemaVersionForBuiltInSchema(schemaId) ?? jsonSchemaVersion), schemaId);
+    if (validate === null) {
+        throw new Error(`Unsupported built-in inline schema: ${schemaId}`);
+    }
+    return validate;
+}
+function jsonSchemaVersionForBuiltInSchema(schemaId) {
+    return BUILT_IN_SCHEMA_VERSIONS.get(schemaId.replace(/#$/, '')) ?? null;
+}
+function failInlineSchema(result, fullPath, message) {
+    actions_core/* core */.I.error(`❌ failed to load inline schema for JSON file: ${fullPath}`);
+    result.success = false;
+    result.failed++;
+    result.violations.push({
+        file: fullPath,
+        errors: [
+            {
+                path: null,
+                message
+            }
+        ]
+    });
+}
+function inlineSchemaReference(fullPath, source, data, isYamlFile) {
+    return isYamlFile
+        ? yamlInlineSchemaReference(source, fullPath)
+        : jsonInlineSchemaReference(data, fullPath);
+}
+async function validateJsonFiles(files, context, processedFiles = new Set()) {
     for (const fullPath of files) {
         actions_core/* core */.I.debug(`found file: ${fullPath}`);
         if (context.jsonSchema !== '' && fullPath.includes(context.jsonSchema)) {
@@ -8120,17 +8309,18 @@ function validateJsonFiles(files, context, processedFiles = new Set()) {
             actions_core/* core */.I.debug(`skipping duplicate file: ${fullPath}`);
             continue;
         }
+        const source = (0,external_node_fs_.readFileSync)(fullPath, 'utf8');
         let data;
         try {
             if (context.yamlAsJson === true && isYamlFile) {
                 actions_core/* core */.I.debug(`attempting to process yaml file: '${fullPath}' as json`);
                 data =
                     context.allowMultipleDocuments === true
-                        ? (0,yaml_dist/* parseAllDocuments */.hR)((0,external_node_fs_.readFileSync)(fullPath, 'utf8'))
-                        : (0,yaml_dist/* parse */.qg)((0,external_node_fs_.readFileSync)(fullPath, 'utf8'));
+                        ? (0,yaml_dist/* parseAllDocuments */.hR)(source)
+                        : (0,yaml_dist/* parse */.qg)(source);
             }
             else {
-                data = JSON.parse((0,external_node_fs_.readFileSync)(fullPath, 'utf8'));
+                data = JSON.parse(source);
             }
         }
         catch {
@@ -8152,15 +8342,24 @@ function validateJsonFiles(files, context, processedFiles = new Set()) {
             ? data.map(doc => doc.toJS())
             : [data];
         actions_core/* core */.I.debug(`${documents.length} object(s) found in file: ${fullPath}`);
+        let validate = context.validate;
+        if (context.inlineSchemaValidator !== undefined) {
+            const inlineValidation = await context.inlineSchemaValidator(fullPath, source, data, isYamlFile);
+            if (inlineValidation !== null && 'error' in inlineValidation) {
+                failInlineSchema(context.result, fullPath, inlineValidation.error);
+                continue;
+            }
+            validate = inlineValidation?.validate ?? validate;
+        }
         let allValid = true;
         const allErrors = [];
         documents.forEach((doc, index) => {
-            const valid = context.validate(doc);
+            const valid = validate(doc);
             if (valid) {
                 return;
             }
             allValid = false;
-            allErrors.push(...(context.validate.errors ?? []).map(error => ({
+            allErrors.push(...(validate.errors ?? []).map(error => ({
                 path: error.instancePath || null,
                 message: error.message ?? 'validation failed',
                 ...(context.allowMultipleDocuments && context.yamlAsJson === true
@@ -8192,6 +8391,7 @@ async function jsonValidator(exclude) {
     const yamlExtension = actions_core/* core */.I.getInput('yaml_extension');
     const yamlExtensionShort = actions_core/* core */.I.getInput('yaml_extension_short');
     const useDotMatch = actions_core/* core */.I.getBooleanInput('use_dot_match');
+    const useInlineSchema = actions_core/* core */.I.getBooleanInput('use_inline_schema');
     const allowMultipleDocuments = actions_core/* core */.I.getBooleanInput('allow_multiple_documents');
     const patterns = actions_core/* core */.I.getMultilineInput('files').filter(Boolean);
     actions_core/* core */.I.debug(`yaml_as_json: ${yamlAsJson}`);
@@ -8210,7 +8410,7 @@ async function jsonValidator(exclude) {
         actions_core/* core */.I.debug('using schema_mappings for json validation');
         for (const mapping of schemaMappings.filter(item => item.type === 'json')) {
             actions_core/* core */.I.debug(`using files: ${mapping.files.join(', ')}`);
-            validateJsonFiles(mapping.files, {
+            await validateJsonFiles(mapping.files, {
                 allowMultipleDocuments,
                 exclude,
                 jsonSchema: mapping.schema,
@@ -8227,6 +8427,37 @@ async function jsonValidator(exclude) {
     let files = (0,file_discovery/* discoverExplicitFiles */.Z)(patterns);
     const baseDirSanitized = baseDir.replace(/\/$/, '');
     const validate = await schema(jsonSchema);
+    const inlineSchemaValidators = new Map();
+    const inlineSchemaValidator = useInlineSchema && jsonSchema === ''
+        ? async (fullPath, source, data, isYamlFile) => {
+            const reference = inlineSchemaReference(fullPath, source, data, isYamlFile);
+            if (reference.kind === 'none') {
+                return null;
+            }
+            if (reference.kind === 'error') {
+                return { error: reference.message };
+            }
+            const cacheKey = reference.kind === 'built-in'
+                ? `built-in:${reference.schemaId}`
+                : `local:${reference.schemaPath}`;
+            const cached = inlineSchemaValidators.get(cacheKey);
+            if (cached !== undefined) {
+                return { validate: cached };
+            }
+            try {
+                const inlineValidate = reference.kind === 'built-in'
+                    ? await builtInSchema(reference.schemaId)
+                    : await schema(reference.schemaPath);
+                inlineSchemaValidators.set(cacheKey, inlineValidate);
+                return { validate: inlineValidate };
+            }
+            catch (error) {
+                return {
+                    error: `Invalid inline schema: ${error instanceof Error ? error.message : String(error)}`
+                };
+            }
+        }
+        : undefined;
     const yamlGlob = `${yamlExtension.replace('.', '')},${yamlExtensionShort.replace('.', '')}`;
     const globOptions = [
         `**/*${jsonExtension}`,
@@ -8251,9 +8482,10 @@ async function jsonValidator(exclude) {
     files = useExplicitFiles
         ? files
         : (0,file_discovery/* discoverFilesByExtension */.n)(baseDirSanitized, extensions, useDotMatch);
-    validateJsonFiles(files, {
+    await validateJsonFiles(files, {
         allowMultipleDocuments,
         exclude,
+        inlineSchemaValidator,
         jsonSchema,
         result,
         skipRegex,
@@ -9011,7 +9243,7 @@ __nccwpck_require__.a(module, async (__webpack_handle_async_dependencies__, __we
 /* harmony export */   e: () => (/* binding */ run)
 /* harmony export */ });
 /* harmony import */ var _functions_exclude_js__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(67);
-/* harmony import */ var _functions_json_validator_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(4379);
+/* harmony import */ var _functions_json_validator_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(6628);
 /* harmony import */ var _functions_process_results_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(4087);
 /* harmony import */ var _functions_yaml_validator_js__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(9503);
 
@@ -12647,7 +12879,7 @@ var YAMLMap = __nccwpck_require__(4454);
 var YAMLSeq = __nccwpck_require__(2223);
 var cst = __nccwpck_require__(3461);
 var lexer = __nccwpck_require__(361);
-var lineCounter = __nccwpck_require__(6628);
+var lineCounter = __nccwpck_require__(4247);
 var parser = __nccwpck_require__(3456);
 var publicApi = __nccwpck_require__(4047);
 var visit = __nccwpck_require__(204);
@@ -14823,7 +15055,7 @@ exports.Lexer = Lexer;
 
 /***/ }),
 
-/***/ 6628:
+/***/ 4247:
 /***/ ((__unused_webpack_module, exports) => {
 
 
@@ -15860,7 +16092,7 @@ var Document = __nccwpck_require__(5402);
 var errors = __nccwpck_require__(1464);
 var log = __nccwpck_require__(7249);
 var identity = __nccwpck_require__(1127);
-var lineCounter = __nccwpck_require__(6628);
+var lineCounter = __nccwpck_require__(4247);
 var parser = __nccwpck_require__(3456);
 
 function parseOptions(options) {

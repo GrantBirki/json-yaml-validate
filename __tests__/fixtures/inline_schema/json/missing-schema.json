@@ -1,0 +1,5 @@
+{
+  "$schema": "../schemas/missing.schema.json",
+  "name": "Ada Lovelace",
+  "age": 36
+}

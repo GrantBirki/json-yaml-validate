@@ -26,6 +26,7 @@ beforeEach(() => {
   process.env.INPUT_FILES = ''
   process.env.INPUT_ALLOW_MULTIPLE_DOCUMENTS = 'false'
   process.env.INPUT_SCHEMA_MAPPINGS = ''
+  process.env.INPUT_USE_INLINE_SCHEMA = 'false'
 })
 
 test('successfully validates a yaml file with a schema', async () => {
@@ -56,6 +57,21 @@ test('successfully skips a file found in the exclude txt file', async () => {
 
 test('successfully validates a yaml file without using a schema', async () => {
   process.env.INPUT_YAML_SCHEMA = ''
+  expect(await yamlValidator(excludeMock)).toStrictEqual({
+    failed: 0,
+    passed: 1,
+    skipped: 0,
+    success: true,
+    violations: []
+  })
+})
+
+test('does not apply yaml language-server inline schemas in native yaml mode', async () => {
+  process.env.INPUT_YAML_SCHEMA = ''
+  process.env.INPUT_USE_INLINE_SCHEMA = 'true'
+  process.env.INPUT_FILES =
+    '__tests__/fixtures/inline_schema/yaml/invalid-person.yaml'
+
   expect(await yamlValidator(excludeMock)).toStrictEqual({
     failed: 0,
     passed: 1,

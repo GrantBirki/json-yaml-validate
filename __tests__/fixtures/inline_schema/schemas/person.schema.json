@@ -1,0 +1,19 @@
+{
+  "type": "object",
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "age": {
+      "type": "integer"
+    }
+  },
+  "required": [
+    "name",
+    "age"
+  ],
+  "additionalProperties": false
+}

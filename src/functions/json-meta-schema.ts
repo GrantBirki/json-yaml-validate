@@ -12,6 +12,27 @@ function normalizeSchemaId(id: string): string {
   return id.replace(/#$/, '')
 }
 
+export function isBuiltInMetaSchemaId(id: string): boolean {
+  return BUILT_IN_META_SCHEMA_IDS.has(normalizeSchemaId(id))
+}
+
+export function builtInMetaSchemaById(
+  ajv: AjvLike,
+  id: string
+): ValidateFunction | null {
+  const normalizedId = normalizeSchemaId(id)
+  if (!BUILT_IN_META_SCHEMA_IDS.has(normalizedId)) {
+    return null
+  }
+
+  return (
+    ajv.getSchema(id) ??
+    ajv.getSchema(normalizedId) ??
+    ajv.getSchema(`${normalizedId}#`) ??
+    null
+  )
+}
+
 function stableStringify(value: unknown): string {
   if (Array.isArray(value)) {
     return `[${value.map(stableStringify).join(',')}]`
@@ -51,16 +72,8 @@ function schemaId(schemaValue: unknown): string {
 }
 
 export function builtInMetaSchema(ajv: AjvLike, schemaValue: unknown): ValidateFunction | null {
-  const normalizedId = normalizeSchemaId(schemaId(schemaValue))
-  if (!BUILT_IN_META_SCHEMA_IDS.has(normalizedId)) {
-    return null
-  }
-
-  const validate =
-    ajv.getSchema(schemaId(schemaValue)) ??
-    ajv.getSchema(normalizedId) ??
-    ajv.getSchema(`${normalizedId}#`)
-  if (validate === undefined) return null
+  const validate = builtInMetaSchemaById(ajv, schemaId(schemaValue))
+  if (validate === null) return null
 
   return stableStringify(validate.schema) === stableStringify(schemaValue)
     ? validate

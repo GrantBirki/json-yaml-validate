@@ -19,13 +19,27 @@ import {
   discoverExplicitFiles,
   discoverFilesByExtension
 } from './file-discovery.js'
-import {builtInMetaSchema} from './json-meta-schema.js'
+import {
+  builtInMetaSchema,
+  builtInMetaSchemaById
+} from './json-meta-schema.js'
+import {
+  type InlineSchemaReference,
+  jsonInlineSchemaReference,
+  yamlInlineSchemaReference
+} from './inline-schema.js'
 import {loadSchemaMappings} from './schema-mappings.js'
 
 const DRAFT_07 = 'draft-07'
 const DRAFT_04 = 'draft-04'
 const DRAFT_2019_09 = 'draft-2019-09'
 const DRAFT_2020_12 = 'draft-2020-12'
+const BUILT_IN_SCHEMA_VERSIONS = new Map([
+  ['http://json-schema.org/draft-04/schema', DRAFT_04],
+  ['http://json-schema.org/draft-07/schema', DRAFT_07],
+  ['https://json-schema.org/draft/2019-09/schema', DRAFT_2019_09],
+  ['https://json-schema.org/draft/2020-12/schema', DRAFT_2020_12]
+])
 const INVALID_JSON_MESSAGE = 'Invalid JSON'
 const CUSTOM_FORMAT_REGEX = /^[\w-]+=.+$/
 const AjvDraft04 = (AjvDraft04Module.default ??
@@ -33,34 +47,31 @@ const AjvDraft04 = (AjvDraft04Module.default ??
 const addFormats = (addFormatsModule.default ??
   addFormatsModule) as unknown as (ajv: AjvLike) => void
 
-async function schema(
-  jsonSchema: string,
-  jsonSchemaVersion = core.getInput('json_schema_version')
-): Promise<ValidateFunction> {
+function ajv(jsonSchemaVersion = core.getInput('json_schema_version')): AjvLike {
   const strict = core.getBooleanInput('ajv_strict_mode')
 
   core.debug(`json_schema_version: ${jsonSchemaVersion}`)
   core.debug(`strict: ${strict}`)
 
-  let ajv: AjvLike
+  let validator: AjvLike
   if (jsonSchemaVersion === DRAFT_07) {
-    ajv = new Ajv({allErrors: true, strict: strict})
+    validator = new Ajv({allErrors: true, strict: strict})
   } else if (jsonSchemaVersion === DRAFT_04) {
-    ajv = new AjvDraft04({allErrors: true, strict: strict})
+    validator = new AjvDraft04({allErrors: true, strict: strict})
   } else if (jsonSchemaVersion === DRAFT_2019_09) {
-    ajv = new Ajv2019({allErrors: true, strict: strict})
+    validator = new Ajv2019({allErrors: true, strict: strict})
   } else if (jsonSchemaVersion === DRAFT_2020_12) {
-    ajv = new Ajv2020({allErrors: true, strict: strict})
+    validator = new Ajv2020({allErrors: true, strict: strict})
   } else {
     core.warning(
       `json_schema_version '${jsonSchemaVersion}' is not supported. Defaulting to '${DRAFT_07}'`
     )
-    ajv = new Ajv({allErrors: true, strict: strict})
+    validator = new Ajv({allErrors: true, strict: strict})
   }
 
   if (core.getBooleanInput('use_ajv_formats')) {
     core.debug('using ajv-formats with json-validator')
-    addFormats(ajv)
+    addFormats(validator)
   } else {
     core.debug('ajv-formats will not be used with the json-validator')
   }
@@ -88,18 +99,79 @@ async function schema(
         )
       }
 
-      ajv.addFormat(keyValuePair[0], regex)
+      validator.addFormat(keyValuePair[0], regex)
     })
 
+  return validator
+}
+
+async function compileSchemaValue(schemaValue: unknown, jsonSchemaVersion: string): Promise<ValidateFunction> {
+  const validator = ajv(jsonSchemaVersion)
+  return builtInMetaSchema(validator, schemaValue) ?? validator.compile(schemaValue)
+}
+
+async function schema(
+  jsonSchema: string,
+  jsonSchemaVersion = core.getInput('json_schema_version')
+): Promise<ValidateFunction> {
   const schemaValue =
     jsonSchema && jsonSchema !== ''
       ? JSON.parse(readFileSync(jsonSchema, 'utf8'))
       : true
 
-  return builtInMetaSchema(ajv, schemaValue) ?? ajv.compile(schemaValue)
+  return compileSchemaValue(schemaValue, jsonSchemaVersion)
 }
 
-function validateJsonFiles(files: string[], context: JsonFileValidationContext, processedFiles = new Set<string>()): void {
+async function builtInSchema(
+  schemaId: string,
+  jsonSchemaVersion = core.getInput('json_schema_version')
+): Promise<ValidateFunction> {
+  const validate = builtInMetaSchemaById(
+    ajv(jsonSchemaVersionForBuiltInSchema(schemaId) ?? jsonSchemaVersion),
+    schemaId
+  )
+  if (validate === null) {
+    throw new Error(`Unsupported built-in inline schema: ${schemaId}`)
+  }
+
+  return validate
+}
+
+function jsonSchemaVersionForBuiltInSchema(schemaId: string): string | null {
+  return BUILT_IN_SCHEMA_VERSIONS.get(schemaId.replace(/#$/, '')) ?? null
+}
+
+function failInlineSchema(
+  result: ValidationResult,
+  fullPath: string,
+  message: string
+): void {
+  core.error(`❌ failed to load inline schema for JSON file: ${fullPath}`)
+  result.success = false
+  result.failed++
+  result.violations.push({
+    file: fullPath,
+    errors: [
+      {
+        path: null,
+        message
+      }
+    ]
+  })
+}
+
+function inlineSchemaReference(
+  fullPath: string,
+  source: string,
+  data: unknown,
+  isYamlFile: boolean
+): InlineSchemaReference {
+  return isYamlFile
+    ? yamlInlineSchemaReference(source, fullPath)
+    : jsonInlineSchemaReference(data, fullPath)
+}
+
+async function validateJsonFiles(files: string[], context: JsonFileValidationContext, processedFiles = new Set<string>()): Promise<void> {
   for (const fullPath of files) {
     core.debug(`found file: ${fullPath}`)
 
@@ -135,16 +207,17 @@ function validateJsonFiles(files: string[], context: JsonFileValidationContext, 
       continue
     }
 
+    const source = readFileSync(fullPath, 'utf8')
     let data: unknown
     try {
       if (context.yamlAsJson === true && isYamlFile) {
         core.debug(`attempting to process yaml file: '${fullPath}' as json`)
         data =
           context.allowMultipleDocuments === true
-            ? parseAllDocuments(readFileSync(fullPath, 'utf8'))
-            : parse(readFileSync(fullPath, 'utf8'))
+            ? parseAllDocuments(source)
+            : parse(source)
       } else {
-        data = JSON.parse(readFileSync(fullPath, 'utf8'))
+        data = JSON.parse(source)
       }
     } catch {
       core.error(`❌ failed to parse JSON file: ${fullPath}`)
@@ -169,18 +242,35 @@ function validateJsonFiles(files: string[], context: JsonFileValidationContext, 
 
     core.debug(`${documents.length} object(s) found in file: ${fullPath}`)
 
+    let validate = context.validate
+    if (context.inlineSchemaValidator !== undefined) {
+      const inlineValidation = await context.inlineSchemaValidator(
+        fullPath,
+        source,
+        data,
+        isYamlFile
+      )
+
+      if (inlineValidation !== null && 'error' in inlineValidation) {
+        failInlineSchema(context.result, fullPath, inlineValidation.error)
+        continue
+      }
+
+      validate = inlineValidation?.validate ?? validate
+    }
+
     let allValid = true
     const allErrors: ValidationError[] = []
 
     documents.forEach((doc, index) => {
-      const valid = context.validate(doc)
+      const valid = validate(doc)
       if (valid) {
         return
       }
 
       allValid = false
       allErrors.push(
-        ...(context.validate.errors ?? []).map(error => ({
+        ...(validate.errors ?? []).map(error => ({
           path: error.instancePath || null,
           message: error.message ?? 'validation failed',
           ...(context.allowMultipleDocuments && context.yamlAsJson === true
@@ -221,6 +311,7 @@ export async function jsonValidator(
   const yamlExtension = core.getInput('yaml_extension')
   const yamlExtensionShort = core.getInput('yaml_extension_short')
   const useDotMatch = core.getBooleanInput('use_dot_match')
+  const useInlineSchema = core.getBooleanInput('use_inline_schema')
   const allowMultipleDocuments = core.getBooleanInput(
     'allow_multiple_documents'
   )
@@ -244,7 +335,7 @@ export async function jsonValidator(
     core.debug('using schema_mappings for json validation')
     for (const mapping of schemaMappings.filter(item => item.type === 'json')) {
       core.debug(`using files: ${mapping.files.join(', ')}`)
-      validateJsonFiles(mapping.files, {
+      await validateJsonFiles(mapping.files, {
         allowMultipleDocuments,
         exclude,
         jsonSchema: mapping.schema,
@@ -263,6 +354,54 @@ export async function jsonValidator(
   let files = discoverExplicitFiles(patterns)
   const baseDirSanitized = baseDir.replace(/\/$/, '')
   const validate = await schema(jsonSchema)
+  const inlineSchemaValidators = new Map<string, ValidateFunction>()
+  const inlineSchemaValidator =
+    useInlineSchema && jsonSchema === ''
+      ? async (
+          fullPath: string,
+          source: string,
+          data: unknown,
+          isYamlFile: boolean
+        ) => {
+          const reference = inlineSchemaReference(
+            fullPath,
+            source,
+            data,
+            isYamlFile
+          )
+          if (reference.kind === 'none') {
+            return null
+          }
+
+          if (reference.kind === 'error') {
+            return {error: reference.message}
+          }
+
+          const cacheKey =
+            reference.kind === 'built-in'
+              ? `built-in:${reference.schemaId}`
+              : `local:${reference.schemaPath}`
+          const cached = inlineSchemaValidators.get(cacheKey)
+          if (cached !== undefined) {
+            return {validate: cached}
+          }
+
+          try {
+            const inlineValidate =
+              reference.kind === 'built-in'
+                ? await builtInSchema(reference.schemaId)
+                : await schema(reference.schemaPath)
+            inlineSchemaValidators.set(cacheKey, inlineValidate)
+            return {validate: inlineValidate}
+          } catch (error) {
+            return {
+              error: `Invalid inline schema: ${
+                error instanceof Error ? error.message : String(error)
+              }`
+            }
+          }
+        }
+      : undefined
 
   const yamlGlob = `${yamlExtension.replace(
     '.',
@@ -295,9 +434,10 @@ export async function jsonValidator(
   files = useExplicitFiles
     ? files
     : discoverFilesByExtension(baseDirSanitized, extensions, useDotMatch)
-  validateJsonFiles(files, {
+  await validateJsonFiles(files, {
     allowMultipleDocuments,
     exclude,
+    inlineSchemaValidator,
     jsonSchema,
     result,
     skipRegex,
