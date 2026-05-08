@@ -87,6 +87,12 @@ function validateYamlFiles(
       continue
     }
 
+    if (processedFiles.has(fullPath)) {
+      core.debug(`skipping duplicate file: ${fullPath}`)
+      continue
+    }
+    processedFiles.add(fullPath)
+
     if (context.yamlAsJson) {
       core.debug(
         `skipping yaml since it should be treated as json: ${fullPath}`
@@ -104,11 +110,6 @@ function validateYamlFiles(
     if (context.exclude.isExcluded(fullPath)) {
       core.info(`skipping due to exclude match: ${fullPath}`)
       context.result.skipped++
-      continue
-    }
-
-    if (processedFiles.has(fullPath)) {
-      core.debug(`skipping duplicate file: ${fullPath}`)
       continue
     }
 
@@ -173,8 +174,6 @@ function validateYamlFiles(
       })
       continue
     }
-
-    processedFiles.add(fullPath)
 
     context.result.passed++
     core.info(`${fullPath} is valid`)
