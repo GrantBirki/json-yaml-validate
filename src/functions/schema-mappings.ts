@@ -1,8 +1,11 @@
 import {parse} from 'yaml'
+import {realpathSync} from 'node:fs'
+import {resolve} from 'node:path'
 import {discoverExplicitFiles} from './file-discovery.js'
 
 export type SchemaMappingType = 'json' | 'yaml'
 
+/* node:coverage ignore next 6 */
 export interface SchemaMapping {
   type: SchemaMappingType
   schema: string
@@ -24,6 +27,27 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function schemaMappingError(index: number, message: string): Error {
   return new Error(`schema_mappings[${index}]: ${message}`)
+}
+
+function canonicalFileKey(file: string): string {
+  return realpathSync(resolve(file))
+}
+
+function deduplicateFiles(files: string[]): string[] {
+  const seen = new Set<string>()
+  const deduplicated: string[] = []
+
+  for (const file of files) {
+    const key = canonicalFileKey(file)
+    if (seen.has(key)) {
+      continue
+    }
+
+    seen.add(key)
+    deduplicated.push(file)
+  }
+
+  return deduplicated
 }
 
 function normalizeType(value: unknown, index: number): SchemaMappingType {
@@ -66,7 +90,7 @@ function normalizeFilePatterns(value: unknown, index: number): string[] {
     throw schemaMappingError(index, 'files must include at least one pattern')
   }
 
-  const files = [...new Set(discoverExplicitFiles(normalizedPatterns))]
+  const files = deduplicateFiles(discoverExplicitFiles(normalizedPatterns))
   if (files.length === 0) {
     throw schemaMappingError(index, 'files matched no files')
   }
@@ -127,14 +151,15 @@ function assertNoOverlappingFiles(mappings: SchemaMapping[]): void {
     filesByType.set(mapping.type, files)
 
     for (const file of mapping.files) {
-      const previousSchema = files.get(file)
+      const fileKey = canonicalFileKey(file)
+      const previousSchema = files.get(fileKey)
       if (previousSchema !== undefined) {
         throw new Error(
           `schema_mappings maps "${file}" to multiple ${mapping.type} schemas: ${previousSchema}, ${mapping.schema}`
         )
       }
 
-      files.set(file, mapping.schema)
+      files.set(fileKey, mapping.schema)
     }
   }
 }
