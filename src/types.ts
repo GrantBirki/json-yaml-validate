@@ -36,6 +36,7 @@ export interface Excluder {
 }
 
 export interface YamlDocument {
+  errors: unknown[]
   toJS(): unknown
 }
 

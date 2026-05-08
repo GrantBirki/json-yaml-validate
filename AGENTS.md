@@ -195,9 +195,11 @@ Important inputs:
   This is not JSON Schema and has different syntax and capability limits.
 - `yaml_as_json`: validates YAML files through the JSON validator using
   `json_schema`; the YAML validator skips YAML files in this mode.
-- `allow_multiple_documents`: native YAML mode validates multi-document syntax
-  but skips YAML schema validation for those files; `yaml_as_json` mode validates
-  each parsed YAML document through AJV and adds a `document` index to errors.
+- `allow_multiple_documents`: defaults to true. Native YAML mode accepts
+  multi-document files and validates each parsed document with `yaml_schema` when
+  one is configured. `yaml_as_json` mode validates each parsed YAML document
+  through AJV. Multi-document validation errors include a zero-based `document`
+  index.
 - `exclude_file`: `.gitignore`-style pattern file loaded through `ignore`.
 - `exclude_file_required`: if true and `exclude_file` is missing, construction
   of `Exclude` fails.
@@ -343,11 +345,12 @@ Skipping:
 
 Validation:
 
-- Single-document YAML is parsed with `yaml.parse`.
-- Multi-document YAML is parsed with `yaml.parseAllDocuments`, checks document
-  errors, then parses each document string again.
-- If `allow_multiple_documents` is true and parsing succeeds, YAML schema
-  validation is skipped for that file.
+- YAML is parsed with `yaml.parseAllDocuments`.
+- If `allow_multiple_documents` is false and the file contains multiple
+  documents, validation fails with a hint to enable multi-document YAML.
+- If `yaml_schema` is configured, each parsed YAML document is validated against
+  that schema. Multi-document schema errors include a zero-based `document`
+  index.
 - Schema validation uses `yaml-schema-validator.ts`, the native TypeScript
   replacement for the old `yaml-schema-validator` dependency.
 - Schema keys named `type`, `required`, `length`, or `enum` may be either legacy
@@ -464,7 +467,8 @@ hardened unit tests around these behaviors green:
 - custom JSON and YAML extensions are discovered through crawler mode
 - `yaml_as_json` parse failures are reported as `Invalid JSON` for
   compatibility
-- multi-document YAML syntax validation skips native YAML schema validation
+- multi-document YAML validates each document with native YAML schema validation
+  when `yaml_schema` is configured
 - local copies of built-in JSON Schema meta-schemas validate without duplicate
   ID failures, but user schemas with only a spoofed built-in `$id` still go
   through normal `ajv.compile`
@@ -484,7 +488,7 @@ Acceptance tests in `.github/workflows/acceptance.yml` use the action exactly as
 consumers do through `uses: ./`. Expected-failure acceptance cases must use
 `continue-on-error: true` on the action step and a following assertion step that
 checks `steps.<id>.outcome == 'failure'`; this keeps the job green while proving
-invalid syntax, schema violations, and multi-document YAML without opt-in still
+invalid syntax, schema violations, and explicit multi-document YAML opt-out
 fail. Keep explicit `files` inputs pointed at existing fixtures, because if all
 patterns are unmatched the validators fall back to `base_dir` discovery.
 Intentionally invalid acceptance fixtures under `__tests__/acceptance` must also
@@ -701,8 +705,8 @@ Preparing a PR:
 - Inline schema support is intentionally local-only. Do not add remote schema
   fetching without a separate design for network permissions, pinning, caching,
   timeout behavior, and PR threat modeling.
-- Native YAML multi-document mode does not run YAML schema validation after a
-  successful multi-document syntax parse.
+- Native YAML multi-document mode now applies `yaml_schema` to each document.
+  Preserve the zero-based `document` index on per-document schema errors.
 - YAML schema keyword names can also be ordinary field names. Preserve tests for
   target data fields named `type`, `required`, `length`, and `enum`.
 - `yaml_as_json` changes counting: YAML files are validated by the JSON

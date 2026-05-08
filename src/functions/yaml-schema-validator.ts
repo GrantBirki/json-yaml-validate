@@ -274,8 +274,16 @@ export function validateYamlSchemaFile(
   targetPath: string,
   schemaPath: string
 ): YamlSchemaValidationError[] {
-  const schema = loadStructuredFile(schemaPath)
   const target = loadStructuredFile(targetPath)
+
+  return validateYamlSchemaData(target, schemaPath)
+}
+
+export function validateYamlSchemaData(
+  target: unknown,
+  schemaPath: string
+): YamlSchemaValidationError[] {
+  const schema = loadStructuredFile(schemaPath)
   const validationErrors: YamlSchemaValidationError[] = []
   const extraFieldErrors: YamlSchemaValidationError[] = []
 

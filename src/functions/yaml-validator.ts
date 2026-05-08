@@ -1,5 +1,5 @@
 import {readFileSync} from 'node:fs'
-import {parse, parseAllDocuments} from 'yaml'
+import {parseAllDocuments} from 'yaml'
 import {core} from '../actions-core.js'
 import type {Excluder, ValidationError, ValidationResult} from '../types.js'
 import {
@@ -7,12 +7,51 @@ import {
   discoverFilesByExtension
 } from './file-discovery.js'
 import {loadSchemaMappings} from './schema-mappings.js'
-import {validateYamlSchemaFile} from './yaml-schema-validator.js'
+import {validateYamlSchemaData} from './yaml-schema-validator.js'
 
 const INVALID_YAML_MESSAGE = 'Invalid YAML'
+const MULTIPLE_DOCUMENTS_MESSAGE =
+  'Multiple YAML documents found; set allow_multiple_documents: "true" to validate Kubernetes-style multi-document YAML files.'
+
+class MultipleYamlDocumentsError extends Error {
+  constructor() {
+    super(MULTIPLE_DOCUMENTS_MESSAGE)
+  }
+}
 
 function formatYamlParseError(error: unknown): string {
+  if (error instanceof MultipleYamlDocumentsError) {
+    return error.message
+  }
+
   return String(error).split(':').slice(0, 2).join('')
+}
+
+interface ParsedYamlDocument {
+  data: unknown
+  document?: number
+}
+
+function parseYamlDocuments(
+  fullPath: string,
+  allowMultipleDocuments: boolean
+): ParsedYamlDocument[] {
+  const documents = parseAllDocuments(readFileSync(fullPath, 'utf8'))
+
+  for (const document of documents) {
+    if (document.errors.length > 0) {
+      throw document.errors[0]
+    }
+  }
+
+  if (!allowMultipleDocuments && documents.length > 1) {
+    throw new MultipleYamlDocumentsError()
+  }
+
+  return documents.map((document, index) => ({
+    data: document.toJS(),
+    ...(documents.length > 1 ? {document: index} : {})
+  }))
 }
 
 interface YamlFileValidationContext {
@@ -73,21 +112,12 @@ function validateYamlFiles(
       continue
     }
 
-    let multipleDocuments = false
+    let documents: ParsedYamlDocument[]
 
     try {
-      if (context.allowMultipleDocuments) {
-        const documents = parseAllDocuments(readFileSync(fullPath, 'utf8'))
-        for (const doc of documents) {
-          if (doc.errors.length > 0) {
-            throw doc.errors[0]
-          }
-          parse(doc.toString())
-        }
+      documents = parseYamlDocuments(fullPath, context.allowMultipleDocuments)
+      if (documents.length > 1) {
         core.info(`multiple documents found in file: ${fullPath}`)
-        multipleDocuments = true
-      } else {
-        parse(readFileSync(fullPath, 'utf8'))
       }
     } catch (error) {
       core.error(`❌ failed to parse YAML file: ${fullPath}`)
@@ -106,18 +136,27 @@ function validateYamlFiles(
       continue
     }
 
-    const hasNoSchema =
-      !context.yamlSchema ||
-      context.yamlSchema === '' ||
-      context.yamlSchema === null ||
-      context.yamlSchema === undefined
-    if (hasNoSchema || multipleDocuments) {
+    if (!context.yamlSchema) {
       context.result.passed++
       core.info(`${fullPath} is valid`)
       continue
     }
 
-    const schemaErrors = validateYamlSchemaFile(fullPath, context.yamlSchema)
+    const schemaErrors: ValidationError[] = []
+    for (const document of documents) {
+      for (const error of validateYamlSchemaData(
+        document.data,
+        context.yamlSchema
+      )) {
+        schemaErrors.push({
+          path: error.path || null,
+          message: error.message,
+          ...(document.document !== undefined
+            ? {document: document.document}
+            : {})
+        })
+      }
+    }
 
     if (schemaErrors && schemaErrors.length > 0) {
       core.error(
@@ -128,17 +167,9 @@ function validateYamlFiles(
       context.result.success = false
       context.result.failed++
 
-      const errors: ValidationError[] = []
-      for (const error of schemaErrors) {
-        errors.push({
-          path: error.path || null,
-          message: error.message
-        })
-      }
-
       context.result.violations.push({
         file: fullPath,
-        errors: errors
+        errors: schemaErrors
       })
       continue
     }

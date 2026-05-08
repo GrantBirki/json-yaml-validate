@@ -7,6 +7,11 @@ When `use_inline_schema` is also `"true"`, YAML files may use a leading
 that file. Inline YAML schemas are still JSON Schema and are not interpreted as
 the legacy `yaml_schema` dialect.
 
+YAML files can contain multiple documents separated by `---`. This is enabled by
+default through `allow_multiple_documents: "true"`, and each document is
+validated against the configured JSON Schema. Set
+`allow_multiple_documents: "false"` to reject multi-document YAML files.
+
 Here is an example of how to use this feature:
 
 ```yaml

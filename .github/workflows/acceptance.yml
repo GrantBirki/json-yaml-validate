@@ -209,17 +209,18 @@ jobs:
           echo "yaml schema violations should fail in fail mode"
           exit 1
 
-      - name: acceptance test - multi document yaml requires opt in
+      - name: acceptance test - multi document yaml can be rejected
         uses: ./
-        id: multi_document_without_opt_in
+        id: multi_document_opt_out
         continue-on-error: true
         with:
           use_gitignore: "false"
+          allow_multiple_documents: "false"
           files: |
             __tests__/fixtures/yaml/multiple/yaml1.yaml
 
-      - name: assert multi document yaml requires opt in
-        if: ${{ steps.multi_document_without_opt_in.outcome != 'failure' }}
+      - name: assert multi document yaml can be rejected
+        if: ${{ steps.multi_document_opt_out.outcome != 'failure' }}
         run: |
-          echo "multi-document YAML should fail when allow_multiple_documents is false"
+          echo "multi-document YAML should fail when allow_multiple_documents is explicitly false"
           exit 1

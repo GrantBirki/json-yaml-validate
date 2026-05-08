@@ -36,6 +36,9 @@ When `schema_mappings` is set, mapped files are authoritative. The action does
 not fall back to `base_dir` discovery and does not use top-level `files`,
 `json_schema`, or `yaml_schema`. Existing global exclude options, AJV settings,
 `yaml_as_json`, and `allow_multiple_documents` still apply where relevant.
+When a mapped YAML file contains multiple documents, each document is validated
+against that mapping's schema unless `allow_multiple_documents` is explicitly
+set to `"false"`.
 
 YAML schema mappings cannot be used with `yaml_as_json: "true"` because YAML
 schemas are intentionally ignored in that mode. Use `type: json` mappings when

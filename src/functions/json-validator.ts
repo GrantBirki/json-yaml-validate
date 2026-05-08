@@ -212,10 +212,16 @@ async function validateJsonFiles(files: string[], context: JsonFileValidationCon
     try {
       if (context.yamlAsJson === true && isYamlFile) {
         core.debug(`attempting to process yaml file: '${fullPath}' as json`)
-        data =
-          context.allowMultipleDocuments === true
-            ? parseAllDocuments(source)
-            : parse(source)
+        if (context.allowMultipleDocuments === true) {
+          data = parseAllDocuments(source)
+          for (const document of data as YamlDocument[]) {
+            if (document.errors.length > 0) {
+              throw document.errors[0]
+            }
+          }
+        } else {
+          data = parse(source)
+        }
       } else {
         data = JSON.parse(source)
       }
@@ -236,9 +242,13 @@ async function validateJsonFiles(files: string[], context: JsonFileValidationCon
     }
 
     const documents =
-      context.yamlAsJson === true && context.allowMultipleDocuments === true
+      context.yamlAsJson === true &&
+      isYamlFile &&
+      context.allowMultipleDocuments === true
         ? (data as YamlDocument[]).map(doc => doc.toJS())
         : [data]
+    const includeDocumentIndexes =
+      context.yamlAsJson && isYamlFile && documents.length > 1
 
     core.debug(`${documents.length} object(s) found in file: ${fullPath}`)
 
@@ -273,9 +283,7 @@ async function validateJsonFiles(files: string[], context: JsonFileValidationCon
         ...(validate.errors ?? []).map(error => ({
           path: error.instancePath || null,
           message: error.message ?? 'validation failed',
-          ...(context.allowMultipleDocuments && context.yamlAsJson === true
-            ? {document: index}
-            : {})
+          ...(includeDocumentIndexes ? {document: index} : {})
         }))
       )
     })
