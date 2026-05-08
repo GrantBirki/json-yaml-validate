@@ -42,8 +42,8 @@ Here is a quick example of how to install this action in any workflow:
 | `comment` | `false` | `"false"` | Whether or not to comment on a PR with the validation results - `"true"` or `"false"` |
 | `comment_on_success` | `false` | `"false"` | Whether or not to comment on a PR when all validation checks pass - `"true"` or `"false"` |
 | `update_comment` | `false` | `"false"` | Whether or not to update an existing validation results PR comment authored by `github-actions[bot]` instead of creating a new one - `"true"` or `"false"` |
-| `base_dir` | `false` | `"."` | The base directory to search for JSON and YAML files (e.g. ./src) - Default is `"."` which searches the entire repository |
-| `files` | `false` | `""` | List of file paths to validate. File paths may be newline-delimited or provided as a single space-separated line. |
+| `base_dir` | `false` | `"."` | The base directory to search for JSON and YAML files (e.g. ./src) - Default is `"."` which searches the entire repository. The directory must resolve inside the workspace. |
+| `files` | `false` | `""` | List of file paths to validate. File paths may be newline-delimited or provided as a single space-separated line. Matched files must resolve to regular files inside the workspace. |
 | `schema_mappings` | `false` | `""` | YAML list that maps JSON or YAML schema files to explicit file patterns for multi-schema validation |
 | `use_inline_schema` | `false` | `"false"` | Whether or not to use local inline JSON Schema references in JSON files and YAML language-server schema comments when YAML is validated as JSON |
 | `use_dot_match` | `false` | `"true"` | Whether or not to use dot-matching when searching for files - `"true"` or `"false"` - If this is true, directories like `.github`, etc will be searched |
@@ -65,6 +65,11 @@ Here is a quick example of how to install this action in any workflow:
 | `ajv_strict_mode` | `false` | `"true"` | Whether or not to use strict mode for AJV - "true" or "false" - Default is "true" |
 | `ajv_custom_regexp_formats` | `false` | `""` | List of key value pairs of `format_name=regexp`. Each pair must be on a newline. (e.g. `lowercase_chars=^[a-z]*$` - See below for more details) |
 | `github_token` | `false` | `${{ github.token }}` | The GitHub token used to create an authenticated client - Provided for you by default! |
+
+Validation targets discovered from `base_dir`, `files`, or `schema_mappings`
+are resolved through real paths before they are read. Directories, non-file
+matches, and symlinks that resolve outside `GITHUB_WORKSPACE` fail validation
+instead of being read.
 
 ## Outputs 📤
 

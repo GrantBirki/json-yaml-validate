@@ -4,7 +4,6 @@ import * as addFormatsModule from 'ajv-formats'
 import {Ajv2019} from 'ajv/dist/2019.js'
 import {Ajv2020} from 'ajv/dist/2020.js'
 import {readFileSync} from 'node:fs'
-import {resolve} from 'node:path'
 import {parse, parseAllDocuments} from 'yaml'
 import {core} from '../actions-core.js'
 import type {
@@ -29,6 +28,12 @@ import {
   jsonInlineSchemaReference,
   yamlInlineSchemaReference
 } from './inline-schema.js'
+import {
+  isSameFile,
+  resolveValidationFile,
+  resolveWorkspaceDirectory,
+  safeLogPath
+} from './path-utils.js'
 import {loadSchemaMappings} from './schema-mappings.js'
 
 const DRAFT_07 = 'draft-07'
@@ -108,12 +113,14 @@ function ajv(jsonSchemaVersion = core.getInput('json_schema_version')): AjvLike 
 }
 
 function isJsonSchemaFile(fullPath: string, jsonSchema: string): boolean {
-  return jsonSchema !== '' && resolve(fullPath) === resolve(jsonSchema)
+  return jsonSchema !== '' && isSameFile(fullPath, jsonSchema)
 }
 
 async function compileSchemaValue(schemaValue: unknown, jsonSchemaVersion: string): Promise<ValidateFunction> {
   const validator = ajv(jsonSchemaVersion)
-  return builtInMetaSchema(validator, schemaValue) ?? validator.compile(schemaValue)
+  return (
+    builtInMetaSchema(validator, schemaValue) ?? validator.compile(schemaValue)
+  )
 }
 
 async function schema(
@@ -166,6 +173,25 @@ function failInlineSchema(
   })
 }
 
+function failPathValidation(
+  result: ValidationResult,
+  displayPath: string,
+  message: string
+): void {
+  core.error(`❌ invalid validation path: ${displayPath}`)
+  result.success = false
+  result.failed++
+  result.violations.push({
+    file: displayPath,
+    errors: [
+      {
+        path: null,
+        message
+      }
+    ]
+  })
+}
+
 function inlineSchemaReference(
   fullPath: string,
   source: string,
@@ -185,44 +211,64 @@ async function validateJsonFiles(
   for (const fullPath of files) {
     core.debug(`found file: ${fullPath}`)
 
-    if (isJsonSchemaFile(fullPath, context.jsonSchema)) {
-      core.debug(`skipping json schema file: ${fullPath}`)
+    const resolved = resolveValidationFile(fullPath)
+    if (!resolved.ok) {
+      failPathValidation(
+        context.result,
+        resolved.displayPath,
+        resolved.message
+      )
+      continue
+    }
+    const file = resolved.value
+
+    if (isJsonSchemaFile(file.fullPath, context.jsonSchema)) {
+      core.debug(`skipping json schema file: ${file.displayPath}`)
       continue
     }
 
     const isYamlFile =
-      fullPath.endsWith(context.yamlExtension) ||
-      fullPath.endsWith(context.yamlExtensionShort)
+      file.relativePath.endsWith(context.yamlExtension) ||
+      file.relativePath.endsWith(context.yamlExtensionShort)
     if (context.yamlAsJson === false && isYamlFile) {
       core.debug(
-        `the json-validator found a yaml file so it will be skipped here: '${fullPath}'`
+        `the json-validator found a yaml file so it will be skipped here: '${file.displayPath}'`
       )
       continue
     }
 
-    if (processedFiles.has(fullPath)) {
-      core.debug(`skipping duplicate file: ${fullPath}`)
+    if (processedFiles.has(file.fullPath)) {
+      core.debug(`skipping duplicate file: ${file.displayPath}`)
       continue
     }
-    processedFiles.add(fullPath)
+    processedFiles.add(file.fullPath)
 
-    if (context.skipRegex !== null && context.skipRegex.test(fullPath)) {
-      core.info(`skipping due to exclude match: ${fullPath}`)
+    if (
+      context.skipRegex !== null &&
+      context.skipRegex.test(file.relativePath)
+    ) {
+      core.info(
+        `skipping due to exclude match: ${safeLogPath(file.displayPath)}`
+      )
       context.result.skipped++
       continue
     }
 
-    if (context.exclude.isExcluded(fullPath)) {
-      core.info(`skipping due to exclude match: ${fullPath}`)
+    if (context.exclude.isExcluded(file.relativePath)) {
+      core.info(
+        `skipping due to exclude match: ${safeLogPath(file.displayPath)}`
+      )
       context.result.skipped++
       continue
     }
 
-    const source = readFileSync(fullPath, 'utf8')
+    const source = readFileSync(file.fullPath, 'utf8')
     let data: unknown
     try {
       if (context.yamlAsJson === true && isYamlFile) {
-        core.debug(`attempting to process yaml file: '${fullPath}' as json`)
+        core.debug(
+          `attempting to process yaml file: '${file.displayPath}' as json`
+        )
         if (context.allowMultipleDocuments === true) {
           data = parseAllDocuments(source)
           for (const document of data as YamlDocument[]) {
@@ -237,11 +283,11 @@ async function validateJsonFiles(
         data = JSON.parse(source)
       }
     } catch {
-      core.error(`❌ failed to parse JSON file: ${fullPath}`)
+      core.error(`❌ failed to parse JSON file: ${file.displayPath}`)
       context.result.success = false
       context.result.failed++
       context.result.violations.push({
-        file: fullPath,
+        file: file.displayPath,
         errors: [
           {
             path: null,
@@ -261,19 +307,25 @@ async function validateJsonFiles(
     const includeDocumentIndexes =
       context.yamlAsJson && isYamlFile && documents.length > 1
 
-    core.debug(`${documents.length} object(s) found in file: ${fullPath}`)
+    core.debug(
+      `${documents.length} object(s) found in file: ${file.displayPath}`
+    )
 
     let validate = context.validate
     if (context.inlineSchemaValidator !== undefined) {
       const inlineValidation = await context.inlineSchemaValidator(
-        fullPath,
+        file.fullPath,
         source,
         data,
         isYamlFile
       )
 
       if (inlineValidation !== null && 'error' in inlineValidation) {
-        failInlineSchema(context.result, fullPath, inlineValidation.error)
+        failInlineSchema(
+          context.result,
+          file.displayPath,
+          inlineValidation.error
+        )
         continue
       }
 
@@ -301,19 +353,21 @@ async function validateJsonFiles(
 
     if (!allValid) {
       core.error(
-        `❌ failed to parse JSON file: ${fullPath}\n${JSON.stringify(allErrors)}`
+        `❌ failed to parse JSON file: ${file.displayPath}\n${JSON.stringify(
+          allErrors
+        )}`
       )
       context.result.success = false
       context.result.failed++
       context.result.violations.push({
-        file: `${fullPath}`,
+        file: file.displayPath,
         errors: allErrors
       })
       continue
     }
 
     context.result.passed++
-    core.info(`${fullPath} is valid`)
+    core.info(`${safeLogPath(file.displayPath)} is valid`)
   }
 }
 
@@ -370,7 +424,6 @@ export async function jsonValidator(
 
   let files = discoverExplicitFiles(patterns)
   const baseDirSanitized = baseDir.replace(/\/$/, '')
-  const validate = await schema(jsonSchema)
   const inlineSchemaValidators = new Map<string, ValidateFunction>()
   const inlineSchemaValidator =
     useInlineSchema && jsonSchema === ''
@@ -448,9 +501,25 @@ export async function jsonValidator(
   const extensions = yamlAsJson
     ? [jsonExtension, yamlExtension, yamlExtensionShort]
     : [jsonExtension]
-  files = useExplicitFiles
-    ? files
-    : discoverFilesByExtension(baseDirSanitized, extensions, useDotMatch)
+  if (!useExplicitFiles) {
+    const baseDirectory = resolveWorkspaceDirectory(baseDirSanitized)
+    if (!baseDirectory.ok) {
+      failPathValidation(
+        result,
+        baseDirectory.displayPath,
+        baseDirectory.message
+      )
+      return result
+    }
+
+    files = discoverFilesByExtension(
+      baseDirectory.value,
+      extensions,
+      useDotMatch
+    )
+  }
+
+  const validate = await schema(jsonSchema)
   await validateJsonFiles(files, {
     allowMultipleDocuments,
     exclude,

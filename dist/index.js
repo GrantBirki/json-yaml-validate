@@ -7891,11 +7891,10 @@ class Exclude {
 /* harmony import */ var node_fs__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__nccwpck_require__.n(node_fs__WEBPACK_IMPORTED_MODULE_0__);
 /* harmony import */ var node_path__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(6760);
 /* harmony import */ var node_path__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__nccwpck_require__.n(node_path__WEBPACK_IMPORTED_MODULE_1__);
+/* harmony import */ var _path_utils_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(1666);
 
 
-function normalizePath(filePath) {
-    return filePath.split(node_path__WEBPACK_IMPORTED_MODULE_1__.sep).join('/');
-}
+
 function expandFilePatterns(patterns) {
     const files = [];
     for (const pattern of patterns) {
@@ -7925,7 +7924,7 @@ function discoverFilesByExtension(baseDir, extensions, useDotMatch) {
             }
             if (entry.isFile() &&
                 extensions.some(extension => fullPath.endsWith(extension))) {
-                files.push(normalizePath(fullPath));
+                files.push((0,_path_utils_js__WEBPACK_IMPORTED_MODULE_2__/* .normalizePath */ .Fd)(fullPath));
             }
         }
     }
@@ -7959,8 +7958,6 @@ var _2019 = __nccwpck_require__(878);
 var _2020 = __nccwpck_require__(2210);
 // EXTERNAL MODULE: external "node:fs"
 var external_node_fs_ = __nccwpck_require__(3024);
-// EXTERNAL MODULE: external "node:path"
-var external_node_path_ = __nccwpck_require__(6760);
 // EXTERNAL MODULE: ./node_modules/yaml/dist/index.js
 var yaml_dist = __nccwpck_require__(8815);
 // EXTERNAL MODULE: ./src/actions-core.ts + 1 modules
@@ -8026,6 +8023,8 @@ function builtInMetaSchema(ajv, schemaValue) {
         : null;
 }
 
+// EXTERNAL MODULE: external "node:path"
+var external_node_path_ = __nccwpck_require__(6760);
 ;// CONCATENATED MODULE: ./src/functions/inline-schema.ts
 
 
@@ -8163,6 +8162,8 @@ function yamlInlineSchemaReference(source, sourceFile, workspace) {
     return resolveInlineSchemaReference(reference, sourceFile, workspace);
 }
 
+// EXTERNAL MODULE: ./src/functions/path-utils.ts
+var path_utils = __nccwpck_require__(1666);
 // EXTERNAL MODULE: ./src/functions/schema-mappings.ts
 var schema_mappings = __nccwpck_require__(4748);
 ;// CONCATENATED MODULE: ./src/functions/json-validator.ts
@@ -8246,11 +8247,11 @@ function json_validator_ajv(jsonSchemaVersion = actions_core/* core */.I.getInpu
     return validator;
 }
 function isJsonSchemaFile(fullPath, jsonSchema) {
-    return jsonSchema !== '' && (0,external_node_path_.resolve)(fullPath) === (0,external_node_path_.resolve)(jsonSchema);
+    return jsonSchema !== '' && (0,path_utils/* isSameFile */.Dl)(fullPath, jsonSchema);
 }
 async function compileSchemaValue(schemaValue, jsonSchemaVersion) {
     const validator = json_validator_ajv(jsonSchemaVersion);
-    return builtInMetaSchema(validator, schemaValue) ?? validator.compile(schemaValue);
+    return (builtInMetaSchema(validator, schemaValue) ?? validator.compile(schemaValue));
 }
 async function schema(jsonSchema, jsonSchemaVersion = actions_core/* core */.I.getInput('json_schema_version')) {
     const schemaValue = jsonSchema && jsonSchema !== ''
@@ -8282,6 +8283,20 @@ function failInlineSchema(result, fullPath, message) {
         ]
     });
 }
+function failPathValidation(result, displayPath, message) {
+    actions_core/* core */.I.error(`❌ invalid validation path: ${displayPath}`);
+    result.success = false;
+    result.failed++;
+    result.violations.push({
+        file: displayPath,
+        errors: [
+            {
+                path: null,
+                message
+            }
+        ]
+    });
+}
 function inlineSchemaReference(fullPath, source, data, isYamlFile) {
     return isYamlFile
         ? yamlInlineSchemaReference(source, fullPath)
@@ -8290,36 +8305,43 @@ function inlineSchemaReference(fullPath, source, data, isYamlFile) {
 async function validateJsonFiles(files, context, processedFiles = new Set()) {
     for (const fullPath of files) {
         actions_core/* core */.I.debug(`found file: ${fullPath}`);
-        if (isJsonSchemaFile(fullPath, context.jsonSchema)) {
-            actions_core/* core */.I.debug(`skipping json schema file: ${fullPath}`);
+        const resolved = (0,path_utils/* resolveValidationFile */.O9)(fullPath);
+        if (!resolved.ok) {
+            failPathValidation(context.result, resolved.displayPath, resolved.message);
             continue;
         }
-        const isYamlFile = fullPath.endsWith(context.yamlExtension) ||
-            fullPath.endsWith(context.yamlExtensionShort);
+        const file = resolved.value;
+        if (isJsonSchemaFile(file.fullPath, context.jsonSchema)) {
+            actions_core/* core */.I.debug(`skipping json schema file: ${file.displayPath}`);
+            continue;
+        }
+        const isYamlFile = file.relativePath.endsWith(context.yamlExtension) ||
+            file.relativePath.endsWith(context.yamlExtensionShort);
         if (context.yamlAsJson === false && isYamlFile) {
-            actions_core/* core */.I.debug(`the json-validator found a yaml file so it will be skipped here: '${fullPath}'`);
+            actions_core/* core */.I.debug(`the json-validator found a yaml file so it will be skipped here: '${file.displayPath}'`);
             continue;
         }
-        if (processedFiles.has(fullPath)) {
-            actions_core/* core */.I.debug(`skipping duplicate file: ${fullPath}`);
+        if (processedFiles.has(file.fullPath)) {
+            actions_core/* core */.I.debug(`skipping duplicate file: ${file.displayPath}`);
             continue;
         }
-        processedFiles.add(fullPath);
-        if (context.skipRegex !== null && context.skipRegex.test(fullPath)) {
-            actions_core/* core */.I.info(`skipping due to exclude match: ${fullPath}`);
+        processedFiles.add(file.fullPath);
+        if (context.skipRegex !== null &&
+            context.skipRegex.test(file.relativePath)) {
+            actions_core/* core */.I.info(`skipping due to exclude match: ${(0,path_utils/* safeLogPath */.xU)(file.displayPath)}`);
             context.result.skipped++;
             continue;
         }
-        if (context.exclude.isExcluded(fullPath)) {
-            actions_core/* core */.I.info(`skipping due to exclude match: ${fullPath}`);
+        if (context.exclude.isExcluded(file.relativePath)) {
+            actions_core/* core */.I.info(`skipping due to exclude match: ${(0,path_utils/* safeLogPath */.xU)(file.displayPath)}`);
             context.result.skipped++;
             continue;
         }
-        const source = (0,external_node_fs_.readFileSync)(fullPath, 'utf8');
+        const source = (0,external_node_fs_.readFileSync)(file.fullPath, 'utf8');
         let data;
         try {
             if (context.yamlAsJson === true && isYamlFile) {
-                actions_core/* core */.I.debug(`attempting to process yaml file: '${fullPath}' as json`);
+                actions_core/* core */.I.debug(`attempting to process yaml file: '${file.displayPath}' as json`);
                 if (context.allowMultipleDocuments === true) {
                     data = (0,yaml_dist/* parseAllDocuments */.hR)(source);
                     for (const document of data) {
@@ -8337,11 +8359,11 @@ async function validateJsonFiles(files, context, processedFiles = new Set()) {
             }
         }
         catch {
-            actions_core/* core */.I.error(`❌ failed to parse JSON file: ${fullPath}`);
+            actions_core/* core */.I.error(`❌ failed to parse JSON file: ${file.displayPath}`);
             context.result.success = false;
             context.result.failed++;
             context.result.violations.push({
-                file: fullPath,
+                file: file.displayPath,
                 errors: [
                     {
                         path: null,
@@ -8357,12 +8379,12 @@ async function validateJsonFiles(files, context, processedFiles = new Set()) {
             ? data.map(doc => doc.toJS())
             : [data];
         const includeDocumentIndexes = context.yamlAsJson && isYamlFile && documents.length > 1;
-        actions_core/* core */.I.debug(`${documents.length} object(s) found in file: ${fullPath}`);
+        actions_core/* core */.I.debug(`${documents.length} object(s) found in file: ${file.displayPath}`);
         let validate = context.validate;
         if (context.inlineSchemaValidator !== undefined) {
-            const inlineValidation = await context.inlineSchemaValidator(fullPath, source, data, isYamlFile);
+            const inlineValidation = await context.inlineSchemaValidator(file.fullPath, source, data, isYamlFile);
             if (inlineValidation !== null && 'error' in inlineValidation) {
-                failInlineSchema(context.result, fullPath, inlineValidation.error);
+                failInlineSchema(context.result, file.displayPath, inlineValidation.error);
                 continue;
             }
             validate = inlineValidation?.validate ?? validate;
@@ -8382,17 +8404,17 @@ async function validateJsonFiles(files, context, processedFiles = new Set()) {
             })));
         });
         if (!allValid) {
-            actions_core/* core */.I.error(`❌ failed to parse JSON file: ${fullPath}\n${JSON.stringify(allErrors)}`);
+            actions_core/* core */.I.error(`❌ failed to parse JSON file: ${file.displayPath}\n${JSON.stringify(allErrors)}`);
             context.result.success = false;
             context.result.failed++;
             context.result.violations.push({
-                file: `${fullPath}`,
+                file: file.displayPath,
                 errors: allErrors
             });
             continue;
         }
         context.result.passed++;
-        actions_core/* core */.I.info(`${fullPath} is valid`);
+        actions_core/* core */.I.info(`${(0,path_utils/* safeLogPath */.xU)(file.displayPath)} is valid`);
     }
 }
 async function jsonValidator(exclude) {
@@ -8439,7 +8461,6 @@ async function jsonValidator(exclude) {
     }
     let files = (0,file_discovery/* discoverExplicitFiles */.Z)(patterns);
     const baseDirSanitized = baseDir.replace(/\/$/, '');
-    const validate = await schema(jsonSchema);
     const inlineSchemaValidators = new Map();
     const inlineSchemaValidator = useInlineSchema && jsonSchema === ''
         ? async (fullPath, source, data, isYamlFile) => {
@@ -8492,9 +8513,15 @@ async function jsonValidator(exclude) {
     const extensions = yamlAsJson
         ? [jsonExtension, yamlExtension, yamlExtensionShort]
         : [jsonExtension];
-    files = useExplicitFiles
-        ? files
-        : (0,file_discovery/* discoverFilesByExtension */.n)(baseDirSanitized, extensions, useDotMatch);
+    if (!useExplicitFiles) {
+        const baseDirectory = (0,path_utils/* resolveWorkspaceDirectory */.VR)(baseDirSanitized);
+        if (!baseDirectory.ok) {
+            failPathValidation(result, baseDirectory.displayPath, baseDirectory.message);
+            return result;
+        }
+        files = (0,file_discovery/* discoverFilesByExtension */.n)(baseDirectory.value, extensions, useDotMatch);
+    }
+    const validate = await schema(jsonSchema);
     await validateJsonFiles(files, {
         allowMultipleDocuments,
         exclude,
@@ -8508,6 +8535,140 @@ async function jsonValidator(exclude) {
         yamlExtensionShort
     });
     return result;
+}
+
+
+/***/ }),
+
+/***/ 1666:
+/***/ ((__unused_webpack_module, __webpack_exports__, __nccwpck_require__) => {
+
+/* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
+/* harmony export */   Dl: () => (/* binding */ isSameFile),
+/* harmony export */   Fd: () => (/* binding */ normalizePath),
+/* harmony export */   O9: () => (/* binding */ resolveValidationFile),
+/* harmony export */   VR: () => (/* binding */ resolveWorkspaceDirectory),
+/* harmony export */   xU: () => (/* binding */ safeLogPath)
+/* harmony export */ });
+/* harmony import */ var node_fs__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(3024);
+/* harmony import */ var node_fs__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__nccwpck_require__.n(node_fs__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var node_path__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(6760);
+/* harmony import */ var node_path__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__nccwpck_require__.n(node_path__WEBPACK_IMPORTED_MODULE_1__);
+
+
+function normalizePath(filePath) {
+    return filePath.split(node_path__WEBPACK_IMPORTED_MODULE_1__.sep).join('/');
+}
+function safeLogPath(filePath) {
+    const escaped = filePath.replace(/\r/g, '\\r').replace(/\n/g, '\\n');
+    return escaped.startsWith('::') ? `./${escaped}` : escaped;
+}
+function isPathEscape(relativePath) {
+    return (relativePath === '..' ||
+        relativePath.startsWith('../') ||
+        relativePath.startsWith('..\\') ||
+        (0,node_path__WEBPACK_IMPORTED_MODULE_1__.isAbsolute)(relativePath));
+}
+function isPathInside(childPath, parentPath) {
+    const path = (0,node_path__WEBPACK_IMPORTED_MODULE_1__.relative)(parentPath, childPath);
+    return path === '' || !isPathEscape(path);
+}
+function workspaceRoot(workspace = process.env.GITHUB_WORKSPACE) {
+    return (0,node_fs__WEBPACK_IMPORTED_MODULE_0__.realpathSync)(workspace && workspace !== '' ? workspace : process.cwd());
+}
+function workspaceInputRoot(workspace = process.env.GITHUB_WORKSPACE) {
+    return (0,node_path__WEBPACK_IMPORTED_MODULE_1__.resolve)(workspace && workspace !== '' ? workspace : process.cwd());
+}
+function workspaceRelativePath(root, fullPath) {
+    return normalizePath((0,node_path__WEBPACK_IMPORTED_MODULE_1__.relative)(root, fullPath));
+}
+function displayPathFor(filePath, root, inputRoot = workspaceInputRoot()) {
+    const resolvedPath = (0,node_path__WEBPACK_IMPORTED_MODULE_1__.resolve)(filePath);
+    if (isPathInside(resolvedPath, inputRoot)) {
+        return normalizePath((0,node_path__WEBPACK_IMPORTED_MODULE_1__.relative)(inputRoot, resolvedPath));
+    }
+    return isPathInside(resolvedPath, root)
+        ? workspaceRelativePath(root, resolvedPath)
+        : normalizePath(filePath);
+}
+function resolveWorkspacePath(filePath) {
+    const root = workspaceRoot();
+    const inputRoot = workspaceInputRoot();
+    const displayPath = displayPathFor(filePath, root, inputRoot);
+    let fullPath;
+    try {
+        fullPath = (0,node_fs__WEBPACK_IMPORTED_MODULE_0__.realpathSync)((0,node_path__WEBPACK_IMPORTED_MODULE_1__.resolve)(filePath));
+    }
+    catch {
+        return {
+            displayPath,
+            message: `validation path does not exist: ${displayPath}`,
+            ok: false
+        };
+    }
+    if (!isPathInside(fullPath, root)) {
+        return {
+            displayPath,
+            message: `validation path must be inside the workspace: ${displayPath}`,
+            ok: false
+        };
+    }
+    return {
+        ok: true,
+        value: {
+            fullPath,
+            root
+        }
+    };
+}
+function resolveValidationFile(filePath) {
+    const resolved = resolveWorkspacePath(filePath);
+    if (!resolved.ok) {
+        return resolved;
+    }
+    if (!(0,node_fs__WEBPACK_IMPORTED_MODULE_0__.statSync)(resolved.value.fullPath).isFile()) {
+        const displayPath = displayPathFor(filePath, resolved.value.root);
+        return {
+            displayPath,
+            message: `validation path must be a regular file: ${displayPath}`,
+            ok: false
+        };
+    }
+    const relativePath = workspaceRelativePath(resolved.value.root, resolved.value.fullPath);
+    return {
+        ok: true,
+        value: {
+            displayPath: relativePath,
+            fullPath: resolved.value.fullPath,
+            relativePath
+        }
+    };
+}
+function resolveWorkspaceDirectory(directoryPath) {
+    const resolved = resolveWorkspacePath(directoryPath);
+    if (!resolved.ok) {
+        return resolved;
+    }
+    if (!(0,node_fs__WEBPACK_IMPORTED_MODULE_0__.statSync)(resolved.value.fullPath).isDirectory()) {
+        const displayPath = displayPathFor(directoryPath, resolved.value.root);
+        return {
+            displayPath,
+            message: `base_dir must be a directory: ${displayPath}`,
+            ok: false
+        };
+    }
+    return {
+        ok: true,
+        value: resolved.value.fullPath
+    };
+}
+function isSameFile(leftPath, rightPath) {
+    try {
+        return (0,node_fs__WEBPACK_IMPORTED_MODULE_0__.realpathSync)((0,node_path__WEBPACK_IMPORTED_MODULE_1__.resolve)(leftPath)) === (0,node_fs__WEBPACK_IMPORTED_MODULE_0__.realpathSync)((0,node_path__WEBPACK_IMPORTED_MODULE_1__.resolve)(rightPath));
+    }
+    catch {
+        return false;
+    }
 }
 
 
@@ -8872,6 +9033,8 @@ var actions_core = __nccwpck_require__(1499);
 var file_discovery = __nccwpck_require__(5696);
 // EXTERNAL MODULE: ./src/functions/schema-mappings.ts
 var schema_mappings = __nccwpck_require__(4748);
+// EXTERNAL MODULE: ./src/functions/path-utils.ts
+var path_utils = __nccwpck_require__(1666);
 // EXTERNAL MODULE: external "node:path"
 var external_node_path_ = __nccwpck_require__(6760);
 ;// CONCATENATED MODULE: ./src/functions/yaml-schema-validator.ts
@@ -9089,6 +9252,7 @@ function validateYamlSchemaData(target, schemaPath) {
 
 
 
+
 const INVALID_YAML_MESSAGE = 'Invalid YAML';
 const MULTIPLE_DOCUMENTS_MESSAGE = 'Multiple YAML documents found; set allow_multiple_documents: "true" to validate Kubernetes-style multi-document YAML files.';
 class MultipleYamlDocumentsError extends Error {
@@ -9117,52 +9281,76 @@ function parseYamlDocuments(fullPath, allowMultipleDocuments) {
         ...(documents.length > 1 ? { document: index } : {})
     }));
 }
+function isYamlSchemaFile(fullPath, yamlSchema) {
+    return yamlSchema !== '' && (0,path_utils/* isSameFile */.Dl)(fullPath, yamlSchema);
+}
+function failPathValidation(result, displayPath, message) {
+    actions_core/* core */.I.error(`❌ invalid validation path: ${displayPath}`);
+    result.success = false;
+    result.failed++;
+    result.violations.push({
+        file: displayPath,
+        errors: [
+            {
+                path: null,
+                message
+            }
+        ]
+    });
+}
 function validateYamlFiles(files, context) {
     const processedFiles = new Set();
     for (const fullPath of files) {
         actions_core/* core */.I.debug(`found file: ${fullPath}`);
-        if (context.yamlSchema !== '' && fullPath === context.yamlSchema) {
-            actions_core/* core */.I.debug(`skipping yaml schema file: ${fullPath}`);
+        const resolved = (0,path_utils/* resolveValidationFile */.O9)(fullPath);
+        if (!resolved.ok) {
+            failPathValidation(context.result, resolved.displayPath, resolved.message);
             continue;
         }
-        const isJsonFile = context.jsonExtension && fullPath.endsWith(context.jsonExtension);
+        const file = resolved.value;
+        if (isYamlSchemaFile(file.fullPath, context.yamlSchema)) {
+            actions_core/* core */.I.debug(`skipping yaml schema file: ${file.displayPath}`);
+            continue;
+        }
+        const isJsonFile = context.jsonExtension && file.relativePath.endsWith(context.jsonExtension);
         if (context.yamlAsJson === false && isJsonFile) {
-            actions_core/* core */.I.debug(`the yaml-validator found a json file so it will be skipped here: '${fullPath}'`);
+            actions_core/* core */.I.debug(`the yaml-validator found a json file so it will be skipped here: '${file.displayPath}'`);
             continue;
         }
-        if (processedFiles.has(fullPath)) {
-            actions_core/* core */.I.debug(`skipping duplicate file: ${fullPath}`);
+        if (processedFiles.has(file.fullPath)) {
+            actions_core/* core */.I.debug(`skipping duplicate file: ${file.displayPath}`);
             continue;
         }
-        processedFiles.add(fullPath);
+        processedFiles.add(file.fullPath);
         if (context.yamlAsJson) {
-            actions_core/* core */.I.debug(`skipping yaml since it should be treated as json: ${fullPath}`);
+            actions_core/* core */.I.debug(`skipping yaml since it should be treated as json: ${file.displayPath}`);
             context.result.skipped++;
             continue;
         }
-        if (context.skipRegex !== null && context.skipRegex.test(fullPath)) {
-            actions_core/* core */.I.info(`skipping due to exclude match: ${fullPath}`);
+        if (context.skipRegex !== null &&
+            context.skipRegex.test(file.relativePath)) {
+            actions_core/* core */.I.info(`skipping due to exclude match: ${(0,path_utils/* safeLogPath */.xU)(file.displayPath)}`);
             context.result.skipped++;
             continue;
         }
-        if (context.exclude.isExcluded(fullPath)) {
-            actions_core/* core */.I.info(`skipping due to exclude match: ${fullPath}`);
+        if (context.exclude.isExcluded(file.relativePath)) {
+            actions_core/* core */.I.info(`skipping due to exclude match: ${(0,path_utils/* safeLogPath */.xU)(file.displayPath)}`);
             context.result.skipped++;
             continue;
         }
         let documents;
         try {
-            documents = parseYamlDocuments(fullPath, context.allowMultipleDocuments);
+            documents = parseYamlDocuments(file.fullPath, context.allowMultipleDocuments);
             if (documents.length > 1) {
-                actions_core/* core */.I.info(`multiple documents found in file: ${fullPath}`);
+                actions_core/* core */.I.info(`multiple documents found in file: ${(0,path_utils/* safeLogPath */.xU)(file.displayPath)}`);
             }
         }
         catch (error) {
-            actions_core/* core */.I.error(`❌ failed to parse YAML file: ${fullPath}`);
+            actions_core/* core */.I.error(`❌ failed to parse YAML file: ${file.displayPath}`);
             context.result.success = false;
             context.result.failed++;
             context.result.violations.push({
-                file: fullPath,
+                file: file.displayPath,
                 errors: [
                     {
                         path: null,
@@ -9175,7 +9363,7 @@ function validateYamlFiles(files, context) {
         }
         if (!context.yamlSchema) {
             context.result.passed++;
-            actions_core/* core */.I.info(`${fullPath} is valid`);
+            actions_core/* core */.I.info(`${(0,path_utils/* safeLogPath */.xU)(file.displayPath)} is valid`);
             continue;
         }
         const schemaErrors = [];
@@ -9191,17 +9379,17 @@ function validateYamlFiles(files, context) {
             }
         }
         if (schemaErrors && schemaErrors.length > 0) {
-            actions_core/* core */.I.error(`❌ failed to parse YAML file: ${fullPath}\n${JSON.stringify(schemaErrors)}`);
+            actions_core/* core */.I.error(`❌ failed to parse YAML file: ${file.displayPath}\n${JSON.stringify(schemaErrors)}`);
             context.result.success = false;
             context.result.failed++;
             context.result.violations.push({
-                file: fullPath,
+                file: file.displayPath,
                 errors: schemaErrors
             });
             continue;
         }
         context.result.passed++;
-        actions_core/* core */.I.info(`${fullPath} is valid`);
+        actions_core/* core */.I.info(`${(0,path_utils/* safeLogPath */.xU)(file.displayPath)} is valid`);
     }
 }
 async function yamlValidator(exclude) {
@@ -9253,7 +9441,12 @@ async function yamlValidator(exclude) {
     else {
         actions_core/* core */.I.debug(`using baseDir: ${baseDirSanitized}`);
         actions_core/* core */.I.debug(`using glob: ${glob}`);
-        files = (0,file_discovery/* discoverFilesByExtension */.n)(baseDirSanitized, [yamlExtension, yamlExtensionShort], useDotMatch);
+        const baseDirectory = (0,path_utils/* resolveWorkspaceDirectory */.VR)(baseDirSanitized);
+        if (!baseDirectory.ok) {
+            failPathValidation(result, baseDirectory.displayPath, baseDirectory.message);
+            return result;
+        }
+        files = (0,file_discovery/* discoverFilesByExtension */.n)(baseDirectory.value, [yamlExtension, yamlExtensionShort], useDotMatch);
     }
     validateYamlFiles(files, {
         allowMultipleDocuments,

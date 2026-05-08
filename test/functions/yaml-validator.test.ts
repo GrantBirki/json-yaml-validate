@@ -15,6 +15,7 @@ const excludeMock = new Exclude()
 
 beforeEach(() => {
   jest.clearAllMocks()
+  delete process.env.GITHUB_WORKSPACE
   process.env.INPUT_YAML_SCHEMA = '__tests__/fixtures/schemas/schema1.yaml'
   process.env.INPUT_BASE_DIR = '__tests__/fixtures/yaml/valid'
   process.env.INPUT_JSON_EXTENSION = '.json'
@@ -113,6 +114,24 @@ test('successfully validates a yaml file with a schema and skips the schema as w
 
   expect(debugMock).toHaveBeenCalledWith(
     `skipping yaml schema file: ${process.env.INPUT_YAML_SCHEMA}`
+  )
+})
+
+test('skips yaml schema files when schema input uses a normalized equivalent path', async () => {
+  process.env.INPUT_YAML_SCHEMA =
+    './__tests__/fixtures/yaml/project_dir/schemas/schema.yml'
+  process.env.INPUT_BASE_DIR = '__tests__/fixtures/yaml/project_dir'
+
+  expect(await yamlValidator(excludeMock)).toStrictEqual({
+    failed: 0,
+    passed: 2,
+    skipped: 0,
+    success: true,
+    violations: []
+  })
+
+  expect(debugMock).toHaveBeenCalledWith(
+    'skipping yaml schema file: __tests__/fixtures/yaml/project_dir/schemas/schema.yml'
   )
 })
 
@@ -575,8 +594,12 @@ test('edge case: mixed valid and invalid yaml with multiple documents disabled',
 test('edge case: yaml with empty/minimal data structure', async () => {
   // Create a temporary minimal YAML file
   const fs = require('fs')
-  const tempFile = '/tmp/minimal.yaml'
+  const os = require('os')
+  const path = require('path')
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'minimal-yaml-'))
+  const tempFile = path.join(tempDir, 'minimal.yaml')
   fs.writeFileSync(tempFile, 'null')
+  process.env.GITHUB_WORKSPACE = tempDir
 
   process.env.INPUT_FILES = tempFile
   process.env.INPUT_BASE_DIR = '.'
@@ -586,17 +609,21 @@ test('edge case: yaml with empty/minimal data structure', async () => {
   expect(result.passed).toBe(1)
 
   // Cleanup
-  fs.unlinkSync(tempFile)
+  fs.rmSync(tempDir, {recursive: true, force: true})
 })
 
 test('edge case: yaml with undefined/null values in error paths', async () => {
   // This test tries to trigger a schema error with a null/undefined path
   const fs = require('fs')
-  const tempFile = '/tmp/null_path_error.yaml'
+  const os = require('os')
+  const path = require('path')
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'null-path-yaml-'))
+  const tempFile = path.join(tempDir, 'null_path_error.yaml')
   fs.writeFileSync(
     tempFile,
     'invalid_structure: true\nextra_field: not_allowed'
   )
+  process.env.GITHUB_WORKSPACE = tempDir
 
   process.env.INPUT_FILES = tempFile
   process.env.INPUT_BASE_DIR = '.'
@@ -606,7 +633,7 @@ test('edge case: yaml with undefined/null values in error paths', async () => {
   expect(result.failed + result.passed).toBeGreaterThan(0)
 
   // Cleanup
-  fs.unlinkSync(tempFile)
+  fs.rmSync(tempDir, {recursive: true, force: true})
 })
 
 test('skips json files when yaml_as_json is false', async () => {
@@ -661,6 +688,7 @@ test('discovers yaml files with custom extensions', async () => {
   const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'yaml-custom-ext-'))
   fs.writeFileSync(path.join(tempDir, 'config.yamlx'), 'person:\n  age: 1')
   fs.writeFileSync(path.join(tempDir, 'other.ymlx'), 'person:\n  age: 2')
+  process.env.GITHUB_WORKSPACE = tempDir
 
   process.env.INPUT_YAML_SCHEMA = ''
   process.env.INPUT_YAML_EXTENSION = '.yamlx'
@@ -673,6 +701,95 @@ test('discovers yaml files with custom extensions', async () => {
     skipped: 0,
     success: true,
     violations: []
+  })
+
+  fs.rmSync(tempDir, {recursive: true, force: true})
+})
+
+test('rejects explicit yaml file matches that are not regular workspace files', async () => {
+  const fs = require('fs')
+  const os = require('os')
+  const path = require('path')
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'yaml-paths-'))
+  const outsideDir = fs.mkdtempSync(path.join(os.tmpdir(), 'yaml-outside-'))
+  fs.mkdirSync(path.join(tempDir, 'dir.yaml'))
+  fs.writeFileSync(path.join(tempDir, 'ok.yaml'), 'name: Ada')
+  fs.writeFileSync(path.join(outsideDir, 'secret.yaml'), 'name: Ada')
+  fs.symlinkSync(
+    path.join(outsideDir, 'secret.yaml'),
+    path.join(tempDir, 'outside.yaml')
+  )
+  process.env.GITHUB_WORKSPACE = tempDir
+
+  process.env.INPUT_YAML_SCHEMA = ''
+  process.env.INPUT_FILES = path.join(tempDir, '*.yaml')
+  process.env.INPUT_BASE_DIR = tempDir
+
+  const result = await yamlValidator(excludeMock)
+
+  expect(result).toStrictEqual({
+    failed: 2,
+    passed: 1,
+    skipped: 0,
+    success: false,
+    violations: [
+      {
+        file: 'dir.yaml',
+        errors: [
+          {
+            path: null,
+            message: 'validation path must be a regular file: dir.yaml'
+          }
+        ]
+      },
+      {
+        file: 'outside.yaml',
+        errors: [
+          {
+            path: null,
+            message: 'validation path must be inside the workspace: outside.yaml'
+          }
+        ]
+      }
+    ]
+  })
+  expect(infoMock).toHaveBeenCalledWith('ok.yaml is valid')
+
+  fs.rmSync(tempDir, {recursive: true, force: true})
+  fs.rmSync(outsideDir, {recursive: true, force: true})
+})
+
+test('fails yaml discovery when base_dir resolves outside the workspace', async () => {
+  const fs = require('fs')
+  const os = require('os')
+  const path = require('path')
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'yaml-base-'))
+  const workspace = path.join(tempDir, 'workspace')
+  const outside = path.join(tempDir, 'outside')
+  fs.mkdirSync(workspace)
+  fs.mkdirSync(outside)
+  process.env.GITHUB_WORKSPACE = workspace
+
+  process.env.INPUT_YAML_SCHEMA = ''
+  process.env.INPUT_BASE_DIR = outside
+  process.env.INPUT_FILES = ''
+
+  expect(await yamlValidator(excludeMock)).toStrictEqual({
+    failed: 1,
+    passed: 0,
+    skipped: 0,
+    success: false,
+    violations: [
+      {
+        file: outside,
+        errors: [
+          {
+            path: null,
+            message: `validation path must be inside the workspace: ${outside}`
+          }
+        ]
+      }
+    ]
   })
 
   fs.rmSync(tempDir, {recursive: true, force: true})
