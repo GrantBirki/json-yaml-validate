@@ -7884,6 +7884,7 @@ class Exclude {
 /***/ ((__unused_webpack_module, __webpack_exports__, __nccwpck_require__) => {
 
 /* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
+/* harmony export */   Z: () => (/* binding */ discoverExplicitFiles),
 /* harmony export */   n: () => (/* binding */ discoverFilesByExtension)
 /* harmony export */ });
 /* harmony import */ var node_fs__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(3024);
@@ -7894,6 +7895,20 @@ class Exclude {
 
 function normalizePath(filePath) {
     return filePath.split(node_path__WEBPACK_IMPORTED_MODULE_1__.sep).join('/');
+}
+function expandFilePatterns(patterns) {
+    const files = [];
+    for (const pattern of patterns) {
+        files.push(...(0,node_fs__WEBPACK_IMPORTED_MODULE_0__.globSync)(pattern));
+    }
+    return files;
+}
+function discoverExplicitFiles(patterns) {
+    const files = expandFilePatterns(patterns);
+    const flatListPatterns = patterns.length === 1 ? patterns[0].split(/\s+/).filter(Boolean) : [];
+    return files.length > 0 || flatListPatterns.length <= 1
+        ? files
+        : expandFilePatterns(flatListPatterns);
 }
 function discoverFilesByExtension(baseDir, extensions, useDotMatch) {
     const files = [];
@@ -7961,13 +7976,6 @@ const AjvDraft04 = ((ajv_draft_04__WEBPACK_IMPORTED_MODULE_0___default()) ??
     ajv_draft_04__WEBPACK_IMPORTED_MODULE_0__);
 const addFormats = ((ajv_formats__WEBPACK_IMPORTED_MODULE_1___default()) ??
     ajv_formats__WEBPACK_IMPORTED_MODULE_1__);
-function discoverExplicitFiles(patterns) {
-    const files = [];
-    for (const pattern of patterns) {
-        files.push(...(0,node_fs__WEBPACK_IMPORTED_MODULE_2__.globSync)(pattern));
-    }
-    return files;
-}
 async function schema(jsonSchema) {
     const jsonSchemaVersion = _actions_core_js__WEBPACK_IMPORTED_MODULE_4__/* .core */ .I.getInput('json_schema_version');
     const strict = _actions_core_js__WEBPACK_IMPORTED_MODULE_4__/* .core */ .I.getBooleanInput('ajv_strict_mode');
@@ -8046,7 +8054,7 @@ async function jsonValidator(exclude) {
     const allowMultipleDocuments = _actions_core_js__WEBPACK_IMPORTED_MODULE_4__/* .core */ .I.getBooleanInput('allow_multiple_documents');
     const patterns = _actions_core_js__WEBPACK_IMPORTED_MODULE_4__/* .core */ .I.getMultilineInput('files').filter(Boolean);
     _actions_core_js__WEBPACK_IMPORTED_MODULE_4__/* .core */ .I.debug(`yaml_as_json: ${yamlAsJson}`);
-    let files = discoverExplicitFiles(patterns);
+    let files = (0,_file_discovery_js__WEBPACK_IMPORTED_MODULE_5__/* .discoverExplicitFiles */ .Z)(patterns);
     const baseDirSanitized = baseDir.replace(/\/$/, '');
     const skipRegex = jsonExcludeRegex ? new RegExp(jsonExcludeRegex) : null;
     const validate = await schema(jsonSchema);
@@ -8518,13 +8526,6 @@ function validateYamlSchemaFile(targetPath, schemaPath) {
 
 
 const INVALID_YAML_MESSAGE = 'Invalid YAML';
-function discoverExplicitFiles(patterns) {
-    const files = [];
-    for (const pattern of patterns) {
-        files.push(...(0,external_node_fs_.globSync)(pattern));
-    }
-    return files;
-}
 function formatYamlParseError(error) {
     return String(error).split(':').slice(0, 2).join('');
 }
@@ -8539,7 +8540,7 @@ async function yamlValidator(exclude) {
     const useDotMatch = actions_core/* core */.I.getBooleanInput('use_dot_match');
     const allowMultipleDocuments = actions_core/* core */.I.getBooleanInput('allow_multiple_documents');
     const patterns = actions_core/* core */.I.getMultilineInput('files').filter(Boolean);
-    let files = discoverExplicitFiles(patterns);
+    let files = (0,file_discovery/* discoverExplicitFiles */.Z)(patterns);
     const baseDirSanitized = baseDir.replace(/\/$/, '');
     const skipRegex = yamlExcludeRegex ? new RegExp(yamlExcludeRegex) : null;
     const result = {

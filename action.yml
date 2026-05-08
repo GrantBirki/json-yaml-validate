@@ -22,7 +22,7 @@ inputs:
     required: false
     default: "."
   files:
-    description: List of file paths to validate. Each file path must be on a newline.
+    description: List of file paths to validate. File paths may be newline-delimited or provided as a single space-separated line.
     required: false
     default: ""
   use_dot_match:

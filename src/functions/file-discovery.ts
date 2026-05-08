@@ -1,8 +1,28 @@
-import {readdirSync} from 'node:fs'
+import {globSync, readdirSync} from 'node:fs'
 import {join, sep} from 'node:path'
 
 function normalizePath(filePath: string): string {
   return filePath.split(sep).join('/')
+}
+
+function expandFilePatterns(patterns: string[]): string[] {
+  const files: string[] = []
+
+  for (const pattern of patterns) {
+    files.push(...globSync(pattern))
+  }
+
+  return files
+}
+
+export function discoverExplicitFiles(patterns: string[]): string[] {
+  const files = expandFilePatterns(patterns)
+  const flatListPatterns =
+    patterns.length === 1 ? patterns[0].split(/\s+/).filter(Boolean) : []
+
+  return files.length > 0 || flatListPatterns.length <= 1
+    ? files
+    : expandFilePatterns(flatListPatterns)
 }
 
 export function discoverFilesByExtension(

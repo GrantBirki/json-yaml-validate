@@ -3,7 +3,7 @@ import * as AjvDraft04Module from 'ajv-draft-04'
 import * as addFormatsModule from 'ajv-formats'
 import {Ajv2019} from 'ajv/dist/2019.js'
 import {Ajv2020} from 'ajv/dist/2020.js'
-import {globSync, readFileSync} from 'node:fs'
+import {readFileSync} from 'node:fs'
 import {parse, parseAllDocuments} from 'yaml'
 import {core} from '../actions-core.js'
 import type {
@@ -14,7 +14,10 @@ import type {
   ValidationResult,
   YamlDocument
 } from '../types.js'
-import {discoverFilesByExtension} from './file-discovery.js'
+import {
+  discoverExplicitFiles,
+  discoverFilesByExtension
+} from './file-discovery.js'
 
 const DRAFT_07 = 'draft-07'
 const DRAFT_04 = 'draft-04'
@@ -22,21 +25,10 @@ const DRAFT_2019_09 = 'draft-2019-09'
 const DRAFT_2020_12 = 'draft-2020-12'
 const INVALID_JSON_MESSAGE = 'Invalid JSON'
 const CUSTOM_FORMAT_REGEX = /^[\w-]+=.+$/
-
 const AjvDraft04 = (AjvDraft04Module.default ??
   AjvDraft04Module) as unknown as AjvConstructor
 const addFormats = (addFormatsModule.default ??
   addFormatsModule) as unknown as (ajv: AjvLike) => void
-
-function discoverExplicitFiles(patterns: string[]): string[] {
-  const files: string[] = []
-
-  for (const pattern of patterns) {
-    files.push(...globSync(pattern))
-  }
-
-  return files
-}
 
 async function schema(jsonSchema: string): Promise<ValidateFunction> {
   const jsonSchemaVersion = core.getInput('json_schema_version')
