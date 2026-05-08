@@ -8289,13 +8289,22 @@ async function commentOnPullRequest(body) {
     await createPullRequestComment(_actions_core_js__WEBPACK_IMPORTED_MODULE_1__/* .core */ .I.getInput('github_token', { required: true }), pullRequestContext, body);
     return true;
 }
+function warnSuccessCommentError(error) {
+    const message = error instanceof Error ? error.message : String(error);
+    _actions_core_js__WEBPACK_IMPORTED_MODULE_1__/* .core */ .I.warning(`failed to create success PR comment: ${message}`);
+}
 async function processResults(jsonResults, yamlResults) {
     const jsonResult = await checkResults(jsonResults, 'JSON');
     const yamlResult = await checkResults(yamlResults, 'YAML');
     if (jsonResult === true && yamlResult === true) {
         _actions_core_js__WEBPACK_IMPORTED_MODULE_1__/* .core */ .I.setOutput('success', SUCCESS_OUTPUT_VALUE);
         if (_actions_core_js__WEBPACK_IMPORTED_MODULE_1__/* .core */ .I.getBooleanInput('comment_on_success')) {
-            await commentOnPullRequest(constructSuccessBody(jsonResults, yamlResults));
+            try {
+                await commentOnPullRequest(constructSuccessBody(jsonResults, yamlResults));
+            }
+            catch (error) {
+                warnSuccessCommentError(error);
+            }
         }
         return true;
     }

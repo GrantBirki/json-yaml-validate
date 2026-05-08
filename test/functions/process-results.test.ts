@@ -195,6 +195,28 @@ test('does not comment on success outside a pull request', async () => {
   expect(setOutputMock).toHaveBeenCalledWith('success', 'true')
 })
 
+test('keeps successful validations passing when the success PR comment fails', async () => {
+  process.env.INPUT_COMMENT_ON_SUCCESS = 'true'
+  global.fetch.mockResolvedValueOnce({
+    ok: false,
+    status: 403,
+    statusText: 'Forbidden'
+  })
+
+  expect(
+    await processResults(
+      {success: true, failed: 0, passed: 2, skipped: 0, violations: []},
+      {success: true, failed: 0, passed: 1, skipped: 0, violations: []}
+    )
+  ).toBe(true)
+
+  expect(setOutputMock).toHaveBeenCalledWith('success', 'true')
+  expect(warningMock).toHaveBeenCalledWith(
+    'failed to create success PR comment: failed to create PR comment: 403 Forbidden'
+  )
+  expect(setFailedMock).not.toHaveBeenCalled()
+})
+
 test('fails the action due to json errors, but yaml is fine - warn mode', async () => {
   process.env.INPUT_MODE = 'warn'
   expect(

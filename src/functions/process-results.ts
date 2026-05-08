@@ -168,6 +168,11 @@ async function commentOnPullRequest(body: string): Promise<boolean> {
   return true
 }
 
+function warnSuccessCommentError(error: unknown): void {
+  const message = error instanceof Error ? error.message : String(error)
+  core.warning(`failed to create success PR comment: ${message}`)
+}
+
 export async function processResults(
   jsonResults: ValidationResult,
   yamlResults: ValidationResult
@@ -178,7 +183,13 @@ export async function processResults(
   if (jsonResult === true && yamlResult === true) {
     core.setOutput('success', SUCCESS_OUTPUT_VALUE)
     if (core.getBooleanInput('comment_on_success')) {
-      await commentOnPullRequest(constructSuccessBody(jsonResults, yamlResults))
+      try {
+        await commentOnPullRequest(
+          constructSuccessBody(jsonResults, yamlResults)
+        )
+      } catch (error) {
+        warnSuccessCommentError(error)
+      }
     }
     return true
   }
