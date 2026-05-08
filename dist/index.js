@@ -7936,27 +7936,73 @@ function discoverFilesByExtension(baseDir, extensions, useDotMatch) {
 
 /***/ }),
 
-/***/ 4064:
+/***/ 4379:
 /***/ ((__unused_webpack_module, __webpack_exports__, __nccwpck_require__) => {
 
-/* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
-/* harmony export */   p: () => (/* binding */ jsonValidator)
-/* harmony export */ });
-/* harmony import */ var ajv__WEBPACK_IMPORTED_MODULE_6__ = __nccwpck_require__(2463);
-/* harmony import */ var ajv__WEBPACK_IMPORTED_MODULE_6___default = /*#__PURE__*/__nccwpck_require__.n(ajv__WEBPACK_IMPORTED_MODULE_6__);
-/* harmony import */ var ajv_draft_04__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(905);
-/* harmony import */ var ajv_draft_04__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__nccwpck_require__.n(ajv_draft_04__WEBPACK_IMPORTED_MODULE_0__);
-/* harmony import */ var ajv_formats__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(2815);
-/* harmony import */ var ajv_formats__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__nccwpck_require__.n(ajv_formats__WEBPACK_IMPORTED_MODULE_1__);
-/* harmony import */ var ajv_dist_2019_js__WEBPACK_IMPORTED_MODULE_7__ = __nccwpck_require__(878);
-/* harmony import */ var ajv_dist_2019_js__WEBPACK_IMPORTED_MODULE_7___default = /*#__PURE__*/__nccwpck_require__.n(ajv_dist_2019_js__WEBPACK_IMPORTED_MODULE_7__);
-/* harmony import */ var ajv_dist_2020_js__WEBPACK_IMPORTED_MODULE_8__ = __nccwpck_require__(2210);
-/* harmony import */ var ajv_dist_2020_js__WEBPACK_IMPORTED_MODULE_8___default = /*#__PURE__*/__nccwpck_require__.n(ajv_dist_2020_js__WEBPACK_IMPORTED_MODULE_8__);
-/* harmony import */ var node_fs__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(3024);
-/* harmony import */ var node_fs__WEBPACK_IMPORTED_MODULE_2___default = /*#__PURE__*/__nccwpck_require__.n(node_fs__WEBPACK_IMPORTED_MODULE_2__);
-/* harmony import */ var yaml__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(8815);
-/* harmony import */ var _actions_core_js__WEBPACK_IMPORTED_MODULE_4__ = __nccwpck_require__(1499);
-/* harmony import */ var _file_discovery_js__WEBPACK_IMPORTED_MODULE_5__ = __nccwpck_require__(5696);
+
+// EXPORTS
+__nccwpck_require__.d(__webpack_exports__, {
+  p: () => (/* binding */ jsonValidator)
+});
+
+// EXTERNAL MODULE: ./node_modules/ajv/dist/ajv.js
+var dist_ajv = __nccwpck_require__(2463);
+// EXTERNAL MODULE: ./node_modules/ajv-draft-04/dist/index.js
+var dist = __nccwpck_require__(905);
+var dist_default = /*#__PURE__*/__nccwpck_require__.n(dist);
+// EXTERNAL MODULE: ./node_modules/ajv-formats/dist/index.js
+var ajv_formats_dist = __nccwpck_require__(2815);
+var ajv_formats_dist_default = /*#__PURE__*/__nccwpck_require__.n(ajv_formats_dist);
+// EXTERNAL MODULE: ./node_modules/ajv/dist/2019.js
+var _2019 = __nccwpck_require__(878);
+// EXTERNAL MODULE: ./node_modules/ajv/dist/2020.js
+var _2020 = __nccwpck_require__(2210);
+// EXTERNAL MODULE: external "node:fs"
+var external_node_fs_ = __nccwpck_require__(3024);
+// EXTERNAL MODULE: ./node_modules/yaml/dist/index.js
+var yaml_dist = __nccwpck_require__(8815);
+// EXTERNAL MODULE: ./src/actions-core.ts + 1 modules
+var actions_core = __nccwpck_require__(1499);
+// EXTERNAL MODULE: ./src/functions/file-discovery.ts
+var file_discovery = __nccwpck_require__(5696);
+;// CONCATENATED MODULE: ./src/functions/json-meta-schema.ts
+const BUILT_IN_META_SCHEMA_IDS = new Set([
+    'http://json-schema.org/draft-04/schema',
+    'http://json-schema.org/draft-07/schema',
+    'https://json-schema.org/draft/2019-09/schema',
+    'https://json-schema.org/draft/2020-12/schema'
+]);
+function normalizeSchemaId(id) {
+    return id.replace(/#$/, '');
+}
+function schemaId(schemaValue) {
+    if (typeof schemaValue !== 'object' ||
+        schemaValue === null ||
+        Array.isArray(schemaValue)) {
+        return '';
+    }
+    const schemaRecord = schemaValue;
+    if (typeof schemaRecord.$id === 'string') {
+        return schemaRecord.$id;
+    }
+    if (typeof schemaRecord.id === 'string') {
+        return schemaRecord.id;
+    }
+    return '';
+}
+function builtInMetaSchema(ajv, schemaValue) {
+    const id = schemaId(schemaValue);
+    if (!BUILT_IN_META_SCHEMA_IDS.has(normalizeSchemaId(id))) {
+        return null;
+    }
+    return (ajv.getSchema(id) ??
+        ajv.getSchema(normalizeSchemaId(id)) ??
+        ajv.getSchema(`${normalizeSchemaId(id)}#`) ??
+        null);
+}
+
+;// CONCATENATED MODULE: ./src/functions/json-validator.ts
+
 
 
 
@@ -7972,40 +8018,40 @@ const DRAFT_2019_09 = 'draft-2019-09';
 const DRAFT_2020_12 = 'draft-2020-12';
 const INVALID_JSON_MESSAGE = 'Invalid JSON';
 const CUSTOM_FORMAT_REGEX = /^[\w-]+=.+$/;
-const AjvDraft04 = ((ajv_draft_04__WEBPACK_IMPORTED_MODULE_0___default()) ??
-    ajv_draft_04__WEBPACK_IMPORTED_MODULE_0__);
-const addFormats = ((ajv_formats__WEBPACK_IMPORTED_MODULE_1___default()) ??
-    ajv_formats__WEBPACK_IMPORTED_MODULE_1__);
+const AjvDraft04 = ((dist_default()) ??
+    dist);
+const addFormats = ((ajv_formats_dist_default()) ??
+    ajv_formats_dist);
 async function schema(jsonSchema) {
-    const jsonSchemaVersion = _actions_core_js__WEBPACK_IMPORTED_MODULE_4__/* .core */ .I.getInput('json_schema_version');
-    const strict = _actions_core_js__WEBPACK_IMPORTED_MODULE_4__/* .core */ .I.getBooleanInput('ajv_strict_mode');
-    _actions_core_js__WEBPACK_IMPORTED_MODULE_4__/* .core */ .I.debug(`json_schema_version: ${jsonSchemaVersion}`);
-    _actions_core_js__WEBPACK_IMPORTED_MODULE_4__/* .core */ .I.debug(`strict: ${strict}`);
+    const jsonSchemaVersion = actions_core/* core */.I.getInput('json_schema_version');
+    const strict = actions_core/* core */.I.getBooleanInput('ajv_strict_mode');
+    actions_core/* core */.I.debug(`json_schema_version: ${jsonSchemaVersion}`);
+    actions_core/* core */.I.debug(`strict: ${strict}`);
     let ajv;
     if (jsonSchemaVersion === DRAFT_07) {
-        ajv = new ajv__WEBPACK_IMPORTED_MODULE_6__.Ajv({ allErrors: true, strict: strict });
+        ajv = new dist_ajv.Ajv({ allErrors: true, strict: strict });
     }
     else if (jsonSchemaVersion === DRAFT_04) {
         ajv = new AjvDraft04({ allErrors: true, strict: strict });
     }
     else if (jsonSchemaVersion === DRAFT_2019_09) {
-        ajv = new ajv_dist_2019_js__WEBPACK_IMPORTED_MODULE_7__.Ajv2019({ allErrors: true, strict: strict });
+        ajv = new _2019.Ajv2019({ allErrors: true, strict: strict });
     }
     else if (jsonSchemaVersion === DRAFT_2020_12) {
-        ajv = new ajv_dist_2020_js__WEBPACK_IMPORTED_MODULE_8__.Ajv2020({ allErrors: true, strict: strict });
+        ajv = new _2020.Ajv2020({ allErrors: true, strict: strict });
     }
     else {
-        _actions_core_js__WEBPACK_IMPORTED_MODULE_4__/* .core */ .I.warning(`json_schema_version '${jsonSchemaVersion}' is not supported. Defaulting to '${DRAFT_07}'`);
-        ajv = new ajv__WEBPACK_IMPORTED_MODULE_6__.Ajv({ allErrors: true, strict: strict });
+        actions_core/* core */.I.warning(`json_schema_version '${jsonSchemaVersion}' is not supported. Defaulting to '${DRAFT_07}'`);
+        ajv = new dist_ajv.Ajv({ allErrors: true, strict: strict });
     }
-    if (_actions_core_js__WEBPACK_IMPORTED_MODULE_4__/* .core */ .I.getBooleanInput('use_ajv_formats')) {
-        _actions_core_js__WEBPACK_IMPORTED_MODULE_4__/* .core */ .I.debug('using ajv-formats with json-validator');
+    if (actions_core/* core */.I.getBooleanInput('use_ajv_formats')) {
+        actions_core/* core */.I.debug('using ajv-formats with json-validator');
         addFormats(ajv);
     }
     else {
-        _actions_core_js__WEBPACK_IMPORTED_MODULE_4__/* .core */ .I.debug('ajv-formats will not be used with the json-validator');
+        actions_core/* core */.I.debug('ajv-formats will not be used with the json-validator');
     }
-    _actions_core_js__WEBPACK_IMPORTED_MODULE_4__/* .core */ .I
+    actions_core/* core */.I
         .getMultilineInput('ajv_custom_regexp_formats')
         .filter(Boolean)
         .forEach(customFormat => {
@@ -8025,9 +8071,9 @@ async function schema(jsonSchema) {
         ajv.addFormat(keyValuePair[0], regex);
     });
     const schemaValue = jsonSchema && jsonSchema !== ''
-        ? JSON.parse((0,node_fs__WEBPACK_IMPORTED_MODULE_2__.readFileSync)(jsonSchema, 'utf8'))
+        ? JSON.parse((0,external_node_fs_.readFileSync)(jsonSchema, 'utf8'))
         : true;
-    return ajv.compile(schemaValue);
+    return builtInMetaSchema(ajv, schemaValue) ?? ajv.compile(schemaValue);
 }
 function toValidationError(error, document) {
     const errorValue = {
@@ -8043,18 +8089,18 @@ function toYamlDocuments(data) {
     return data.map(doc => doc.toJS());
 }
 async function jsonValidator(exclude) {
-    const baseDir = _actions_core_js__WEBPACK_IMPORTED_MODULE_4__/* .core */ .I.getInput('base_dir');
-    const jsonExtension = _actions_core_js__WEBPACK_IMPORTED_MODULE_4__/* .core */ .I.getInput('json_extension');
-    const jsonExcludeRegex = _actions_core_js__WEBPACK_IMPORTED_MODULE_4__/* .core */ .I.getInput('json_exclude_regex');
-    const jsonSchema = _actions_core_js__WEBPACK_IMPORTED_MODULE_4__/* .core */ .I.getInput('json_schema');
-    const yamlAsJson = _actions_core_js__WEBPACK_IMPORTED_MODULE_4__/* .core */ .I.getBooleanInput('yaml_as_json');
-    const yamlExtension = _actions_core_js__WEBPACK_IMPORTED_MODULE_4__/* .core */ .I.getInput('yaml_extension');
-    const yamlExtensionShort = _actions_core_js__WEBPACK_IMPORTED_MODULE_4__/* .core */ .I.getInput('yaml_extension_short');
-    const useDotMatch = _actions_core_js__WEBPACK_IMPORTED_MODULE_4__/* .core */ .I.getBooleanInput('use_dot_match');
-    const allowMultipleDocuments = _actions_core_js__WEBPACK_IMPORTED_MODULE_4__/* .core */ .I.getBooleanInput('allow_multiple_documents');
-    const patterns = _actions_core_js__WEBPACK_IMPORTED_MODULE_4__/* .core */ .I.getMultilineInput('files').filter(Boolean);
-    _actions_core_js__WEBPACK_IMPORTED_MODULE_4__/* .core */ .I.debug(`yaml_as_json: ${yamlAsJson}`);
-    let files = (0,_file_discovery_js__WEBPACK_IMPORTED_MODULE_5__/* .discoverExplicitFiles */ .Z)(patterns);
+    const baseDir = actions_core/* core */.I.getInput('base_dir');
+    const jsonExtension = actions_core/* core */.I.getInput('json_extension');
+    const jsonExcludeRegex = actions_core/* core */.I.getInput('json_exclude_regex');
+    const jsonSchema = actions_core/* core */.I.getInput('json_schema');
+    const yamlAsJson = actions_core/* core */.I.getBooleanInput('yaml_as_json');
+    const yamlExtension = actions_core/* core */.I.getInput('yaml_extension');
+    const yamlExtensionShort = actions_core/* core */.I.getInput('yaml_extension_short');
+    const useDotMatch = actions_core/* core */.I.getBooleanInput('use_dot_match');
+    const allowMultipleDocuments = actions_core/* core */.I.getBooleanInput('allow_multiple_documents');
+    const patterns = actions_core/* core */.I.getMultilineInput('files').filter(Boolean);
+    actions_core/* core */.I.debug(`yaml_as_json: ${yamlAsJson}`);
+    let files = (0,file_discovery/* discoverExplicitFiles */.Z)(patterns);
     const baseDirSanitized = baseDir.replace(/\/$/, '');
     const skipRegex = jsonExcludeRegex ? new RegExp(jsonExcludeRegex) : null;
     const validate = await schema(jsonSchema);
@@ -8071,8 +8117,8 @@ async function jsonValidator(exclude) {
         `**/*{${jsonExtension},${yamlGlob}}`
     ];
     const glob = globOptions[Number(yamlAsJson)];
-    _actions_core_js__WEBPACK_IMPORTED_MODULE_4__/* .core */ .I.debug(`json - using baseDir: ${baseDirSanitized}`);
-    _actions_core_js__WEBPACK_IMPORTED_MODULE_4__/* .core */ .I.debug(`json - using glob: ${glob}`);
+    actions_core/* core */.I.debug(`json - using baseDir: ${baseDirSanitized}`);
+    actions_core/* core */.I.debug(`json - using glob: ${glob}`);
     const useExplicitFiles = files.length > 0;
     /* node:coverage disable */
     const discoveryMessages = [
@@ -8081,55 +8127,55 @@ async function jsonValidator(exclude) {
     ][Number(useExplicitFiles)];
     /* node:coverage enable */
     for (const message of discoveryMessages) {
-        _actions_core_js__WEBPACK_IMPORTED_MODULE_4__/* .core */ .I.debug(message);
+        actions_core/* core */.I.debug(message);
     }
     const extensions = yamlAsJson
         ? [jsonExtension, yamlExtension, yamlExtensionShort]
         : [jsonExtension];
     files = useExplicitFiles
         ? files
-        : (0,_file_discovery_js__WEBPACK_IMPORTED_MODULE_5__/* .discoverFilesByExtension */ .n)(baseDirSanitized, extensions, useDotMatch);
+        : (0,file_discovery/* discoverFilesByExtension */.n)(baseDirSanitized, extensions, useDotMatch);
     const processedFiles = new Set();
     for (const fullPath of files) {
-        _actions_core_js__WEBPACK_IMPORTED_MODULE_4__/* .core */ .I.debug(`found file: ${fullPath}`);
+        actions_core/* core */.I.debug(`found file: ${fullPath}`);
         if (jsonSchema !== '' && fullPath.includes(jsonSchema)) {
-            _actions_core_js__WEBPACK_IMPORTED_MODULE_4__/* .core */ .I.debug(`skipping json schema file: ${fullPath}`);
+            actions_core/* core */.I.debug(`skipping json schema file: ${fullPath}`);
             continue;
         }
         if (skipRegex !== null && skipRegex.test(fullPath)) {
-            _actions_core_js__WEBPACK_IMPORTED_MODULE_4__/* .core */ .I.info(`skipping due to exclude match: ${fullPath}`);
+            actions_core/* core */.I.info(`skipping due to exclude match: ${fullPath}`);
             result.skipped++;
             continue;
         }
         if (exclude.isExcluded(fullPath)) {
-            _actions_core_js__WEBPACK_IMPORTED_MODULE_4__/* .core */ .I.info(`skipping due to exclude match: ${fullPath}`);
+            actions_core/* core */.I.info(`skipping due to exclude match: ${fullPath}`);
             result.skipped++;
             continue;
         }
         const isYamlFile = fullPath.endsWith(yamlExtension) || fullPath.endsWith(yamlExtensionShort);
         if (yamlAsJson === false && isYamlFile) {
-            _actions_core_js__WEBPACK_IMPORTED_MODULE_4__/* .core */ .I.debug(`the json-validator found a yaml file so it will be skipped here: '${fullPath}'`);
+            actions_core/* core */.I.debug(`the json-validator found a yaml file so it will be skipped here: '${fullPath}'`);
             continue;
         }
         if (processedFiles.has(fullPath)) {
-            _actions_core_js__WEBPACK_IMPORTED_MODULE_4__/* .core */ .I.debug(`skipping duplicate file: ${fullPath}`);
+            actions_core/* core */.I.debug(`skipping duplicate file: ${fullPath}`);
             continue;
         }
         let data;
         try {
             if (yamlAsJson === true && isYamlFile) {
-                _actions_core_js__WEBPACK_IMPORTED_MODULE_4__/* .core */ .I.debug(`attempting to process yaml file: '${fullPath}' as json`);
+                actions_core/* core */.I.debug(`attempting to process yaml file: '${fullPath}' as json`);
                 data =
                     allowMultipleDocuments === true
-                        ? (0,yaml__WEBPACK_IMPORTED_MODULE_3__/* .parseAllDocuments */ .hR)((0,node_fs__WEBPACK_IMPORTED_MODULE_2__.readFileSync)(fullPath, 'utf8'))
-                        : (0,yaml__WEBPACK_IMPORTED_MODULE_3__/* .parse */ .qg)((0,node_fs__WEBPACK_IMPORTED_MODULE_2__.readFileSync)(fullPath, 'utf8'));
+                        ? (0,yaml_dist/* parseAllDocuments */.hR)((0,external_node_fs_.readFileSync)(fullPath, 'utf8'))
+                        : (0,yaml_dist/* parse */.qg)((0,external_node_fs_.readFileSync)(fullPath, 'utf8'));
             }
             else {
-                data = JSON.parse((0,node_fs__WEBPACK_IMPORTED_MODULE_2__.readFileSync)(fullPath, 'utf8'));
+                data = JSON.parse((0,external_node_fs_.readFileSync)(fullPath, 'utf8'));
             }
         }
         catch {
-            _actions_core_js__WEBPACK_IMPORTED_MODULE_4__/* .core */ .I.error(`❌ failed to parse JSON file: ${fullPath}`);
+            actions_core/* core */.I.error(`❌ failed to parse JSON file: ${fullPath}`);
             result.success = false;
             result.failed++;
             result.violations.push({
@@ -8146,7 +8192,7 @@ async function jsonValidator(exclude) {
         const documents = yamlAsJson === true && allowMultipleDocuments === true
             ? toYamlDocuments(data)
             : [data];
-        _actions_core_js__WEBPACK_IMPORTED_MODULE_4__/* .core */ .I.debug(`${documents.length} object(s) found in file: ${fullPath}`);
+        actions_core/* core */.I.debug(`${documents.length} object(s) found in file: ${fullPath}`);
         let allValid = true;
         const allErrors = [];
         documents.forEach((doc, index) => {
@@ -8158,7 +8204,7 @@ async function jsonValidator(exclude) {
             allErrors.push(...(validate.errors ?? []).map(error => toValidationError(error, allowMultipleDocuments && yamlAsJson === true ? index : undefined)));
         });
         if (!allValid) {
-            _actions_core_js__WEBPACK_IMPORTED_MODULE_4__/* .core */ .I.error(`❌ failed to parse JSON file: ${fullPath}\n${JSON.stringify(allErrors)}`);
+            actions_core/* core */.I.error(`❌ failed to parse JSON file: ${fullPath}\n${JSON.stringify(allErrors)}`);
             result.success = false;
             result.failed++;
             result.violations.push({
@@ -8169,7 +8215,7 @@ async function jsonValidator(exclude) {
         }
         processedFiles.add(fullPath);
         result.passed++;
-        _actions_core_js__WEBPACK_IMPORTED_MODULE_4__/* .core */ .I.info(`${fullPath} is valid`);
+        actions_core/* core */.I.info(`${fullPath} is valid`);
     }
     return result;
 }
@@ -8769,7 +8815,7 @@ __nccwpck_require__.a(module, async (__webpack_handle_async_dependencies__, __we
 /* harmony export */   e: () => (/* binding */ run)
 /* harmony export */ });
 /* harmony import */ var _functions_exclude_js__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(67);
-/* harmony import */ var _functions_json_validator_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(4064);
+/* harmony import */ var _functions_json_validator_js__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(4379);
 /* harmony import */ var _functions_process_results_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(4087);
 /* harmony import */ var _functions_yaml_validator_js__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(9503);
 

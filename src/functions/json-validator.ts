@@ -18,6 +18,7 @@ import {
   discoverExplicitFiles,
   discoverFilesByExtension
 } from './file-discovery.js'
+import {builtInMetaSchema} from './json-meta-schema.js'
 
 const DRAFT_07 = 'draft-07'
 const DRAFT_04 = 'draft-04'
@@ -71,7 +72,6 @@ async function schema(jsonSchema: string): Promise<ValidateFunction> {
       }
 
       const keyValuePair = customFormat.trim().split(/=(.*)/s)
-
       let regex: RegExp
       try {
         regex = new RegExp(keyValuePair[1])
@@ -92,7 +92,7 @@ async function schema(jsonSchema: string): Promise<ValidateFunction> {
       ? JSON.parse(readFileSync(jsonSchema, 'utf8'))
       : true
 
-  return ajv.compile(schemaValue)
+  return builtInMetaSchema(ajv, schemaValue) ?? ajv.compile(schemaValue)
 }
 
 function toValidationError(
