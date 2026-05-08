@@ -1,0 +1,3 @@
+# yaml-language-server: $schema=../schemas/person.schema.json
+name: Grace Hopper
+age: 85

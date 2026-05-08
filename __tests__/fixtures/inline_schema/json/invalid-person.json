@@ -1,0 +1,5 @@
+{
+  "$schema": "../schemas/person.schema.json",
+  "name": "Ada Lovelace",
+  "age": "36"
+}

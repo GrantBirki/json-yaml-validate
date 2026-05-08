@@ -37,6 +37,10 @@ inputs:
     description: YAML list that maps JSON or YAML schema files to explicit file patterns for multi-schema validation.
     required: false
     default: ""
+  use_inline_schema:
+    description: Whether or not to use local inline JSON Schema references in JSON files and YAML language-server schema comments when YAML is validated as JSON - "true" or "false" - Default is "false"
+    required: false
+    default: "false"
   use_dot_match:
     description: Whether or not to use dot-matching when searching for files - "true" or "false" - Default is "true" - If this is true, directories like .github, etc will be searched
     required: false

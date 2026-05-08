@@ -16,6 +16,7 @@ const excludeMock = new Exclude()
 
 beforeEach(() => {
   jest.clearAllMocks()
+  delete process.env.GITHUB_WORKSPACE
   process.env.INPUT_JSON_SCHEMA = '__tests__/fixtures/schemas/schema1.json'
   process.env.INPUT_BASE_DIR = '__tests__/fixtures/json/valid'
   process.env.INPUT_JSON_EXTENSION = '.json'
@@ -31,6 +32,7 @@ beforeEach(() => {
   process.env.INPUT_AJV_CUSTOM_REGEXP_FORMATS = ''
   process.env.INPUT_ALLOW_MULTIPLE_DOCUMENTS = 'false'
   process.env.INPUT_SCHEMA_MAPPINGS = ''
+  process.env.INPUT_USE_INLINE_SCHEMA = 'false'
 })
 
 test('successfully validates a json file with a schema', async () => {
@@ -644,6 +646,372 @@ test('successfully validates json files with multiple schema mappings', async ()
   expect(debugMock).toHaveBeenCalledWith(
     'using schema_mappings for json validation'
   )
+})
+
+test('validates a json file with a local inline schema', async () => {
+  process.env.INPUT_JSON_SCHEMA = ''
+  process.env.INPUT_USE_INLINE_SCHEMA = 'true'
+  process.env.INPUT_FILES =
+    '__tests__/fixtures/inline_schema/json/valid-person.json'
+
+  expect(await jsonValidator(excludeMock)).toStrictEqual({
+    failed: 0,
+    passed: 1,
+    skipped: 0,
+    success: true,
+    violations: []
+  })
+})
+
+test('fails a json file against its local inline schema', async () => {
+  process.env.INPUT_JSON_SCHEMA = ''
+  process.env.INPUT_USE_INLINE_SCHEMA = 'true'
+  process.env.INPUT_FILES =
+    '__tests__/fixtures/inline_schema/json/invalid-person.json'
+
+  expect(await jsonValidator(excludeMock)).toStrictEqual({
+    failed: 1,
+    passed: 0,
+    skipped: 0,
+    success: false,
+    violations: [
+      {
+        file: '__tests__/fixtures/inline_schema/json/invalid-person.json',
+        errors: [
+          {
+            path: '/age',
+            message: 'must be integer'
+          }
+        ]
+      }
+    ]
+  })
+})
+
+test('reuses cached validators for repeated local inline schemas', async () => {
+  process.env.INPUT_JSON_SCHEMA = ''
+  process.env.INPUT_USE_INLINE_SCHEMA = 'true'
+  process.env.INPUT_FILES = [
+    '__tests__/fixtures/inline_schema/json/valid-person.json',
+    '__tests__/fixtures/inline_schema/json/invalid-person.json'
+  ].join('\n')
+
+  expect(await jsonValidator(excludeMock)).toStrictEqual({
+    failed: 1,
+    passed: 1,
+    skipped: 0,
+    success: false,
+    violations: [
+      {
+        file: '__tests__/fixtures/inline_schema/json/invalid-person.json',
+        errors: [
+          {
+            path: '/age',
+            message: 'must be integer'
+          }
+        ]
+      }
+    ]
+  })
+})
+
+test('reports invalid inline schema JSON as file validation failures', async () => {
+  const fs = require('fs')
+  const os = require('os')
+  const path = require('path')
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'inline-schema-'))
+  const schemaFile = path.join(tempDir, 'schema.json')
+  const dataFile = path.join(tempDir, 'data.json')
+
+  fs.writeFileSync(schemaFile, '{')
+  fs.writeFileSync(
+    dataFile,
+    JSON.stringify({
+      $schema: './schema.json',
+      name: 'Ada Lovelace',
+      age: 36
+    })
+  )
+
+  process.env.GITHUB_WORKSPACE = tempDir
+  process.env.INPUT_BASE_DIR = tempDir
+  process.env.INPUT_JSON_SCHEMA = ''
+  process.env.INPUT_USE_INLINE_SCHEMA = 'true'
+  process.env.INPUT_FILES = dataFile
+
+  const result = await jsonValidator(excludeMock)
+
+  expect(result.success).toBe(false)
+  expect(result.failed).toBe(1)
+  expect(result.violations[0].file).toBe(dataFile)
+  expect(result.violations[0].errors[0].path).toBe(null)
+  expect(result.violations[0].errors[0].message).toContain(
+    'Invalid inline schema: Expected property name or'
+  )
+
+  delete process.env.GITHUB_WORKSPACE
+  fs.rmSync(tempDir, {recursive: true, force: true})
+})
+
+test('keeps syntax-only behavior when inline schema mode finds no schema reference', async () => {
+  process.env.INPUT_JSON_SCHEMA = ''
+  process.env.INPUT_USE_INLINE_SCHEMA = 'true'
+  process.env.INPUT_FILES =
+    '__tests__/fixtures/inline_schema/json/no-inline-schema.json'
+
+  expect(await jsonValidator(excludeMock)).toStrictEqual({
+    failed: 0,
+    passed: 1,
+    skipped: 0,
+    success: true,
+    violations: []
+  })
+})
+
+test('explicit json_schema overrides local inline schema references', async () => {
+  process.env.INPUT_JSON_SCHEMA =
+    '__tests__/fixtures/inline_schema/schemas/person-age-string.schema.json'
+  process.env.INPUT_USE_INLINE_SCHEMA = 'true'
+  process.env.INPUT_FILES =
+    '__tests__/fixtures/inline_schema/json/invalid-person.json'
+
+  expect(await jsonValidator(excludeMock)).toStrictEqual({
+    failed: 0,
+    passed: 1,
+    skipped: 0,
+    success: true,
+    violations: []
+  })
+})
+
+test('schema mappings bypass local inline schema references', async () => {
+  process.env.INPUT_JSON_SCHEMA = ''
+  process.env.INPUT_USE_INLINE_SCHEMA = 'true'
+  process.env.INPUT_SCHEMA_MAPPINGS = [
+    '- type: json',
+    '  schema: __tests__/fixtures/inline_schema/schemas/person-age-string.schema.json',
+    '  files:',
+    '    - __tests__/fixtures/inline_schema/json/invalid-person.json'
+  ].join('\n')
+
+  expect(await jsonValidator(excludeMock)).toStrictEqual({
+    failed: 0,
+    passed: 1,
+    skipped: 0,
+    success: true,
+    violations: []
+  })
+})
+
+test('reports invalid local inline schema references as file validation failures', async () => {
+  process.env.INPUT_JSON_SCHEMA = ''
+  process.env.INPUT_USE_INLINE_SCHEMA = 'true'
+  process.env.INPUT_FILES =
+    '__tests__/fixtures/inline_schema/json/missing-schema.json'
+
+  expect(await jsonValidator(excludeMock)).toStrictEqual({
+    failed: 1,
+    passed: 0,
+    skipped: 0,
+    success: false,
+    violations: [
+      {
+        file: '__tests__/fixtures/inline_schema/json/missing-schema.json',
+        errors: [
+          {
+            path: null,
+            message: `Inline schema file does not exist: ${process.cwd()}/__tests__/fixtures/inline_schema/schemas/missing.schema.json`
+          }
+        ]
+      }
+    ]
+  })
+})
+
+test('rejects remote inline json schemas without fetching them', async () => {
+  process.env.INPUT_JSON_SCHEMA = ''
+  process.env.INPUT_USE_INLINE_SCHEMA = 'true'
+  process.env.INPUT_FILES =
+    '__tests__/fixtures/inline_schema/json/remote-schema.json'
+
+  expect(await jsonValidator(excludeMock)).toStrictEqual({
+    failed: 1,
+    passed: 0,
+    skipped: 0,
+    success: false,
+    violations: [
+      {
+        file: '__tests__/fixtures/inline_schema/json/remote-schema.json',
+        errors: [
+          {
+            path: null,
+            message:
+              'Remote inline schemas are not supported: https://example.com/schema.json'
+          }
+        ]
+      }
+    ]
+  })
+})
+
+test('rejects non-string inline json schema references', async () => {
+  process.env.INPUT_JSON_SCHEMA = ''
+  process.env.INPUT_USE_INLINE_SCHEMA = 'true'
+  process.env.INPUT_FILES =
+    '__tests__/fixtures/inline_schema/json/non-string-schema.json'
+
+  expect(await jsonValidator(excludeMock)).toStrictEqual({
+    failed: 1,
+    passed: 0,
+    skipped: 0,
+    success: false,
+    violations: [
+      {
+        file: '__tests__/fixtures/inline_schema/json/non-string-schema.json',
+        errors: [
+          {
+            path: null,
+            message: 'Inline JSON schema reference must be a string'
+          }
+        ]
+      }
+    ]
+  })
+})
+
+test('uses built-in meta-schema validators for inline draft schema urls', async () => {
+  process.env.INPUT_JSON_SCHEMA = ''
+  process.env.INPUT_USE_INLINE_SCHEMA = 'true'
+  process.env.INPUT_FILES =
+    '__tests__/fixtures/inline_schema/json/schema-document-invalid.json'
+
+  const result = await jsonValidator(excludeMock)
+
+  expect(result.success).toBe(false)
+  expect(result.failed).toBe(1)
+  expect(result.violations[0].file).toBe(
+    '__tests__/fixtures/inline_schema/json/schema-document-invalid.json'
+  )
+  expect(result.violations[0].errors).toStrictEqual([
+    {
+      path: '/type',
+      message: 'must be equal to one of the allowed values'
+    },
+    {
+      path: '/type',
+      message: 'must be array'
+    },
+    {
+      path: '/type',
+      message: 'must match a schema in anyOf'
+    }
+  ])
+})
+
+test('uses the matching AJV draft for inline built-in meta-schema urls', async () => {
+  process.env.INPUT_JSON_SCHEMA = ''
+  process.env.INPUT_JSON_SCHEMA_VERSION = 'draft-07'
+  process.env.INPUT_USE_INLINE_SCHEMA = 'true'
+  process.env.INPUT_FILES =
+    '__tests__/fixtures/inline_schema/json/schema-document-2020-valid.json'
+
+  expect(await jsonValidator(excludeMock)).toStrictEqual({
+    failed: 0,
+    passed: 1,
+    skipped: 0,
+    success: true,
+    violations: []
+  })
+
+  expect(debugMock).toHaveBeenCalledWith(
+    'json_schema_version: draft-2020-12'
+  )
+})
+
+test('validates a yaml file with a local inline schema when yaml_as_json is enabled', async () => {
+  process.env.INPUT_JSON_SCHEMA = ''
+  process.env.INPUT_YAML_AS_JSON = 'true'
+  process.env.INPUT_USE_INLINE_SCHEMA = 'true'
+  process.env.INPUT_FILES =
+    '__tests__/fixtures/inline_schema/yaml/valid-person.yaml'
+
+  expect(await jsonValidator(excludeMock)).toStrictEqual({
+    failed: 0,
+    passed: 1,
+    skipped: 0,
+    success: true,
+    violations: []
+  })
+})
+
+test('fails a yaml file against its local inline schema when yaml_as_json is enabled', async () => {
+  process.env.INPUT_JSON_SCHEMA = ''
+  process.env.INPUT_YAML_AS_JSON = 'true'
+  process.env.INPUT_USE_INLINE_SCHEMA = 'true'
+  process.env.INPUT_FILES =
+    '__tests__/fixtures/inline_schema/yaml/invalid-person.yaml'
+
+  expect(await jsonValidator(excludeMock)).toStrictEqual({
+    failed: 1,
+    passed: 0,
+    skipped: 0,
+    success: false,
+    violations: [
+      {
+        file: '__tests__/fixtures/inline_schema/yaml/invalid-person.yaml',
+        errors: [
+          {
+            path: '/age',
+            message: 'must be integer'
+          }
+        ]
+      }
+    ]
+  })
+})
+
+test('yaml inline schemas are ignored by json validation unless yaml_as_json is enabled', async () => {
+  process.env.INPUT_JSON_SCHEMA = ''
+  process.env.INPUT_YAML_AS_JSON = 'false'
+  process.env.INPUT_USE_INLINE_SCHEMA = 'true'
+  process.env.INPUT_FILES =
+    '__tests__/fixtures/inline_schema/yaml/invalid-person.yaml'
+
+  expect(await jsonValidator(excludeMock)).toStrictEqual({
+    failed: 0,
+    passed: 0,
+    skipped: 0,
+    success: true,
+    violations: []
+  })
+})
+
+test('reports document indexes for inline multi-document yaml_as_json failures', async () => {
+  process.env.INPUT_JSON_SCHEMA = ''
+  process.env.INPUT_YAML_AS_JSON = 'true'
+  process.env.INPUT_ALLOW_MULTIPLE_DOCUMENTS = 'true'
+  process.env.INPUT_USE_INLINE_SCHEMA = 'true'
+  process.env.INPUT_FILES =
+    '__tests__/fixtures/inline_schema/yaml/invalid-person-multi.yaml'
+
+  expect(await jsonValidator(excludeMock)).toStrictEqual({
+    failed: 1,
+    passed: 0,
+    skipped: 0,
+    success: false,
+    violations: [
+      {
+        file: '__tests__/fixtures/inline_schema/yaml/invalid-person-multi.yaml',
+        errors: [
+          {
+            document: 1,
+            path: '/age',
+            message: 'must be integer'
+          }
+        ]
+      }
+    ]
+  })
 })
 
 test('fails json files against their mapped schema only', async () => {

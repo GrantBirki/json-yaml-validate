@@ -52,6 +52,20 @@ export interface JsonFileValidationContext {
   result: ValidationResult
   skipRegex: RegExp | null
   validate: ValidateFunction
+  inlineSchemaValidator?: (
+    filePath: string,
+    source: string,
+    data: unknown,
+    isYamlFile: boolean
+  ) => Promise<
+    | {
+        validate: ValidateFunction
+      }
+    | {
+        error: string
+      }
+    | null
+  >
   yamlAsJson: boolean
   yamlExtension: string
   yamlExtensionShort: string
