@@ -52,6 +52,15 @@ jobs:
         with:
           files: __tests__/fixtures/json/valid/json1.json __tests__/fixtures/yaml/valid/yaml1.yaml
 
+      - name: acceptance test - comment on success
+        uses: ./
+        id: json-yaml-validate-comment-on-success-test
+        with:
+          comment_on_success: "true"
+          files: |
+            __tests__/fixtures/json/valid/json1.json
+            __tests__/fixtures/yaml/valid/yaml1.yaml
+
       - name: acceptance test - custom formats
         uses: ./
         id: json-yaml-validate-custom-formats-test

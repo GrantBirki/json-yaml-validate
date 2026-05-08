@@ -8219,7 +8219,25 @@ async function constructBody(jsonResults, yamlResults) {
     }
     return body;
 }
+function constructSuccessBody(jsonResults, yamlResults) {
+    return [
+        '## JSON and YAML Validation Results',
+        '',
+        '✅ All detected JSON and YAML files are valid.',
+        resultSection('JSON', jsonResults),
+        resultSection('YAML', yamlResults)
+    ].join('\n');
+}
 function validationSection(type, results) {
+    return [
+        resultSection(type, results),
+        '**Violations**:',
+        '',
+        ''
+    ].join('\n');
+    /* node:coverage ignore next 2 */
+}
+function resultSection(type, results) {
     return [
         '',
         `### ${type} Validation Results`,
@@ -8227,9 +8245,6 @@ function validationSection(type, results) {
         `- ✅ File(s) Passed: ${results.passed}`,
         `- ❌ File(s) Failed: ${results.failed}`,
         `- ⏭️ File(s) Skipped: ${results.skipped}`,
-        '',
-        '**Violations**:',
-        '',
         ''
     ].join('\n');
     /* node:coverage ignore next 2 */
@@ -8265,22 +8280,29 @@ async function createPullRequestComment(token, pullRequestContext, body) {
         throw new Error(`failed to create PR comment: ${response.status} ${response.statusText}`);
     }
 }
+async function commentOnPullRequest(body) {
+    const pullRequestContext = getPullRequestContext();
+    if (pullRequestContext === null) {
+        return false;
+    }
+    _actions_core_js__WEBPACK_IMPORTED_MODULE_1__/* .core */ .I.info(`📝 adding comment to PR #${pullRequestContext.issueNumber}`);
+    await createPullRequestComment(_actions_core_js__WEBPACK_IMPORTED_MODULE_1__/* .core */ .I.getInput('github_token', { required: true }), pullRequestContext, body);
+    return true;
+}
 async function processResults(jsonResults, yamlResults) {
     const jsonResult = await checkResults(jsonResults, 'JSON');
     const yamlResult = await checkResults(yamlResults, 'YAML');
     if (jsonResult === true && yamlResult === true) {
         _actions_core_js__WEBPACK_IMPORTED_MODULE_1__/* .core */ .I.setOutput('success', SUCCESS_OUTPUT_VALUE);
+        if (_actions_core_js__WEBPACK_IMPORTED_MODULE_1__/* .core */ .I.getBooleanInput('comment_on_success')) {
+            await commentOnPullRequest(constructSuccessBody(jsonResults, yamlResults));
+        }
         return true;
     }
     _actions_core_js__WEBPACK_IMPORTED_MODULE_1__/* .core */ .I.setOutput('success', FAILURE_OUTPUT_VALUE);
     if (_actions_core_js__WEBPACK_IMPORTED_MODULE_1__/* .core */ .I.getBooleanInput('comment')) {
-        const pullRequestContext = getPullRequestContext();
-        if (pullRequestContext === null) {
-            return applyMode();
-        }
         const body = await constructBody(jsonResults, yamlResults);
-        _actions_core_js__WEBPACK_IMPORTED_MODULE_1__/* .core */ .I.info(`📝 adding comment to PR #${pullRequestContext.issueNumber}`);
-        await createPullRequestComment(_actions_core_js__WEBPACK_IMPORTED_MODULE_1__/* .core */ .I.getInput('github_token', { required: true }), pullRequestContext, body);
+        await commentOnPullRequest(body);
     }
     return applyMode();
 }

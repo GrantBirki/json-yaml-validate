@@ -63,7 +63,30 @@ async function constructBody(
   return body
 }
 
+function constructSuccessBody(
+  jsonResults: ValidationResult,
+  yamlResults: ValidationResult
+): string {
+  return [
+    '## JSON and YAML Validation Results',
+    '',
+    '✅ All detected JSON and YAML files are valid.',
+    resultSection('JSON', jsonResults),
+    resultSection('YAML', yamlResults)
+  ].join('\n')
+}
+
 function validationSection(type: 'JSON' | 'YAML', results: ValidationResult) {
+  return [
+    resultSection(type, results),
+    '**Violations**:',
+    '',
+    ''
+  ].join('\n')
+  /* node:coverage ignore next 2 */
+}
+
+function resultSection(type: 'JSON' | 'YAML', results: ValidationResult) {
   return [
     '',
     `### ${type} Validation Results`,
@@ -71,9 +94,6 @@ function validationSection(type: 'JSON' | 'YAML', results: ValidationResult) {
     `- ✅ File(s) Passed: ${results.passed}`,
     `- ❌ File(s) Failed: ${results.failed}`,
     `- ⏭️ File(s) Skipped: ${results.skipped}`,
-    '',
-    '**Violations**:',
-    '',
     ''
   ].join('\n')
   /* node:coverage ignore next 2 */
@@ -133,6 +153,21 @@ async function createPullRequestComment(
   }
 }
 
+async function commentOnPullRequest(body: string): Promise<boolean> {
+  const pullRequestContext = getPullRequestContext()
+  if (pullRequestContext === null) {
+    return false
+  }
+
+  core.info(`📝 adding comment to PR #${pullRequestContext.issueNumber}`)
+  await createPullRequestComment(
+    core.getInput('github_token', {required: true}),
+    pullRequestContext,
+    body
+  )
+  return true
+}
+
 export async function processResults(
   jsonResults: ValidationResult,
   yamlResults: ValidationResult
@@ -142,25 +177,17 @@ export async function processResults(
 
   if (jsonResult === true && yamlResult === true) {
     core.setOutput('success', SUCCESS_OUTPUT_VALUE)
+    if (core.getBooleanInput('comment_on_success')) {
+      await commentOnPullRequest(constructSuccessBody(jsonResults, yamlResults))
+    }
     return true
   }
 
   core.setOutput('success', FAILURE_OUTPUT_VALUE)
 
   if (core.getBooleanInput('comment')) {
-    const pullRequestContext = getPullRequestContext()
-    if (pullRequestContext === null) {
-      return applyMode()
-    }
-
     const body = await constructBody(jsonResults, yamlResults)
-
-    core.info(`📝 adding comment to PR #${pullRequestContext.issueNumber}`)
-    await createPullRequestComment(
-      core.getInput('github_token', {required: true}),
-      pullRequestContext,
-      body
-    )
+    await commentOnPullRequest(body)
   }
 
   return applyMode()

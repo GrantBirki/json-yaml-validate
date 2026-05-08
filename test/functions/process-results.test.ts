@@ -71,6 +71,7 @@ beforeEach(() => {
   process.env.INPUT_MODE = 'fail'
   process.env.INPUT_GITHUB_TOKEN = 'faketoken'
   process.env.INPUT_COMMENT = 'false'
+  process.env.INPUT_COMMENT_ON_SUCCESS = 'false'
   process.env.GITHUB_REPOSITORY = 'corp/test'
   process.env.GITHUB_API_URL = 'https://api.github.com'
   global.fetch = jest.fn().mockResolvedValue({
@@ -119,6 +120,7 @@ test('successfully processes the results with no JSON or YAML failures', async (
     '✅ all 5 detected YAML files are valid'
   )
   expect(setOutputMock).toHaveBeenCalledWith('success', 'true')
+  expect(global.fetch).not.toHaveBeenCalled()
 })
 
 test('successfully processes the results with no JSON or YAML detected files', async () => {
@@ -130,6 +132,66 @@ test('successfully processes the results with no JSON or YAML detected files', a
   ).toBe(true)
   expect(infoMock).toHaveBeenCalledWith('🔎 no JSON files were detected')
   expect(infoMock).toHaveBeenCalledWith('🔎 no YAML files were detected')
+  expect(setOutputMock).toHaveBeenCalledWith('success', 'true')
+})
+
+test('comments on pull requests when all validations pass and comment_on_success is enabled', async () => {
+  process.env.INPUT_COMMENT_ON_SUCCESS = 'true'
+
+  expect(
+    await processResults(
+      {success: true, failed: 0, passed: 12, skipped: 2, violations: []},
+      {success: true, failed: 0, passed: 5, skipped: 1, violations: []}
+    )
+  ).toBe(true)
+
+  expect(setOutputMock).toHaveBeenCalledWith('success', 'true')
+  expect(infoMock).toHaveBeenCalledWith('📝 adding comment to PR #123')
+  expect(global.fetch).toHaveBeenCalledWith(
+    'https://api.github.com/repos/corp/test/issues/123/comments',
+    expect.objectContaining({
+      method: 'POST',
+      headers: expect.objectContaining({
+        authorization: 'Bearer faketoken',
+        'content-type': 'application/json',
+        'user-agent': 'json-yaml-validate-action'
+      })
+    })
+  )
+
+  const requestBody = JSON.parse(global.fetch.mock.calls[0][1].body)
+  const commentBody = requestBody.body
+  expect(commentBody).toContain('✅ All detected JSON and YAML files are valid.')
+  expect(commentBody).toContain('### JSON Validation Results')
+  expect(commentBody).toContain('- ✅ File(s) Passed: 12')
+  expect(commentBody).toContain('- ❌ File(s) Failed: 0')
+  expect(commentBody).toContain('- ⏭️ File(s) Skipped: 2')
+  expect(commentBody).toContain('### YAML Validation Results')
+  expect(commentBody).toContain('- ✅ File(s) Passed: 5')
+  expect(commentBody).toContain('- ⏭️ File(s) Skipped: 1')
+  expect(commentBody).not.toContain('**Violations**:')
+  expect(setFailedMock).not.toHaveBeenCalled()
+})
+
+test('does not comment on success outside a pull request', async () => {
+  process.env.INPUT_COMMENT_ON_SUCCESS = 'true'
+  writeEvent({
+    push: {
+      ref: 'refs/heads/main'
+    },
+    repository: {
+      full_name: 'corp/test'
+    }
+  })
+
+  expect(
+    await processResults(
+      {success: true, failed: 0, passed: 2, skipped: 0, violations: []},
+      {success: true, failed: 0, passed: 1, skipped: 0, violations: []}
+    )
+  ).toBe(true)
+
+  expect(global.fetch).not.toHaveBeenCalled()
   expect(setOutputMock).toHaveBeenCalledWith('success', 'true')
 })
 
