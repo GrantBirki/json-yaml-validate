@@ -1456,6 +1456,36 @@ test('edge case: schema file skipping logic', async () => {
   )
 })
 
+test('does not skip json files whose path only contains the schema path', async () => {
+  const fs = require('fs')
+  const os = require('os')
+  const path = require('path')
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'json-schema-skip-'))
+  const schemaFile = path.join(tempDir, 'schema.json')
+  const dataFile = path.join(tempDir, 'schema.json-target.json')
+
+  fs.writeFileSync(schemaFile, '{}')
+  fs.writeFileSync(dataFile, '{"ok": true}')
+
+  process.env.INPUT_JSON_SCHEMA = schemaFile
+  process.env.INPUT_FILES = dataFile
+  process.env.INPUT_BASE_DIR = '.'
+
+  expect(await jsonValidator(excludeMock)).toStrictEqual({
+    failed: 0,
+    passed: 1,
+    skipped: 0,
+    success: true,
+    violations: []
+  })
+
+  expect(debugMock).not.toHaveBeenCalledWith(
+    `skipping json schema file: ${dataFile}`
+  )
+
+  fs.rmSync(tempDir, {recursive: true, force: true})
+})
+
 test('stress test: large number of custom regex formats', async () => {
   const formats = []
   for (let i = 0; i < 10; i++) {

@@ -534,7 +534,10 @@ test('updates the latest existing validation comment when update_comment is enab
       json: async () => [
         {
           id: 456,
-          body: '## JSON and YAML Validation Results\nold results'
+          body: '## JSON and YAML Validation Results\nold results',
+          user: {
+            login: 'github-actions[bot]'
+          }
         }
       ]
     })
@@ -574,6 +577,58 @@ test('updates the latest existing validation comment when update_comment is enab
   expect(requestBody.body).toContain('<!-- json-yaml-validate-comment -->')
   expect(requestBody.body).toContain(JSON.stringify(jsonViolations, null, 2))
   expect(infoMock).toHaveBeenCalledWith('📝 updated comment on PR #123')
+  expect(setFailedMock).toHaveBeenCalledWith(
+    '❌ JSON or YAML files failed validation'
+  )
+})
+
+test('creates a new validation comment when existing matches are not from github-actions bot', async () => {
+  process.env.INPUT_COMMENT = 'true'
+  process.env.INPUT_UPDATE_COMMENT = 'true'
+
+  global.fetch
+    .mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      statusText: 'OK',
+      json: async () => [
+        {
+          id: 456,
+          body: '<!-- json-yaml-validate-comment -->\nold results',
+          user: {
+            login: 'octocat'
+          }
+        }
+      ]
+    })
+    .mockResolvedValueOnce({
+      ok: true,
+      status: 201,
+      statusText: 'Created'
+    })
+
+  expect(
+    await processResults(
+      {
+        success: false,
+        failed: 2,
+        passed: 1,
+        skipped: 3,
+        violations: jsonViolations
+      },
+      {success: true, failed: 0, passed: 4, skipped: 5, violations: []}
+    )
+  ).toBe(false)
+
+  expect(global.fetch.mock.calls[0][0]).toBe(
+    'https://api.github.com/repos/corp/test/issues/123/comments?per_page=100&page=1'
+  )
+  expect(global.fetch.mock.calls[0][1].method).toBe('GET')
+  expect(global.fetch.mock.calls[1][0]).toBe(
+    'https://api.github.com/repos/corp/test/issues/123/comments'
+  )
+  expect(global.fetch.mock.calls[1][1].method).toBe('POST')
+  expect(infoMock).toHaveBeenCalledWith('📝 created comment on PR #123')
   expect(setFailedMock).toHaveBeenCalledWith(
     '❌ JSON or YAML files failed validation'
   )

@@ -10,6 +10,7 @@ const DEFAULT_GITHUB_API_URL = 'https://api.github.com'
 const GITHUB_API_VERSION = '2022-11-28'
 const COMMENT_MARKER = '<!-- json-yaml-validate-comment -->'
 const COMMENT_HEADER = '## JSON and YAML Validation Results'
+const GITHUB_ACTIONS_BOT_LOGIN = 'github-actions[bot]'
 
 async function checkResults(
   results: ValidationResult,
@@ -107,6 +108,9 @@ function resultSection(type: 'JSON' | 'YAML', results: ValidationResult) {
 interface PullRequestComment {
   body?: string | null
   id: number
+  user?: {
+    login?: string | null
+  } | null
 }
 
 function commentsUrl(pullRequestContext: PullRequestContext): string {
@@ -140,6 +144,13 @@ function isValidationComment(comment: PullRequestComment): boolean {
   return (
     comment.body?.includes(COMMENT_MARKER) === true ||
     comment.body?.startsWith(COMMENT_HEADER) === true
+  )
+}
+
+function isUpdatableValidationComment(comment: PullRequestComment): boolean {
+  return (
+    comment.user?.login === GITHUB_ACTIONS_BOT_LOGIN &&
+    isValidationComment(comment)
   )
 }
 
@@ -210,7 +221,7 @@ async function findPullRequestComment(
 
     const comments = (await response.json()) as PullRequestComment[]
     for (const comment of comments) {
-      if (isValidationComment(comment)) {
+      if (isUpdatableValidationComment(comment)) {
         matchingCommentId = comment.id
       }
     }

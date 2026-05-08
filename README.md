@@ -41,7 +41,7 @@ Here is a quick example of how to install this action in any workflow:
 | `mode` | `false` | `"fail"` | The mode to run the action in `"warn"` or `"fail"` |
 | `comment` | `false` | `"false"` | Whether or not to comment on a PR with the validation results - `"true"` or `"false"` |
 | `comment_on_success` | `false` | `"false"` | Whether or not to comment on a PR when all validation checks pass - `"true"` or `"false"` |
-| `update_comment` | `false` | `"false"` | Whether or not to update an existing validation results PR comment instead of creating a new one - `"true"` or `"false"` |
+| `update_comment` | `false` | `"false"` | Whether or not to update an existing validation results PR comment authored by `github-actions[bot]` instead of creating a new one - `"true"` or `"false"` |
 | `base_dir` | `false` | `"."` | The base directory to search for JSON and YAML files (e.g. ./src) - Default is `"."` which searches the entire repository |
 | `files` | `false` | `""` | List of file paths to validate. File paths may be newline-delimited or provided as a single space-separated line. |
 | `schema_mappings` | `false` | `""` | YAML list that maps JSON or YAML schema files to explicit file patterns for multi-schema validation |
@@ -134,6 +134,10 @@ jobs:
 The resulting comment will look like this:
 
 ![comment-example](docs/assets/comment-example.png)
+
+When `update_comment` is set to `"true"`, the action only updates an existing
+validation results comment authored by `github-actions[bot]`. If no matching
+bot-authored validation comment exists, it creates a new comment instead.
 
 ### Schema Validation
 

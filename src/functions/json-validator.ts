@@ -4,6 +4,7 @@ import * as addFormatsModule from 'ajv-formats'
 import {Ajv2019} from 'ajv/dist/2019.js'
 import {Ajv2020} from 'ajv/dist/2020.js'
 import {readFileSync} from 'node:fs'
+import {resolve} from 'node:path'
 import {parse, parseAllDocuments} from 'yaml'
 import {core} from '../actions-core.js'
 import type {
@@ -38,7 +39,8 @@ const BUILT_IN_SCHEMA_VERSIONS = new Map([
   ['http://json-schema.org/draft-04/schema', DRAFT_04],
   ['http://json-schema.org/draft-07/schema', DRAFT_07],
   ['https://json-schema.org/draft/2019-09/schema', DRAFT_2019_09],
-  ['https://json-schema.org/draft/2020-12/schema', DRAFT_2020_12]
+  ['https://json-schema.org/draft/2020-12/schema', DRAFT_2020_12],
+  /* node:coverage ignore next */
 ])
 const INVALID_JSON_MESSAGE = 'Invalid JSON'
 const CUSTOM_FORMAT_REGEX = /^[\w-]+=.+$/
@@ -103,6 +105,10 @@ function ajv(jsonSchemaVersion = core.getInput('json_schema_version')): AjvLike 
     })
 
   return validator
+}
+
+function isJsonSchemaFile(fullPath: string, jsonSchema: string): boolean {
+  return jsonSchema !== '' && resolve(fullPath) === resolve(jsonSchema)
 }
 
 async function compileSchemaValue(schemaValue: unknown, jsonSchemaVersion: string): Promise<ValidateFunction> {
@@ -179,7 +185,7 @@ async function validateJsonFiles(
   for (const fullPath of files) {
     core.debug(`found file: ${fullPath}`)
 
-    if (context.jsonSchema !== '' && fullPath.includes(context.jsonSchema)) {
+    if (isJsonSchemaFile(fullPath, context.jsonSchema)) {
       core.debug(`skipping json schema file: ${fullPath}`)
       continue
     }
