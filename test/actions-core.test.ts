@@ -62,11 +62,13 @@ test('reads multiline inputs and filters blank lines', () => {
 test('emits GitHub command output for logs and legacy outputs', () => {
   core.debug('a%b\nc')
   core.error(new Error('bad'))
+  core.info('plain log')
   core.warning('heads:tails,comma')
   core.setOutput('result', 'ok')
 
   expect(logMock).toHaveBeenCalledWith('::debug::a%25b%0Ac')
   expect(logMock).toHaveBeenCalledWith('::error::bad')
+  expect(logMock).toHaveBeenCalledWith('plain log')
   expect(logMock).toHaveBeenCalledWith('::warning::heads:tails,comma')
   expect(logMock).toHaveBeenCalledWith('::set-output name=result::ok')
 })

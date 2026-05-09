@@ -490,6 +490,34 @@ test('constructs a pull request comment body with both violation sections', asyn
   expect(commentBody).toContain(JSON.stringify(yamlViolations, null, 2))
 })
 
+test('uses the event repository when GITHUB_REPOSITORY is not set for comments', async () => {
+  process.env.INPUT_COMMENT = 'true'
+  delete process.env.GITHUB_REPOSITORY
+
+  expect(
+    await processResults(
+      {
+        success: false,
+        failed: 1,
+        passed: 0,
+        skipped: 0,
+        violations: jsonViolations
+      },
+      {success: true, failed: 0, passed: 1, skipped: 0, violations: []}
+    )
+  ).toBe(false)
+
+  expect(global.fetch).toHaveBeenCalledWith(
+    'https://api.github.com/repos/corp/test/issues/123/comments',
+    expect.objectContaining({
+      method: 'POST'
+    })
+  )
+  expect(setFailedMock).toHaveBeenCalledWith(
+    '❌ JSON or YAML files failed validation'
+  )
+})
+
 test('fails when pull request comment creation fails', async () => {
   process.env.INPUT_COMMENT = 'true'
   global.fetch.mockResolvedValueOnce({
