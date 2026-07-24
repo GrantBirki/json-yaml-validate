@@ -39,5 +39,8 @@
     "@vercel/ncc": "^0.38.4",
     "tsx": "^4.21.0",
     "typescript": "^6.0.3"
+  },
+  "overrides": {
+    "fast-uri": "3.1.4"
   }
 }
