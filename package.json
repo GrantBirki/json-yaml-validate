@@ -32,12 +32,12 @@
     "ajv-draft-04": "^1.0.0",
     "ajv-formats": "^3.0.1",
     "ignore": "^7.0.5",
-    "yaml": "^2.8.4"
+    "yaml": "^2.9.0"
   },
   "devDependencies": {
-    "@types/node": "^25.6.0",
-    "@vercel/ncc": "^0.38.4",
-    "tsx": "^4.22.4",
+    "@types/node": "^26.1.0",
+    "@vercel/ncc": "^0.44.1",
+    "tsx": "^4.23.0",
     "typescript": "^6.0.3"
   },
   "overrides": {
