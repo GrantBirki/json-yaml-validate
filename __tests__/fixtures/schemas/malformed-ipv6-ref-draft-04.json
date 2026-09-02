@@ -1,0 +1,10 @@
+{
+  "id": "https://schema.example/root",
+  "definitions": {
+    "local": {
+      "id": "http://[::]/schema",
+      "type": "object"
+    }
+  },
+  "$ref": "http://[::not-valid]/schema"
+}

@@ -561,6 +561,8 @@ Current native replacements:
 Keep `@vercel/ncc` as a dev dependency. GitHub Actions execute the committed
 bundle, and `tsc` alone does not bundle runtime dependencies into `dist/`.
 
+TypeScript is pinned to `6.0.3` because `@vercel/ncc` `0.44.1` fails to bundle with TypeScript 7 (`Cannot read properties of undefined (reading 'fileExists')`). Verify bundler compatibility before upgrading TypeScript.
+
 ## Coding Style
 
 - Use strict TypeScript and ES module syntax.
