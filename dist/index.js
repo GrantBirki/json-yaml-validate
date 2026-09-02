@@ -8469,6 +8469,9 @@ async function jsonValidator(exclude) {
         return result;
     }
     let files = (0,file_discovery/* discoverExplicitFiles */.Z)(patterns);
+    if (patterns.length > 0 && files.length === 0) {
+        throw new Error('files input matched no files');
+    }
     const baseDirSanitized = baseDir.replace(/\/$/, '');
     const inlineSchemaValidators = new Map();
     const inlineSchemaValidator = useInlineSchema && jsonSchema === ''
@@ -9463,6 +9466,9 @@ async function yamlValidator(exclude) {
         return result;
     }
     let files = (0,file_discovery/* discoverExplicitFiles */.Z)(patterns);
+    if (patterns.length > 0 && files.length === 0) {
+        throw new Error('files input matched no files');
+    }
     const baseDirSanitized = baseDir.replace(/\/$/, '');
     const glob = `**/*.{${yamlExtension.replace('.', '')},${yamlExtensionShort.replace('.', '')}}`;
     actions_core/* core */.I.debug(`yaml - using baseDir: ${baseDirSanitized}`);

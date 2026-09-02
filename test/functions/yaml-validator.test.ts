@@ -255,6 +255,7 @@ test('successfully validates yaml files when files is a flat space-separated lis
 
 test('successfully validates yaml files with multiple schema mappings', async () => {
   process.env.INPUT_BASE_DIR = '__tests__/fixtures/yaml/invalid'
+  process.env.INPUT_FILES = '__tests__/fixtures/does-not-exist/**/*.yaml'
   process.env.INPUT_YAML_SCHEMA = '__tests__/fixtures/schemas/schema2.yml'
   process.env.INPUT_SCHEMA_MAPPINGS = [
     '- type: json',
@@ -654,17 +655,57 @@ test('skips json files when yaml_as_json is false', async () => {
   )
 })
 
-test('falls back to base_dir discovery when explicit yaml file globs match nothing', async () => {
-  process.env.INPUT_FILES = '__tests__/fixtures/does-not-exist/**/*.yaml'
-  process.env.INPUT_BASE_DIR = '__tests__/fixtures/yaml/valid'
+test('rejects explicit yaml file patterns that match nothing', async () => {
+  const missing = '__tests__/fixtures/does-not-exist'
+  for (const files of [
+    `${missing}/**/*.yaml`,
+    `${missing}/first.yaml\n${missing}/second.yml`,
+    `${missing}/first.yaml ${missing}/second.yml`,
+    '- */not_matching*.yaml'
+  ]) {
+    process.env.INPUT_FILES = files
 
-  expect(await yamlValidator(excludeMock)).toStrictEqual({
-    failed: 0,
-    passed: 1,
-    skipped: 0,
-    success: true,
-    violations: []
-  })
+    await expect(yamlValidator(excludeMock)).rejects.toThrow(
+      'files input matched no files'
+    )
+  }
+  expect(infoMock).not.toHaveBeenCalled()
+})
+
+test('discovers yaml files when files is omitted, empty, or whitespace-only', async () => {
+  for (const files of [undefined, '', ' \n\t ']) {
+    if (files === undefined) {
+      delete process.env.INPUT_FILES
+    } else {
+      process.env.INPUT_FILES = files
+    }
+
+    expect(await yamlValidator(excludeMock)).toStrictEqual({
+      failed: 0,
+      passed: 1,
+      skipped: 0,
+      success: true,
+      violations: []
+    })
+  }
+})
+
+test('validates matched yaml files when other patterns match nothing', async () => {
+  process.env.INPUT_BASE_DIR = '__tests__/fixtures/yaml/invalid'
+  for (const separator of ['\n', ' ']) {
+    process.env.INPUT_FILES = [
+      '__tests__/fixtures/does-not-exist/**/*.yaml',
+      '__tests__/fixtures/yaml/valid/yaml1.yaml'
+    ].join(separator)
+
+    expect(await yamlValidator(excludeMock)).toStrictEqual({
+      failed: 0,
+      passed: 1,
+      skipped: 0,
+      success: true,
+      violations: []
+    })
+  }
 })
 
 test('files input validates yaml outside base_dir', async () => {

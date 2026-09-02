@@ -51,6 +51,28 @@ jobs:
         with:
           files: __tests__/fixtures/json/valid/json1.json __tests__/fixtures/yaml/valid/yaml1.yaml
 
+      - name: acceptance test - empty files uses base_dir
+        uses: ./
+        with:
+          base_dir: __tests__/fixtures/yaml/valid
+          use_gitignore: "false"
+          files: ""
+
+      - name: acceptance test - unmatched files fails
+        uses: ./
+        id: unmatched_files
+        continue-on-error: true
+        with:
+          base_dir: __tests__/fixtures/yaml/valid
+          use_gitignore: "false"
+          files: __tests__/fixtures/does-not-exist/**/*.{json,yaml,yml}
+
+      - name: assert unmatched files fails
+        if: ${{ steps.unmatched_files.outcome != 'failure' }}
+        run: |
+          echo "unmatched files should fail instead of scanning base_dir"
+          exit 1
+
       - name: acceptance test - custom formats
         uses: ./
         id: json-yaml-validate-custom-formats-test

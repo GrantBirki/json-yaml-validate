@@ -47,7 +47,7 @@ the action ref.
 | `comment_on_success` | `false` | `"false"` | Whether or not to comment on a PR when all validation checks pass - `"true"` or `"false"` |
 | `update_comment` | `false` | `"false"` | Whether or not to update an existing validation results PR comment authored by `github-actions[bot]` instead of creating a new one - `"true"` or `"false"` |
 | `base_dir` | `false` | `"."` | The base directory to search for JSON and YAML files (e.g. ./src) - Default is `"."` which searches the entire repository. The directory must resolve inside the workspace. |
-| `files` | `false` | `""` | List of file paths to validate. File paths may be newline-delimited or provided as a single space-separated line. Matched files must resolve to regular files inside the workspace. |
+| `files` | `false` | `""` | List of file paths to validate. File paths may be newline-delimited or provided as a single space-separated line. Empty input uses `base_dir` discovery; non-empty input with no matches fails. Matched files must resolve to regular files inside the workspace. |
 | `schema_mappings` | `false` | `""` | YAML list that maps JSON or YAML schema files to explicit file patterns for multi-schema validation |
 | `use_inline_schema` | `false` | `"false"` | Whether or not to use local inline JSON Schema references in JSON files and YAML language-server schema comments when YAML is validated as JSON |
 | `use_dot_match` | `false` | `"true"` | Whether or not to use dot-matching when searching for files - `"true"` or `"false"` - If this is true, directories like `.github`, etc will be searched |
@@ -109,6 +109,22 @@ jobs:
         id: json-yaml-validate
         uses: GrantBirki/json-yaml-validate@v5
 ```
+
+### Selecting Files
+
+Use `files` to select file paths or glob patterns. A multiline value is a string with one pattern per line, without YAML list markers (`-`):
+
+```yaml
+- uses: GrantBirki/json-yaml-validate@v5
+  with:
+    files: |
+      data/*.json
+      config/*.yaml
+```
+
+When `files` is omitted, empty, or whitespace-only, the action discovers JSON and YAML files under `base_dir`. Otherwise, at least one pattern must match a path. If newline-delimited patterns match nothing, a single non-empty line is also tried as a whitespace-delimited list. If there are still no matches, the action fails with `files input matched no files`, including in `mode: warn`. When some patterns match and others do not, only the matched files are processed. Existing exclusions still apply after matching.
+
+This replaces the previous behavior where unmatched patterns fell back to scanning `base_dir`. To intentionally scan a directory, leave `files` empty and set `base_dir`. When `schema_mappings` is set, its mappings remain authoritative and the top-level `files` input is ignored.
 
 ### Pull Request Comment
 

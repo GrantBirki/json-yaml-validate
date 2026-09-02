@@ -636,6 +636,7 @@ test('successfully validates json files with a schema when files is a flat space
 
 test('successfully validates json files with multiple schema mappings', async () => {
   process.env.INPUT_BASE_DIR = '__tests__/fixtures/json/invalid'
+  process.env.INPUT_FILES = '__tests__/fixtures/does-not-exist/**/*.json'
   process.env.INPUT_JSON_SCHEMA = '__tests__/fixtures/schemas/schema2.json'
   process.env.INPUT_SCHEMA_MAPPINGS = [
     '- type: json',
@@ -1799,18 +1800,65 @@ test('edge case: malformed JSON in real file', async () => {
   fs.rmSync(tempDir, {recursive: true, force: true})
 })
 
-test('falls back to base_dir discovery when explicit json file globs match nothing', async () => {
-  process.env.INPUT_JSON_SCHEMA = ''
-  process.env.INPUT_FILES = '__tests__/fixtures/does-not-exist/**/*.json'
-  process.env.INPUT_BASE_DIR = '__tests__/fixtures/json/valid'
+test('rejects explicit json file patterns that match nothing', async () => {
+  const missing = '__tests__/fixtures/does-not-exist'
+  for (const files of [
+    `${missing}/**/*.json`,
+    `${missing}/first.json\n${missing}/second.json`,
+    `${missing}/first.json ${missing}/second.json`
+  ]) {
+    process.env.INPUT_FILES = files
 
-  expect(await jsonValidator(excludeMock)).toStrictEqual({
-    failed: 0,
-    passed: 1,
-    skipped: 0,
-    success: true,
-    violations: []
-  })
+    await expect(jsonValidator(excludeMock)).rejects.toThrow(
+      'files input matched no files'
+    )
+  }
+  expect(infoMock).not.toHaveBeenCalled()
+})
+
+test('rejects unmatched yaml patterns in yaml_as_json mode', async () => {
+  process.env.INPUT_YAML_AS_JSON = 'true'
+  process.env.INPUT_FILES = '*/not_matching*.yaml'
+
+  await expect(jsonValidator(excludeMock)).rejects.toThrow(
+    'files input matched no files'
+  )
+})
+
+test('discovers json files when files is omitted, empty, or whitespace-only', async () => {
+  for (const files of [undefined, '', ' \n\t ']) {
+    if (files === undefined) {
+      delete process.env.INPUT_FILES
+    } else {
+      process.env.INPUT_FILES = files
+    }
+
+    expect(await jsonValidator(excludeMock)).toStrictEqual({
+      failed: 0,
+      passed: 1,
+      skipped: 0,
+      success: true,
+      violations: []
+    })
+  }
+})
+
+test('validates matched json files when other patterns match nothing', async () => {
+  process.env.INPUT_BASE_DIR = '__tests__/fixtures/json/invalid'
+  for (const separator of ['\n', ' ']) {
+    process.env.INPUT_FILES = [
+      '__tests__/fixtures/does-not-exist/**/*.json',
+      '__tests__/fixtures/json/valid/json1.json'
+    ].join(separator)
+
+    expect(await jsonValidator(excludeMock)).toStrictEqual({
+      failed: 0,
+      passed: 1,
+      skipped: 0,
+      success: true,
+      violations: []
+    })
+  }
 })
 
 test('files input validates json outside base_dir', async () => {
