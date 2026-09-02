@@ -6883,6 +6883,15 @@ const sanitizeRange = range => range.replace(
     : EMPTY
 )
 
+// > An optional `!` or `^` at the start of a class negates it, so that it
+// >   matches any character not in the set. (gitignore(5), fnmatch(3))
+// The leading `^` has already been escaped to `\^` by the metacharacter
+//   escaper, so we strip the literal `!` or escaped `^` and emit a single
+//   regex `^` which is the JavaScript negation token.
+const negateRange = range => range.startsWith('!') || range.startsWith('\\^')
+  ? `^${range.slice(range[0] === '!' ? 1 : 2)}`
+  : range
+
 // See fixtures #59
 const cleanRangeBackSlash = slashes => {
   const {length} = slashes
@@ -6987,7 +6996,7 @@ const REPLACERS = [
     // > "**/foo/bar" matches file or directory "bar" anywhere that is directly
     // >   under directory "foo".
     // Notice that the '*'s have been replaced as '\\*'
-    /^\^*\\\*\\\*\\\//,
+    /^\^*(?:\\\*\\\*\\\/)+/,
 
     // '**/foo' <-> 'foo'
     () => '^(?:.*\\/)?'
@@ -7098,7 +7107,7 @@ const REPLACERS = [
           // A normal case, and it is a range notation
           // '[bar]'
           // '[bar\\\\]'
-          ? `[${sanitizeRange(range)}${endEscape}]`
+          ? `[${negateRange(sanitizeRange(range))}${endEscape}]`
           // Invalid range notaton
           // '[bar\\]' -> '[bar\\\\]'
           : '[]'
@@ -9555,8 +9564,23 @@ module.exports = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("process");
 
 
 
-const { normalizeIPv6, removeDotSegments, recomposeAuthority, normalizePercentEncoding, normalizePathEncoding, escapePreservingEscapes, reescapeHostDelimiters, isIPv4, nonSimpleDomain } = __nccwpck_require__(5077)
+const { normalizeIPv6, removeDotSegments, recomposeAuthority, normalizePercentEncoding, normalizePathEncoding, serializePathEncoding, normalizeQueryFragmentEncoding, encodeQuery, encodeFragment, reescapeHostDelimiters, isIPv4, nonSimpleDomain } = __nccwpck_require__(5077)
 const { SCHEMES, getSchemeHandler } = __nccwpck_require__(5300)
+
+const VALID_SCHEME = /^[A-Za-z][A-Za-z0-9+.-]*$/u
+const MALFORMED_SCHEME_ERROR = 'URI scheme is malformed.'
+
+/**
+ * @param {string} scheme
+ * @returns {string}
+ */
+function decodeValidScheme (scheme) {
+  const decodedScheme = unescape(String(scheme))
+  if (!VALID_SCHEME.test(decodedScheme)) {
+    throw new TypeError(MALFORMED_SCHEME_ERROR)
+  }
+  return decodedScheme
+}
 
 /**
  * @template {import('./types/index').URIComponent|string} T
@@ -9581,12 +9605,50 @@ function normalize (uri, options) {
  */
 function resolve (baseURI, relativeURI, options) {
   const schemelessOptions = options ? Object.assign({ scheme: 'null' }, options) : { scheme: 'null' }
-  const { parsed: baseParsed, malformedAuthorityOrPort: baseMalformed } = parseWithStatus(baseURI, schemelessOptions)
-  const { parsed: relativeParsed, malformedAuthorityOrPort: relativeMalformed } = parseWithStatus(relativeURI, schemelessOptions)
-  if (baseMalformed || relativeMalformed) {
+  const {
+    parsed: baseParsed,
+    malformedAuthorityOrPort: baseMalformed,
+    malformedPercentEncoding: baseMalformedPercentEncoding,
+    malformedSchemeSpecific: baseMalformedSchemeSpecific,
+    malformedHost: baseMalformedHost,
+    malformedScheme: baseMalformedScheme
+  } = parseWithStatus(baseURI, schemelessOptions)
+  const {
+    parsed: relativeParsed,
+    malformedAuthorityOrPort: relativeMalformed,
+    malformedPercentEncoding: relativeMalformedPercentEncoding,
+    malformedSchemeSpecific: relativeMalformedSchemeSpecific,
+    malformedHost: relativeMalformedHost,
+    malformedScheme: relativeMalformedScheme
+  } = parseWithStatus(relativeURI, schemelessOptions)
+  if (
+    baseMalformed ||
+    relativeMalformed ||
+    baseMalformedPercentEncoding ||
+    relativeMalformedPercentEncoding ||
+    baseMalformedSchemeSpecific ||
+    relativeMalformedSchemeSpecific ||
+    baseMalformedHost ||
+    relativeMalformedHost ||
+    baseMalformedScheme ||
+    relativeMalformedScheme
+  ) {
     throw new Error(baseParsed.error || relativeParsed.error || 'URI is malformed.')
   }
   const resolved = resolveComponent(baseParsed, relativeParsed, schemelessOptions, true)
+  const resolvedSchemeHandler = getSchemeHandler((options && options.scheme) || resolved.scheme)
+  const resolvedHost = resolved.host
+  const resolvedHostIsIP = resolvedHost !== undefined && resolvedHost !== '' &&
+    (isIPv4(resolvedHost) || normalizeIPv6(resolvedHost).isIPV6)
+  canonicalizeHost(resolved, options || {}, resolvedSchemeHandler, resolvedHostIsIP)
+  // Percent escapes in an ASCII reg-name are encoded data. The WHATWG hostname
+  // parser can reject them even though fast-uri preserves them safely as RFC
+  // 3986 data. A raw non-ASCII host must still fail closed if conversion fails.
+  const encodedASCIIHost = resolvedHost && resolvedHost.indexOf('%') !== -1 &&
+    !/\P{ASCII}/u.test(resolvedHost)
+  if (resolved.error && !encodedASCIIHost) {
+    throw new Error(resolved.error)
+  }
   schemelessOptions.skipEscape = true
   return serialize(resolved, schemelessOptions)
 }
@@ -9669,7 +9731,7 @@ function equal (uriA, uriB, options) {
   const normalizedA = normalizeComparableURI(uriA, options)
   const normalizedB = normalizeComparableURI(uriB, options)
 
-  return normalizedA !== undefined && normalizedB !== undefined && normalizedA.toLowerCase() === normalizedB.toLowerCase()
+  return normalizedA !== undefined && normalizedB !== undefined && normalizedA === normalizedB
 }
 
 /**
@@ -9697,25 +9759,30 @@ function serialize (cmpts, opts) {
   const options = Object.assign({}, opts)
   const uriTokens = []
 
+  if (component.scheme) {
+    component.scheme = decodeValidScheme(component.scheme)
+  }
+
   // find scheme handler
   const schemeHandler = getSchemeHandler(options.scheme || component.scheme)
 
   // perform scheme specific serialization
   if (schemeHandler && schemeHandler.serialize) schemeHandler.serialize(component, options)
 
+  const hasAuthority = component.userinfo !== undefined || component.host !== undefined || component.port !== undefined
+  const pathNoScheme = !options.skipEscape && component.scheme === undefined && !hasAuthority
+
   if (component.path !== undefined) {
     if (!options.skipEscape) {
-      component.path = escapePreservingEscapes(component.path)
-
-      if (component.scheme !== undefined) {
-        component.path = component.path.split('%3A').join(':')
-      }
+      component.path = serializePathEncoding(component.path, pathNoScheme)
     } else {
       component.path = normalizePercentEncoding(component.path)
     }
   }
 
   if (options.reference !== 'suffix' && component.scheme) {
+    // Scheme handlers may replace the scheme during serialization.
+    component.scheme = decodeValidScheme(component.scheme)
     uriTokens.push(component.scheme, ':')
   }
 
@@ -9738,6 +9805,13 @@ function serialize (cmpts, opts) {
       s = removeDotSegments(s)
     }
 
+    // Dot-segment removal can expose a colon that was not originally in the
+    // first segment (for example, "./a:b"). Reapply path-noscheme encoding so
+    // the serialized relative reference cannot be reparsed as a URI scheme.
+    if (pathNoScheme) {
+      s = serializePathEncoding(s, true)
+    }
+
     if (
       authority === undefined &&
       s[0] === '/' &&
@@ -9751,11 +9825,11 @@ function serialize (cmpts, opts) {
   }
 
   if (component.query !== undefined) {
-    uriTokens.push('?', component.query)
+    uriTokens.push('?', encodeQuery(component.query))
   }
 
   if (component.fragment !== undefined) {
-    uriTokens.push('#', component.fragment)
+    uriTokens.push('#', encodeFragment(component.fragment))
   }
   return uriTokens.join('')
 }
@@ -9793,9 +9867,73 @@ function getParseError (parsed, matches) {
 }
 
 /**
+ * Checks percent syntax without decoding the represented octets. RFC 3986
+ * percent-encoding is byte-oriented, so sequences such as `%FF` are valid even
+ * though they are not independently valid UTF-8.
+ *
+ * @param {string|undefined} component
+ * @returns {boolean}
+ */
+function hasMalformedPercentEncoding (component) {
+  if (component === undefined) return false
+
+  let percent = component.indexOf('%')
+  while (percent !== -1) {
+    if (percent + 2 >= component.length || !/^[\da-f]{2}$/iu.test(component.slice(percent + 1, percent + 3))) {
+      return true
+    }
+    percent = component.indexOf('%', percent + 3)
+  }
+
+  return false
+}
+
+/**
+ * @param {RegExpMatchArray} matches
+ * @returns {boolean}
+ */
+function hasMalformedComponentPercentEncoding (matches) {
+  // Bracketed IP literals use a raw "%" as the zone separator for historical
+  // compatibility. Their parsing is intentionally left to normalizeIPv6.
+  const host = matches[4]
+  return hasMalformedPercentEncoding(matches[3]) ||
+    (host !== undefined && !(host[0] === '[' && host[host.length - 1] === ']') && hasMalformedPercentEncoding(host)) ||
+    hasMalformedPercentEncoding(matches[6]) ||
+    hasMalformedPercentEncoding(matches[7]) ||
+    hasMalformedPercentEncoding(matches[8])
+}
+
+/**
+ * @param {import('./types/index').URIComponent} parsed
+ * @param {import('./types/index').Options} options
+ * @param {{ domainHost?: boolean, unicodeSupport?: boolean }|undefined} schemeHandler
+ * @param {boolean} isIP
+ * @returns {boolean} whether host conversion failed
+ */
+function canonicalizeHost (parsed, options, schemeHandler, isIP) {
+  if (
+    !options.unicodeSupport &&
+    (!schemeHandler || !schemeHandler.unicodeSupport) &&
+    parsed.host &&
+    parsed.host[0] !== '[' &&
+    (options.domainHost || (schemeHandler && schemeHandler.domainHost)) &&
+    isIP === false &&
+    nonSimpleDomain(parsed.host)
+  ) {
+    try {
+      parsed.host = new URL('http://' + parsed.host).hostname
+    } catch (e) {
+      parsed.error = parsed.error || "Host's domain name can not be converted to ASCII: " + e
+      return true
+    }
+  }
+  return false
+}
+
+/**
  * @param {string} uri
  * @param {import('./types/index').Options} [opts]
- * @returns {{ parsed: import('./types/index').URIComponent, malformedAuthorityOrPort: boolean }}
+ * @returns {{ parsed: import('./types/index').URIComponent, malformedAuthorityOrPort: boolean, malformedPercentEncoding: boolean, malformedSchemeSpecific: boolean, malformedHost: boolean, malformedScheme: boolean }}
  */
 function parseWithStatus (uri, opts) {
   const options = Object.assign({}, opts)
@@ -9811,6 +9949,11 @@ function parseWithStatus (uri, opts) {
   }
 
   let malformedAuthorityOrPort = false
+  let malformedPercentEncoding = false
+  let malformedSchemeSpecific = false
+  let malformedHost = false
+  let malformedIPLiteral = false
+  let malformedScheme = false
 
   let isIP = false
   if (options.reference === 'suffix') {
@@ -9868,6 +10011,21 @@ function parseWithStatus (uri, opts) {
     parsed.query = matches[7]
     parsed.fragment = matches[8]
 
+    if (parsed.scheme !== undefined) {
+      const decodedScheme = unescape(parsed.scheme)
+      if (VALID_SCHEME.test(decodedScheme)) {
+        parsed.scheme = decodedScheme.toLowerCase()
+      } else {
+        parsed.error = parsed.error || MALFORMED_SCHEME_ERROR
+        malformedScheme = true
+      }
+    }
+
+    malformedPercentEncoding = hasMalformedComponentPercentEncoding(matches)
+    if (malformedPercentEncoding) {
+      parsed.error = parsed.error || 'URI contains malformed percent-encoding.'
+    }
+
     // fix port number
     if (isNaN(parsed.port)) {
       parsed.port = matches[5]
@@ -9882,9 +10040,16 @@ function parseWithStatus (uri, opts) {
     if (parsed.host) {
       const ipv4result = isIPv4(parsed.host)
       if (ipv4result === false) {
+        const bracketedIPLiteral = parsed.host[0] === '[' && parsed.host[parsed.host.length - 1] === ']'
         const ipv6result = normalizeIPv6(parsed.host)
-        parsed.host = ipv6result.host.toLowerCase()
-        isIP = ipv6result.isIPV6
+        isIP = ipv6result.isIPV6 || ipv6result.isIPVFuture === true
+        malformedIPLiteral = bracketedIPLiteral && ipv6result.error === true
+        parsed.host = isIP ? ipv6result.host : ipv6result.host.toLowerCase()
+
+        if (malformedIPLiteral) {
+          parsed.error = parsed.error || 'URI host is malformed.'
+          malformedAuthorityOrPort = true
+        }
       } else {
         isIP = true
       }
@@ -9907,49 +10072,38 @@ function parseWithStatus (uri, opts) {
     // find scheme handler
     const schemeHandler = getSchemeHandler(options.scheme || parsed.scheme)
 
-    // check if scheme can't handle IRIs
-    if (!options.unicodeSupport && (!schemeHandler || !schemeHandler.unicodeSupport)) {
-      // if host component is a domain name
-      if (parsed.host && (options.domainHost || (schemeHandler && schemeHandler.domainHost)) && isIP === false && nonSimpleDomain(parsed.host)) {
-        // convert Unicode IDN -> ASCII IDN
-        try {
-          parsed.host = new URL('http://' + parsed.host).hostname
-        } catch (e) {
-          parsed.error = parsed.error || "Host's domain name can not be converted to ASCII: " + e
-        }
-      }
-      // convert IRI -> URI
-    }
+    // convert Unicode IDN -> ASCII IDN when the effective scheme uses domain hosts
+    malformedHost = canonicalizeHost(parsed, options, schemeHandler, isIP)
 
     if (!schemeHandler || (schemeHandler && !schemeHandler.skipNormalize)) {
       if (uri.indexOf('%') !== -1) {
-        if (parsed.scheme !== undefined) {
-          parsed.scheme = unescape(parsed.scheme)
-        }
-        if (parsed.host !== undefined) {
-          parsed.host = reescapeHostDelimiters(unescape(parsed.host), isIP)
+        if (parsed.host !== undefined && !malformedIPLiteral) {
+          const host = isIP ? parsed.host : normalizePercentEncoding(parsed.host, true)
+          parsed.host = reescapeHostDelimiters(host, isIP)
         }
       }
       if (parsed.path) {
         parsed.path = normalizePathEncoding(parsed.path)
       }
+      if (parsed.query) {
+        parsed.query = normalizeQueryFragmentEncoding(parsed.query)
+      }
       if (parsed.fragment) {
-        try {
-          parsed.fragment = encodeURI(decodeURIComponent(parsed.fragment))
-        } catch {
-          parsed.error = parsed.error || 'URI malformed'
-        }
+        parsed.fragment = normalizeQueryFragmentEncoding(parsed.fragment)
       }
     }
 
     // perform scheme specific parsing
     if (schemeHandler && schemeHandler.parse) {
       schemeHandler.parse(parsed, options)
+      if (schemeHandler === SCHEMES.urn && parsed.nid === undefined) {
+        malformedSchemeSpecific = true
+      }
     }
   } else {
     parsed.error = parsed.error || 'URI can not be parsed.'
   }
-  return { parsed, malformedAuthorityOrPort }
+  return { parsed, malformedAuthorityOrPort, malformedPercentEncoding, malformedSchemeSpecific, malformedHost, malformedScheme }
 }
 
 /**
@@ -9973,13 +10127,17 @@ function normalizeString (uri, opts) {
 /**
  * @param {string} uri
  * @param {import('./types/index').Options} [opts]
- * @returns {{ normalized: string, malformedAuthorityOrPort: boolean }}
+ * @returns {{ normalized: string, malformedAuthorityOrPort: boolean, malformedPercentEncoding: boolean, malformedSchemeSpecific: boolean, malformedHost: boolean, malformedScheme: boolean }}
  */
 function normalizeStringWithStatus (uri, opts) {
-  const { parsed, malformedAuthorityOrPort } = parseWithStatus(uri, opts)
+  const { parsed, malformedAuthorityOrPort, malformedPercentEncoding, malformedSchemeSpecific, malformedHost, malformedScheme } = parseWithStatus(uri, opts)
   return {
-    normalized: malformedAuthorityOrPort ? uri : serialize(parsed, opts),
-    malformedAuthorityOrPort
+    normalized: malformedAuthorityOrPort || malformedPercentEncoding || malformedSchemeSpecific || malformedHost || malformedScheme ? uri : serialize(parsed, opts),
+    malformedAuthorityOrPort,
+    malformedPercentEncoding,
+    malformedSchemeSpecific,
+    malformedHost,
+    malformedScheme
   }
 }
 
@@ -9989,14 +10147,18 @@ function normalizeStringWithStatus (uri, opts) {
  * @returns {string|undefined}
  */
 function normalizeComparableURI (uri, opts) {
-  if (typeof uri === 'string') {
-    const { normalized, malformedAuthorityOrPort } = normalizeStringWithStatus(uri, opts)
-    return malformedAuthorityOrPort ? undefined : normalized
+  if (typeof uri !== 'string' && typeof uri !== 'object') {
+    return undefined
   }
 
-  if (typeof uri === 'object') {
-    return serialize(uri, opts)
+  let value
+  try {
+    value = typeof uri === 'string' ? uri : serialize(uri, opts)
+  } catch {
+    return undefined
   }
+  const { normalized, malformedAuthorityOrPort, malformedPercentEncoding, malformedSchemeSpecific, malformedHost, malformedScheme } = normalizeStringWithStatus(value, opts)
+  return malformedAuthorityOrPort || malformedPercentEncoding || malformedSchemeSpecific || malformedHost || malformedScheme ? undefined : normalized
 }
 
 const fastUri = {
@@ -10022,7 +10184,7 @@ module.exports.fastUri = fastUri
 
 
 const { isUUID } = __nccwpck_require__(5077)
-const URN_REG = /([\da-z][\d\-a-z]{0,31}):((?:[\w!$'()*+,\-.:;=@]|%[\da-f]{2})+)/iu
+const URN_REG = /^([\da-z][\d\-a-z]{0,31}):((?:[\w!$'()*+,\-./:;=@]|%[\da-f]{2})+)$/iu
 
 const supportedSchemeNames = /** @type {const} */ (['http', 'https', 'ws',
   'wss', 'urn', 'urn:uuid'])
@@ -10134,9 +10296,14 @@ function wsSerialize (wsComponent) {
 
   // reconstruct path from resource name
   if (wsComponent.resourceName) {
-    const [path, query] = wsComponent.resourceName.split('?')
+    const queryIndex = wsComponent.resourceName.indexOf('?')
+    const path = queryIndex === -1
+      ? wsComponent.resourceName
+      : wsComponent.resourceName.slice(0, queryIndex)
     wsComponent.path = (path && path !== '/' ? path : undefined)
-    wsComponent.query = query
+    wsComponent.query = queryIndex === -1
+      ? undefined
+      : wsComponent.resourceName.slice(queryIndex + 1)
     wsComponent.resourceName = undefined
   }
 
@@ -10153,7 +10320,7 @@ function urnParse (urnComponent, options) {
     return urnComponent
   }
   const matches = urnComponent.path.match(URN_REG)
-  if (matches) {
+  if (matches && matches[0] === urnComponent.path) {
     const scheme = options.scheme || urnComponent.scheme || 'urn'
     urnComponent.nid = matches[1].toLowerCase()
     urnComponent.nss = matches[2]
@@ -10308,7 +10475,36 @@ const isHexPair = RegExp.prototype.test.bind(/^[\da-f]{2}$/iu)
 const isUnreserved = RegExp.prototype.test.bind(/^[\da-z\-._~]$/iu)
 
 /** @type {(value: string) => boolean} */
-const isPathCharacter = RegExp.prototype.test.bind(/^[\da-z\-._~!$&'()*+,;=:@/]$/iu)
+const isPathCharacter = RegExp.prototype.test.bind(/^[A-Za-z0-9\-._~!$&'()*+,;=:@/]$/u)
+
+/** @type {(value: string) => boolean} */
+const isQueryFragmentCharacter = RegExp.prototype.test.bind(/^[A-Za-z0-9\-._~!$&'()*+,;=:@/?]$/u)
+
+/** @type {(value: string) => boolean} */
+const isUserinfoCharacter = RegExp.prototype.test.bind(/^[A-Za-z0-9\-._~!$&'()*+,;=:]$/u)
+
+const BYTE_HEX = new Array(256)
+{
+  const HEX_DIGITS = '0123456789ABCDEF'
+  for (let i = 0; i < 256; i++) {
+    BYTE_HEX[i] = '%' + HEX_DIGITS[i >> 4] + HEX_DIGITS[i & 0xF]
+  }
+}
+function percentEncodeNonAscii (cp) {
+  if (cp < 0x800) {
+    return BYTE_HEX[0xC0 | (cp >> 6)] +
+           BYTE_HEX[0x80 | (cp & 0x3F)]
+  }
+  if (cp < 0x10000) {
+    return BYTE_HEX[0xE0 | (cp >> 12)] +
+           BYTE_HEX[0x80 | ((cp >> 6) & 0x3F)] +
+           BYTE_HEX[0x80 | (cp & 0x3F)]
+  }
+  return BYTE_HEX[0xF0 | (cp >> 18)] +
+         BYTE_HEX[0x80 | ((cp >> 12) & 0x3F)] +
+         BYTE_HEX[0x80 | ((cp >> 6) & 0x3F)] +
+         BYTE_HEX[0x80 | (cp & 0x3F)]
+}
 
 /**
  * @param {Array<string>} input
@@ -10341,12 +10537,14 @@ function stringArrayToHexStripped (input) {
   return acc
 }
 
-/**
- * @typedef {Object} GetIPV6Result
- * @property {boolean} error - Indicates if there was an error parsing the IPv6 address.
- * @property {string} address - The parsed IPv6 address.
- * @property {string} [zone] - The zone identifier, if present.
- */
+/** @type {(value: string) => boolean} */
+const isHextet = RegExp.prototype.test.bind(/^[\dA-Fa-f]{1,4}$/)
+
+/** @type {(value: string) => boolean} */
+const isIPvFuture = RegExp.prototype.test.bind(/^[vV][\dA-Fa-f]+\.[A-Za-z\d\-._~!$&'()*+,;=:]+$/)
+
+/** @type {(value: string) => boolean} */
+const isZoneCharacter = RegExp.prototype.test.bind(/^[A-Za-z\d\-._~]$/)
 
 /**
  * @param {string} value
@@ -10355,88 +10553,104 @@ function stringArrayToHexStripped (input) {
 const nonSimpleDomain = RegExp.prototype.test.bind(/[^!"$&'()*+,\-.;=_`a-z{}~]/u)
 
 /**
- * @param {Array<string>} buffer
+ * @param {string} zone
  * @returns {boolean}
  */
-function consumeIsZone (buffer) {
-  buffer.length = 0
-  return true
-}
+function isZoneIdentifier (zone) {
+  if (zone.length === 0) return false
 
-/**
- * @param {Array<string>} buffer
- * @param {Array<string>} address
- * @param {GetIPV6Result} output
- * @returns {boolean}
- */
-function consumeHextets (buffer, address, output) {
-  if (buffer.length) {
-    const hex = stringArrayToHexStripped(buffer)
-    if (hex !== '') {
-      address.push(hex)
-    } else {
-      output.error = true
-      return false
+  for (let i = 0; i < zone.length; i++) {
+    if (isZoneCharacter(zone[i])) continue
+    if (zone[i] === '%' && i + 2 < zone.length && isHexPair(zone.slice(i + 1, i + 3))) {
+      i += 2
+      continue
     }
-    buffer.length = 0
+    return false
   }
+
   return true
 }
 
 /**
+ * Compresses the longest run of zero hextets to "::" per RFC 5952. A run of a
+ * single zero hextet is left uncompressed. On ties the leftmost run wins.
+ *
+ * @param {string[]} hextets
+ * @returns {string}
+ */
+function compressIPv6ZeroRun (hextets) {
+  let bestStart = -1
+  let bestLength = 0
+  let runStart = -1
+  let runLength = 0
+  for (let i = 0; i < hextets.length; i++) {
+    if (hextets[i] === '0') {
+      if (runStart === -1) runStart = i
+      runLength++
+      if (runLength > bestLength) {
+        bestLength = runLength
+        bestStart = runStart
+      }
+    } else {
+      runStart = -1
+      runLength = 0
+    }
+  }
+
+  if (bestLength < 2) return hextets.join(':')
+
+  const head = hextets.slice(0, bestStart).join(':')
+  const tail = hextets.slice(bestStart + bestLength).join(':')
+  return head + '::' + tail
+}
+
+/**
+ * Validates an IPv6 address against the alternatives in RFC 3986 section
+ * 3.2.2 and returns the same address with leading hextet zeroes removed.
+ * An embedded IPv4 address counts as two hextets and is only valid at the end.
+ *
  * @param {string} input
- * @returns {GetIPV6Result}
+ * @returns {string|undefined}
  */
-function getIPV6 (input) {
-  let tokenCount = 0
-  const output = { error: false, address: '', zone: '' }
-  /** @type {Array<string>} */
-  const address = []
-  /** @type {Array<string>} */
-  const buffer = []
-  let endipv6Encountered = false
-  let endIpv6 = false
+function normalizeIPv6Address (input) {
+  const compression = input.indexOf('::')
+  if (compression !== -1 && input.indexOf('::', compression + 1) !== -1) return undefined
 
-  let consume = consumeHextets
+  const left = compression === -1 ? input.split(':') : input.slice(0, compression).split(':')
+  const right = compression === -1 ? [] : input.slice(compression + 2).split(':')
+  if (compression !== -1) {
+    if (left.length === 1 && left[0] === '') left.length = 0
+    if (right.length === 1 && right[0] === '') right.length = 0
+  }
 
-  for (let i = 0; i < input.length; i++) {
-    const cursor = input[i]
-    if (cursor === '[' || cursor === ']') { continue }
-    if (cursor === ':') {
-      if (endipv6Encountered === true) {
-        endIpv6 = true
-      }
-      if (!consume(buffer, address, output)) { break }
-      if (++tokenCount > 7) {
-        // not valid
-        output.error = true
-        break
-      }
-      if (i > 0 && input[i - 1] === ':') {
-        endipv6Encountered = true
-      }
-      address.push(':')
-      continue
-    } else if (cursor === '%') {
-      if (!consume(buffer, address, output)) { break }
-      // switch to zone detection
-      consume = consumeIsZone
-    } else {
-      buffer.push(cursor)
+  const parts = left.concat(right)
+  let hextetCount = 0
+  for (let i = 0; i < parts.length; i++) {
+    const part = parts[i]
+    if (part === '') return undefined
+
+    if (part.indexOf('.') !== -1) {
+      if (i !== parts.length - 1 || (compression !== -1 && right.length === 0) || !isIPv4(part)) return undefined
+      hextetCount += 2
       continue
     }
+
+    if (!isHextet(part)) return undefined
+    parts[i] = parseInt(part, 16).toString(16)
+    hextetCount++
   }
-  if (buffer.length) {
-    if (consume === consumeIsZone) {
-      output.zone = buffer.join('')
-    } else if (endIpv6) {
-      address.push(buffer.join(''))
-    } else {
-      address.push(stringArrayToHexStripped(buffer))
-    }
+
+  if (compression === -1) {
+    if (hextetCount !== 8) return undefined
+    return compressIPv6ZeroRun(parts)
   }
-  output.address = address.join('')
-  return output
+  if (hextetCount >= 8) return undefined
+
+  // expand "::" then re-compress the longest run for a canonical result
+  const expanded = parts.slice(0, left.length)
+  for (let i = hextetCount; i < 8; i++) expanded.push('0')
+  for (let i = left.length; i < parts.length; i++) expanded.push(parts[i])
+  return compressIPv6ZeroRun(expanded)
 }
 
 /**
@@ -10444,26 +10658,49 @@ function getIPV6 (input) {
  * @property {string} host - The normalized host.
  * @property {string} [escapedHost] - The escaped host.
  * @property {boolean} isIPV6 - Indicates if the host is an IPv6 address.
+ * @property {boolean} [isIPVFuture] - Indicates if the host is an IPvFuture literal.
+ * @property {boolean} [error] - Indicates if a bracketed IP literal is malformed.
  */
 
 /**
+ * Validates and normalizes a bracketed IP literal. Raw zone separators remain
+ * accepted for backwards compatibility, while encoded separators and zone
+ * contents follow RFC 6874.
+ *
  * @param {string} host
  * @returns {NormalizeIPv6Result}
  */
 function normalizeIPv6 (host) {
-  if (findToken(host, ':') < 2) { return { host, isIPV6: false } }
-  const ipv6 = getIPV6(host)
+  const bracketed = host[0] === '[' && host[host.length - 1] === ']'
+  const hasBracket = host[0] === '[' || host[host.length - 1] === ']'
+  if (hasBracket && !bracketed) return { host, isIPV6: false, error: true }
 
-  if (!ipv6.error) {
-    let newHost = ipv6.address
-    let escapedHost = ipv6.address
-    if (ipv6.zone) {
-      newHost += '%' + ipv6.zone
-      escapedHost += '%25' + ipv6.zone
-    }
-    return { host: newHost, isIPV6: true, escapedHost }
-  } else {
-    return { host, isIPV6: false }
+  let input = bracketed ? host.slice(1, -1) : host
+  if (bracketed && isIPvFuture(input)) {
+    input = input.toLowerCase()
+    return { host: `[${input}]`, escapedHost: input, isIPV6: false, isIPVFuture: true }
+  }
+
+  if (findToken(input, ':') < 2) {
+    return { host, isIPV6: false, error: bracketed }
+  }
+
+  let zoneIdentifier = ''
+  const zoneSeparator = input.indexOf('%')
+  if (zoneSeparator !== -1) {
+    const separatorLength = input.slice(zoneSeparator, zoneSeparator + 3).toLowerCase() === '%25' ? 3 : 1
+    zoneIdentifier = input.slice(zoneSeparator + separatorLength)
+    if (!isZoneIdentifier(zoneIdentifier)) return { host, isIPV6: false, error: true }
+    input = input.slice(0, zoneSeparator)
+  }
+
+  const address = normalizeIPv6Address(input)
+  if (address === undefined) return { host, isIPV6: false, error: true }
+
+  return {
+    host: address + (zoneIdentifier ? '%' + zoneIdentifier : ''),
+    escapedHost: address + (zoneIdentifier ? '%25' + zoneIdentifier : ''),
+    isIPV6: true
   }
 }
 
@@ -10589,7 +10826,7 @@ function reescapeHostDelimiters (host, isIP) {
 
 /**
  * Normalizes percent escapes and optionally decodes only unreserved ASCII bytes.
- * Reserved delimiters such as `%2F` and `%2E` stay escaped.
+ * Reserved delimiters such as `%2F` stay escaped; `%2E` is unreserved.
  *
  * @param {string} input
  * @param {boolean} [decodeUnreserved=false]
@@ -10638,7 +10875,8 @@ function normalizePathEncoding (input) {
   let output = ''
 
   for (let i = 0; i < input.length; i++) {
-    if (input[i] === '%' && i + 2 < input.length) {
+    const ch = input[i]
+    if (ch === '%' && i + 2 < input.length) {
       const hex = input.slice(i + 1, i + 3)
       if (isHexPair(hex)) {
         const normalizedHex = hex.toUpperCase()
@@ -10655,10 +10893,225 @@ function normalizePathEncoding (input) {
       }
     }
 
-    if (isPathCharacter(input[i])) {
-      output += input[i]
+    if (isPathCharacter(ch)) {
+      output += ch
     } else {
-      output += escape(input[i])
+      const code = input.charCodeAt(i)
+      if (code < 0x80) {
+        output += isEscapeSafe(code) ? ch : BYTE_HEX[code]
+      } else if (code < 0xD800 || code > 0xDFFF) {
+        output += percentEncodeNonAscii(code)
+      } else if (code <= 0xDBFF && i + 1 < input.length) {
+        const low = input.charCodeAt(i + 1)
+        if (low >= 0xDC00 && low <= 0xDFFF) {
+          output += percentEncodeNonAscii(0x10000 + ((code - 0xD800) << 10) + (low - 0xDC00))
+          i++
+        } else {
+          output += percentEncodeNonAscii(0xFFFD)
+        }
+      } else {
+        output += percentEncodeNonAscii(0xFFFD)
+      }
+    }
+  }
+
+  return output
+}
+
+/**
+ * Serializes a path without rewriting reserved data. Raw RFC 3986 path
+ * characters remain literal, valid escapes are preserved and uppercased, and
+ * everything else is UTF-8 percent-encoded. In a path-noscheme, a colon in the
+ * first segment must be escaped so the result cannot be parsed as a scheme.
+ *
+ * @param {string} input
+ * @param {boolean} [pathNoScheme=false]
+ * @returns {string}
+ */
+function serializePathEncoding (input, pathNoScheme = false) {
+  let output = ''
+  let firstSegment = pathNoScheme && input[0] !== '/'
+
+  for (let i = 0; i < input.length; i++) {
+    const ch = input[i]
+    if (ch === '%' && i + 2 < input.length) {
+      const hex = input.slice(i + 1, i + 3)
+      if (isHexPair(hex)) {
+        output += '%' + hex.toUpperCase()
+        i += 2
+        continue
+      }
+    }
+
+    if (ch === '/') {
+      firstSegment = false
+    }
+
+    if (isPathCharacter(ch) && (ch !== ':' || !firstSegment)) {
+      output += ch
+    } else {
+      const code = input.charCodeAt(i)
+      if (code < 0x80) {
+        output += BYTE_HEX[code]
+      } else if (code < 0xD800 || code > 0xDFFF) {
+        output += percentEncodeNonAscii(code)
+      } else if (code <= 0xDBFF && i + 1 < input.length) {
+        const low = input.charCodeAt(i + 1)
+        if (low >= 0xDC00 && low <= 0xDFFF) {
+          output += percentEncodeNonAscii(0x10000 + ((code - 0xD800) << 10) + (low - 0xDC00))
+          i++
+        } else {
+          output += percentEncodeNonAscii(0xFFFD)
+        }
+      } else {
+        output += percentEncodeNonAscii(0xFFFD)
+      }
+    }
+  }
+
+  return output
+}
+
+/**
+ * Percent-encodes a URI component using its RFC 3986 literal character set.
+ * Existing valid escapes are preserved and normalized to uppercase hex.
+ *
+ * @param {string} input
+ * @param {(value: string) => boolean} isAllowed
+ * @returns {string}
+ */
+function encodeComponent (input, isAllowed) {
+  let output = ''
+
+  for (let i = 0; i < input.length; i++) {
+    const ch = input[i]
+    if (ch === '%' && i + 2 < input.length) {
+      const hex = input.slice(i + 1, i + 3)
+      if (isHexPair(hex)) {
+        output += '%' + hex.toUpperCase()
+        i += 2
+        continue
+      }
+    }
+
+    if (isAllowed(ch)) {
+      output += ch
+    } else {
+      const code = input.charCodeAt(i)
+      if (code < 0x80) {
+        output += BYTE_HEX[code]
+      } else if (code < 0xD800 || code > 0xDFFF) {
+        output += percentEncodeNonAscii(code)
+      } else if (code <= 0xDBFF && i + 1 < input.length) {
+        const low = input.charCodeAt(i + 1)
+        if (low >= 0xDC00 && low <= 0xDFFF) {
+          output += percentEncodeNonAscii(0x10000 + ((code - 0xD800) << 10) + (low - 0xDC00))
+          i++
+        } else {
+          output += percentEncodeNonAscii(0xFFFD)
+        }
+      } else {
+        output += percentEncodeNonAscii(0xFFFD)
+      }
+    }
+  }
+
+  return output
+}
+
+/**
+ * Encodes userinfo while preserving its RFC 3986 §3.2.1 literal characters.
+ * In particular, authority delimiters such as `@`, `/`, `?`, and `#` are data.
+ *
+ * @param {string} input
+ * @returns {string}
+ */
+function encodeUserinfo (input) {
+  return encodeComponent(input, isUserinfoCharacter)
+}
+
+/**
+ * Encodes query data using the RFC 3986 §3.4 grammar. A literal `#` must be
+ * escaped because it would otherwise begin the fragment component.
+ *
+ * @param {string} input
+ * @returns {string}
+ */
+function encodeQuery (input) {
+  return encodeComponent(input, isQueryFragmentCharacter)
+}
+
+/**
+ * Encodes fragment data using the RFC 3986 §3.5 grammar.
+ *
+ * @param {string} input
+ * @returns {string}
+ */
+function encodeFragment (input) {
+  return encodeComponent(input, isQueryFragmentCharacter)
+}
+
+function isEscapeSafe (cp) {
+  return (
+    (cp >= 0x30 && cp <= 0x39) ||
+    (cp >= 0x41 && cp <= 0x5A) ||
+    (cp >= 0x61 && cp <= 0x7A) ||
+    cp === 0x2A || cp === 0x2B || cp === 0x2D || cp === 0x2E ||
+    cp === 0x2F || cp === 0x40 || cp === 0x5F
+  )
+}
+
+/**
+ * Normalizes the percent-encoding of a query or fragment component.
+ *
+ * Like `normalizePathEncoding`, but uses the query/fragment character set
+ * (which additionally allows `?`) and decodes `.` since it has no dot-segment
+ * meaning outside of a path.
+ *
+ * @param {string} input
+ * @returns {string}
+ */
+function normalizeQueryFragmentEncoding (input) {
+  let output = ''
+
+  for (let i = 0; i < input.length; i++) {
+    const ch = input[i]
+    if (ch === '%' && i + 2 < input.length) {
+      const hex = input.slice(i + 1, i + 3)
+      if (isHexPair(hex)) {
+        const normalizedHex = hex.toUpperCase()
+        const decoded = String.fromCharCode(parseInt(normalizedHex, 16))
+
+        if (isUnreserved(decoded)) {
+          output += decoded
+        } else {
+          output += '%' + normalizedHex
+        }
+
+        i += 2
+        continue
+      }
+    }
+
+    if (isQueryFragmentCharacter(ch)) {
+      output += ch
+    } else {
+      const code = input.charCodeAt(i)
+      if (code < 0x80) {
+        output += isEscapeSafe(code) ? ch : BYTE_HEX[code]
+      } else if (code < 0xD800 || code > 0xDFFF) {
+        output += percentEncodeNonAscii(code)
+      } else if (code <= 0xDBFF && i + 1 < input.length) {
+        const low = input.charCodeAt(i + 1)
+        if (low >= 0xDC00 && low <= 0xDFFF) {
+          output += percentEncodeNonAscii(0x10000 + ((code - 0xD800) << 10) + (low - 0xDC00))
+          i++
+        } else {
+          output += percentEncodeNonAscii(0xFFFD)
+        }
+      } else {
+        output += percentEncodeNonAscii(0xFFFD)
+      }
     }
   }
 
@@ -10698,15 +11151,21 @@ function recomposeAuthority (component) {
   const uriTokens = []
 
   if (component.userinfo !== undefined) {
-    uriTokens.push(component.userinfo)
+    uriTokens.push(encodeUserinfo(component.userinfo))
     uriTokens.push('@')
   }
 
   if (component.host !== undefined) {
-    let host = unescape(component.host)
+    let host = component.host
     if (!isIPv4(host)) {
-      const ipV6res = normalizeIPv6(host)
-      if (ipV6res.isIPV6 === true) {
+      let ipV6res = normalizeIPv6(host)
+      if (ipV6res.isIPV6 !== true && ipV6res.isIPVFuture !== true) {
+        // Decode only unreserved bytes, once. In particular, keep %25 encoded
+        // so it cannot introduce a second escape during recomposition.
+        host = normalizePercentEncoding(host, true)
+        ipV6res = normalizeIPv6(host)
+      }
+      if (ipV6res.isIPV6 === true || ipV6res.isIPVFuture === true) {
         host = `[${ipV6res.escapedHost}]`
       } else {
         host = reescapeHostDelimiters(host, false)
@@ -10729,6 +11188,11 @@ module.exports = {
   reescapeHostDelimiters,
   normalizePercentEncoding,
   normalizePathEncoding,
+  serializePathEncoding,
+  normalizeQueryFragmentEncoding,
+  encodeUserinfo,
+  encodeQuery,
+  encodeFragment,
   escapePreservingEscapes,
   removeDotSegments,
   isIPv4,
@@ -11205,8 +11669,10 @@ class Composer {
             }
         }
         if (afterDoc) {
-            Array.prototype.push.apply(doc.errors, this.errors);
-            Array.prototype.push.apply(doc.warnings, this.warnings);
+            for (let i = 0; i < this.errors.length; ++i)
+                doc.errors.push(this.errors[i]);
+            for (let i = 0; i < this.warnings.length; ++i)
+                doc.warnings.push(this.warnings[i]);
         }
         else {
             doc.errors = this.errors;
@@ -15123,7 +15589,7 @@ class Lexer {
             const n = (yield* this.pushCount(1)) + (yield* this.pushSpaces(true));
             this.indentNext = this.indentValue + 1;
             this.indentValue += n;
-            return yield* this.parseBlockStart();
+            return 'block-start';
         }
         return 'doc';
     }
@@ -15444,32 +15910,36 @@ class Lexer {
         return 0;
     }
     *pushIndicators() {
-        switch (this.charAt(0)) {
-            case '!':
-                return ((yield* this.pushTag()) +
-                    (yield* this.pushSpaces(true)) +
-                    (yield* this.pushIndicators()));
-            case '&':
-                return ((yield* this.pushUntil(isNotAnchorChar)) +
-                    (yield* this.pushSpaces(true)) +
-                    (yield* this.pushIndicators()));
-            case '-': // this is an error
-            case '?': // this is an error outside flow collections
-            case ':': {
-                const inFlow = this.flowLevel > 0;
-                const ch1 = this.charAt(1);
-                if (isEmpty(ch1) || (inFlow && flowIndicatorChars.has(ch1))) {
-                    if (!inFlow)
-                        this.indentNext = this.indentValue + 1;
-                    else if (this.flowKey)
-                        this.flowKey = false;
-                    return ((yield* this.pushCount(1)) +
-                        (yield* this.pushSpaces(true)) +
-                        (yield* this.pushIndicators()));
+        let n = 0;
+        loop: while (true) {
+            switch (this.charAt(0)) {
+                case '!':
+                    n += yield* this.pushTag();
+                    n += yield* this.pushSpaces(true);
+                    continue loop;
+                case '&':
+                    n += yield* this.pushUntil(isNotAnchorChar);
+                    n += yield* this.pushSpaces(true);
+                    continue loop;
+                case '-': // this is an error
+                case '?': // this is an error outside flow collections
+                case ':': {
+                    const inFlow = this.flowLevel > 0;
+                    const ch1 = this.charAt(1);
+                    if (isEmpty(ch1) || (inFlow && flowIndicatorChars.has(ch1))) {
+                        if (!inFlow)
+                            this.indentNext = this.indentValue + 1;
+                        else if (this.flowKey)
+                            this.flowKey = false;
+                        n += yield* this.pushCount(1);
+                        n += yield* this.pushSpaces(true);
+                        continue loop;
+                    }
                 }
             }
+            break loop;
         }
-        return 0;
+        return n;
     }
     *pushTag() {
         if (this.charAt(1) === '<') {
@@ -15655,6 +16125,14 @@ function getFirstKeyStartProps(prev) {
     }
     return prev.splice(i, prev.length);
 }
+function arrayPushArray(target, source) {
+    // May exhaust call stack with large `source` array
+    if (source.length < 1e5)
+        Array.prototype.push.apply(target, source);
+    else
+        for (let i = 0; i < source.length; ++i)
+            target.push(source[i]);
+}
 function fixFlowSeqItems(fc) {
     if (fc.start.type === 'flow-seq-start') {
         for (const it of fc.items) {
@@ -15667,12 +16145,12 @@ function fixFlowSeqItems(fc) {
                 delete it.key;
                 if (isFlowToken(it.value)) {
                     if (it.value.end)
-                        Array.prototype.push.apply(it.value.end, it.sep);
+                        arrayPushArray(it.value.end, it.sep);
                     else
                         it.value.end = it.sep;
                 }
                 else
-                    Array.prototype.push.apply(it.start, it.sep);
+                    arrayPushArray(it.start, it.sep);
                 delete it.sep;
             }
         }
@@ -16092,7 +16570,7 @@ class Parser {
                         const prev = map.items[map.items.length - 2];
                         const end = prev?.value?.end;
                         if (Array.isArray(end)) {
-                            Array.prototype.push.apply(end, it.start);
+                            arrayPushArray(end, it.start);
                             end.push(this.sourceToken);
                             map.items.pop();
                             return;
@@ -16307,7 +16785,7 @@ class Parser {
                         const prev = seq.items[seq.items.length - 2];
                         const end = prev?.value?.end;
                         if (Array.isArray(end)) {
-                            Array.prototype.push.apply(end, it.start);
+                            arrayPushArray(end, it.start);
                             end.push(this.sourceToken);
                             seq.items.pop();
                             return;

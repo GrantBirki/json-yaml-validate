@@ -50,6 +50,19 @@ test('successfully validates a json file with a schema', async () => {
   )
 })
 
+test('rejects malformed IPv6 schema references instead of resolving them to a different local schema', async () => {
+  process.env.INPUT_FILES = '__tests__/fixtures/json/valid/json1.json'
+
+  for (const version of ['draft-04', 'draft-07', 'draft-2019-09', 'draft-2020-12']) {
+    process.env.INPUT_JSON_SCHEMA_VERSION = version
+    process.env.INPUT_JSON_SCHEMA = version === 'draft-04'
+      ? '__tests__/fixtures/schemas/malformed-ipv6-ref-draft-04.json'
+      : '__tests__/fixtures/schemas/malformed-ipv6-ref.json'
+
+    await expect(jsonValidator(excludeMock)).rejects.toThrow('URI host is malformed.')
+  }
+})
+
 test('successfully validates a json file with a schema and defaults to the draft-07 schema version when none is set', async () => {
   const badJsonSchemaVersion = 'evil-draft-999'
   process.env.INPUT_JSON_SCHEMA_VERSION = badJsonSchemaVersion
