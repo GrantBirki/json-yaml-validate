@@ -83,6 +83,19 @@ test('successfully runs the action with default dependencies', async () => {
   expect(infoMock).toHaveBeenCalledWith('🔎 no YAML files were detected')
 })
 
+test('rejects unmatched files before validation even in warn mode', async () => {
+  process.env.INPUT_FILES = '*/not_matching*.yaml'
+  process.env.INPUT_BASE_DIR = '__tests__/fixtures/yaml/valid'
+  process.env.INPUT_MODE = 'warn'
+
+  await expect(run()).rejects.toThrow('files input matched no files')
+
+  expect(setOutputMock).not.toHaveBeenCalled()
+  expect(infoMock).not.toHaveBeenCalledWith(
+    '__tests__/fixtures/yaml/valid/yaml1.yaml is valid'
+  )
+})
+
 test('tests main execution when LOCAL_ACTIONS_CI_TEST is not true', async () => {
   const originalEnv = process.env.LOCAL_ACTIONS_CI_TEST
 

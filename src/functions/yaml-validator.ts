@@ -279,6 +279,9 @@ export async function yamlValidator(
   }
 
   let files = discoverExplicitFiles(patterns)
+  if (patterns.length > 0 && files.length === 0) {
+    throw new Error('files input matched no files')
+  }
   const baseDirSanitized = baseDir.replace(/\/$/, '')
 
   const glob = `**/*.{${yamlExtension.replace(

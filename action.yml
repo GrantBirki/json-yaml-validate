@@ -30,7 +30,7 @@ inputs:
     required: false
     default: "."
   files:
-    description: List of file paths to validate. File paths may be newline-delimited or provided as a single space-separated line. Matched files must resolve to regular files inside the workspace.
+    description: List of file paths to validate. File paths may be newline-delimited or provided as a single space-separated line. Empty input uses base_dir discovery; non-empty input with no matches fails. Matched files must resolve to regular files inside the workspace.
     required: false
     default: ""
   schema_mappings:

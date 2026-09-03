@@ -163,13 +163,7 @@ Important inputs:
 - `github_token`: only used for PR comments. Do not log it.
 - `base_dir`: base directory for crawler-based discovery when `files` is empty.
   A single trailing slash is removed.
-- `files`: newline-delimited glob patterns or a single-line whitespace-delimited
-  file list such as the default `tj-actions/changed-files` output. Validators
-  first expand the value as newline-delimited patterns. If that matches no files
-  and there is exactly one non-empty line, they split that line on whitespace and
-  expand those tokens. If the tokens also match nothing, crawler discovery falls
-  back to `base_dir`. Do not split on commas because commas are valid in glob
-  syntax such as brace patterns.
+- `files`: newline-delimited glob patterns or a single-line whitespace-delimited file list such as the default `tj-actions/changed-files` output. Validators first expand the value as newline-delimited patterns. If that matches no files and there is exactly one non-empty line, they split that line on whitespace and expand those tokens. Non-empty input that still matches nothing throws `files input matched no files` before validation, including in `mode: warn`. Omitted, empty, or whitespace-only input uses crawler discovery under `base_dir`. Do not split on commas because commas are valid in glob syntax such as brace patterns.
 - `schema_mappings`: optional YAML list that maps schema files to explicit file
   patterns. When set, mappings are authoritative: validators do not use
   `base_dir`, top-level `files`, `json_schema`, or `yaml_schema`. Each mapping
@@ -457,8 +451,7 @@ hardened unit tests around these behaviors green:
 
 - explicit `files` input bypasses `base_dir` and validates matching files from
   anywhere in the workspace
-- if `files` is provided but all glob patterns are unmatched, validators fall
-  back to crawler discovery under `base_dir`
+- if non-empty `files` is provided but all glob patterns are unmatched, validators throw a clear input error instead of scanning `base_dir`; omitted, empty, and whitespace-only input still uses crawler discovery
 - single-line whitespace-delimited `files` input is parsed only after the
   original newline-delimited expansion matches nothing
 - newline-delimited `files` globs continue to work and are not split on
@@ -484,16 +477,7 @@ hardened unit tests around these behaviors green:
   crawler discovery. Reject same-type file overlaps so one JSON or YAML file is
   never validated against two schemas in the same run.
 
-Acceptance tests in `.github/workflows/acceptance.yml` use the action exactly as
-consumers do through `uses: ./`. Expected-failure acceptance cases must use
-`continue-on-error: true` on the action step and a following assertion step that
-checks `steps.<id>.outcome == 'failure'`; this keeps the job green while proving
-invalid syntax, schema violations, and explicit multi-document YAML opt-out
-fail. Keep explicit `files` inputs pointed at existing fixtures, because if all
-patterns are unmatched the validators fall back to `base_dir` discovery.
-Intentionally invalid acceptance fixtures under `__tests__/acceptance` must also
-be excluded from any positive crawler-mode acceptance step that scans that
-directory.
+Acceptance tests in `.github/workflows/acceptance.yml` use the action exactly as consumers do through `uses: ./`. Expected-failure acceptance cases must use `continue-on-error: true` on the action step and a following assertion step that checks `steps.<id>.outcome == 'failure'`; this keeps the job green while proving invalid syntax, schema violations, unmatched explicit file patterns, and explicit multi-document YAML opt-out fail. Keep positive explicit `files` inputs pointed at existing fixtures, because non-empty inputs that match nothing fail before validation. Intentionally invalid acceptance fixtures under `__tests__/acceptance` must also be excluded from any positive crawler-mode acceptance step that scans that directory.
 
 ## CI Workflows
 
@@ -695,9 +679,7 @@ Preparing a PR:
 
 - `files` mode bypasses `base_dir` discovery but both validators still receive
   the expanded file list and must skip files they do not own.
-- If every explicit `files` pattern expands to zero files, a single non-empty
-  line is retried as a whitespace-delimited list. If that also expands to zero
-  files, validators fall back to crawler discovery under `base_dir`.
+- If every explicit `files` pattern expands to zero files, a single non-empty line is retried as a whitespace-delimited list. If that also expands to zero files, validators throw `files input matched no files`. Only omitted, empty, or whitespace-only input uses crawler discovery under `base_dir`.
 - Do not treat `files` as comma-delimited. Commas can be valid glob syntax, and
   changing this would create ambiguous parsing for brace patterns.
 - JSON schema skipping uses substring matching; YAML schema skipping uses exact
