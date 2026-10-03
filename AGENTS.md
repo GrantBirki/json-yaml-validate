@@ -481,6 +481,8 @@ Acceptance tests in `.github/workflows/acceptance.yml` use the action exactly as
 
 ## CI Workflows
 
+All executable workflows use `cache-mode: none` to disable GitHub Actions cache reads and writes. Keep dependency installs unconditional and disable setup-node's automatic caching with `package-manager-cache: false` so workflow updates preserve fresh installs without shared dependency caches.
+
 - `test.yml`: installs with `npm ci` and runs `npm run ci-test`.
 - `lint.yml`: installs with `npm ci` and runs `npm run typecheck`.
 - `package-check.yml`: runs `npm run bundle` and fails if tracked or untracked
