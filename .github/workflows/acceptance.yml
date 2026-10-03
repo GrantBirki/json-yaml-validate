@@ -9,6 +9,8 @@ on:
 permissions:
   contents: read
 
+cache-mode: none
+
 jobs:
   acceptance:
     runs-on: ubuntu-latest

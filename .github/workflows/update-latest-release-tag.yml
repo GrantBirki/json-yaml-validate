@@ -16,6 +16,8 @@ on:
 permissions:
   contents: write
 
+cache-mode: none
+
 jobs:
   tag:
     runs-on: ubuntu-latest
